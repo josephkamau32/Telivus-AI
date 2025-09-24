@@ -1,1 +1,4 @@
 project_id = "bakyhjddhqxxsvseygst"
+
+[functions.generate-medical-report]
+verify_jwt = false
