@@ -1,3 +1,4 @@
+// @ts-nocheck
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.4';
@@ -165,18 +166,18 @@ Please provide a structured, professional medical assessment report. Return your
 
 Format the response as valid JSON only, no additional text.`;
 
-    // Call Gemini API with retry logic
+    // Call Gemini API with retry logic (v1 endpoint, header-based API key)
     const geminiResponse = await retryWithBackoff(async () => {
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${GEMINI_API_KEY}`, {
+      const response = await fetch('https://generativelanguage.googleapis.com/v1/models/gemini-1.5-pro:generateContent', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'x-goog-api-key': GEMINI_API_KEY,
         },
         body: JSON.stringify({
           contents: [{
-            parts: [{
-              text: prompt
-            }]
+            role: 'user',
+            parts: [{ text: prompt }]
           }],
           generationConfig: {
             temperature: 0.7,
@@ -195,7 +196,11 @@ Format the response as valid JSON only, no additional text.`;
     });
 
     const data = await geminiResponse.json();
-    const reportText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+    // Some responses split across multiple parts; join all text parts
+    const parts = data.candidates?.[0]?.content?.parts ?? [];
+    const reportText = Array.isArray(parts)
+      ? parts.map((p: any) => p?.text).filter((t: unknown) => typeof t === 'string').join('\n').trim()
+      : undefined;
 
     if (!reportText) {
       throw new Error('No response from Gemini AI');
