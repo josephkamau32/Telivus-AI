@@ -167,13 +167,16 @@ Format the response as valid JSON only, no additional text.`;
 
     // Call Gemini API with retry logic
     const geminiResponse = await retryWithBackoff(async () => {
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${GEMINI_API_KEY}`, {
+      // NOTE: Using the generally-available Gemini Pro model instead of the preview 1.5 endpoint.
+      // If you have early-access to 1.5 you can change `gemini-pro` to `gemini-1.5-pro-latest`.
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${GEMINI_API_KEY}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           contents: [{
+            role: "user",
             parts: [{
               text: prompt
             }]
@@ -195,10 +198,16 @@ Format the response as valid JSON only, no additional text.`;
     });
 
     const data = await geminiResponse.json();
+    if (!data.candidates || data.candidates.length === 0) {
+      console.error('Gemini API unexpectedly returned no candidates:', JSON.stringify(data));
+      throw new Error('Gemini AI returned no candidates');
+    }
+
     const reportText = data.candidates?.[0]?.content?.parts?.[0]?.text;
 
     if (!reportText) {
-      throw new Error('No response from Gemini AI');
+      console.error('Gemini candidate has no text parts:', JSON.stringify(data.candidates[0]));
+      throw new Error('No response text from Gemini AI');
     }
 
     // Try to parse as JSON, fallback to text format if parsing fails
