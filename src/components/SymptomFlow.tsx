@@ -31,6 +31,7 @@ export const SymptomFlow = ({ onComplete, onBack }: SymptomFlowProps) => {
   const [symptoms, setSymptoms] = useState<string[]>([]);
   const [customSymptom, setCustomSymptom] = useState('');
   const [age, setAge] = useState<number | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSymptomToggle = (symptom: string) => {
     setSymptoms(prev => 
@@ -61,9 +62,30 @@ export const SymptomFlow = ({ onComplete, onBack }: SymptomFlowProps) => {
     }
   };
 
-  const handleComplete = () => {
-    if (feelings && symptoms.length > 0 && age && age > 0) {
-      onComplete({ feelings, symptoms, age });
+  const handleComplete = async () => {
+    if (isSubmitting) return; // Prevent duplicate submissions
+    
+    // Enhanced validation
+    if (!feelings?.trim()) {
+      alert('Please select how you are feeling');
+      return;
+    }
+    
+    if (symptoms.length === 0) {
+      alert('Please select at least one symptom');
+      return;
+    }
+    
+    if (!age || age < 0 || age > 130) {
+      alert('Please enter a valid age between 0 and 130');
+      return;
+    }
+    
+    setIsSubmitting(true);
+    try {
+      await onComplete({ feelings, symptoms, age });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -71,7 +93,7 @@ export const SymptomFlow = ({ onComplete, onBack }: SymptomFlowProps) => {
     switch (step) {
       case 1: return feelings !== '';
       case 2: return symptoms.length > 0;
-      case 3: return age !== null && age > 0;
+      case 3: return age !== null && age > 0 && age <= 130;
       default: return false;
     }
   };
@@ -180,11 +202,18 @@ export const SymptomFlow = ({ onComplete, onBack }: SymptomFlowProps) => {
                 <Input
                   id="age"
                   type="number"
-                  min="1"
-                  max="120"
+                  min="0"
+                  max="130"
                   placeholder="Enter your age"
                   value={age || ''}
-                  onChange={(e) => setAge(parseInt(e.target.value) || null)}
+                  onChange={(e) => {
+                    const value = parseInt(e.target.value);
+                    if (isNaN(value) || value < 0 || value > 130) {
+                      setAge(null);
+                    } else {
+                      setAge(value);
+                    }
+                  }}
                   className="text-center text-lg"
                 />
               </div>
@@ -205,10 +234,10 @@ export const SymptomFlow = ({ onComplete, onBack }: SymptomFlowProps) => {
             ) : (
               <Button 
                 onClick={handleComplete} 
-                disabled={!canProceed()}
+                disabled={!canProceed() || isSubmitting}
                 className="bg-secondary hover:bg-secondary/90 text-secondary-foreground"
               >
-                Generate Report
+                {isSubmitting ? 'Generating...' : 'Generate Report'}
                 <CheckCircle className="w-4 h-4 ml-2" />
               </Button>
             )}
