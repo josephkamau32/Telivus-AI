@@ -165,34 +165,55 @@ Please provide a structured, professional medical assessment report. Return your
 
 Format the response as valid JSON only, no additional text.`;
 
-    // Call Gemini API with retry logic
-    const geminiResponse = await retryWithBackoff(async () => {
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${GEMINI_API_KEY}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          contents: [{
-            parts: [{
-              text: prompt
-            }]
-          }],
-          generationConfig: {
-            temperature: 0.7,
-            maxOutputTokens: 2000,
+    // Call Gemini API with retry logic and model fallback
+    let lastRetryAfter: string | null = null;
+    const callGemini = async (model: string) => {
+      return await retryWithBackoff(async () => {
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1/models/${model}:generateContent?key=${GEMINI_API_KEY}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            contents: [{
+              role: 'user',
+              parts: [{ text: prompt }]
+            }],
+            generationConfig: {
+              temperature: 0.7,
+              maxOutputTokens: 2000,
+              responseMimeType: 'application/json'
+            }
+          }),
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('Gemini API error response:', errorText);
+          const retryAfter = response.headers.get('retry-after');
+          if (retryAfter) {
+            lastRetryAfter = retryAfter;
+            console.warn(`Retry-After header from Gemini: ${retryAfter}`);
           }
-        }),
+          throw new Error(`Gemini API error: ${response.status} - ${errorText}`);
+        }
+
+        return response;
       });
+    };
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Gemini API error response:', errorText);
-        throw new Error(`Gemini API error: ${response.status} - ${errorText}`);
+    let geminiResponse;
+    try {
+      geminiResponse = await callGemini('gemini-1.5-pro');
+    } catch (e) {
+      const message = e instanceof Error ? e.message : String(e);
+      if (message.includes('429') || message.includes('RESOURCE_EXHAUSTED')) {
+        console.warn('Rate limited on gemini-1.5-pro, falling back to gemini-1.5-flash');
+        geminiResponse = await callGemini('gemini-1.5-flash');
+      } else {
+        throw e;
       }
-
-      return response;
-    });
+    }
 
     const data = await geminiResponse.json();
     const reportText = data.candidates?.[0]?.content?.parts?.[0]?.text;
@@ -204,10 +225,7 @@ Format the response as valid JSON only, no additional text.`;
     // Try to parse as JSON, fallback to text format if parsing fails
     let parsedReport;
     try {
-      // Clean the response to extract JSON
-      const jsonMatch = reportText.match(/\{[\s\S]*\}/);
-      const jsonString = jsonMatch ? jsonMatch[0] : reportText;
-      parsedReport = JSON.parse(jsonString);
+      parsedReport = JSON.parse(reportText);
     } catch (parseError) {
       console.warn('Failed to parse JSON response, using text format:', parseError);
       parsedReport = {
@@ -274,12 +292,19 @@ Format the response as valid JSON only, no additional text.`;
       });
     }
 
+    const isRateLimited = error instanceof Error && (error.message.includes('429') || error.message.includes('RATE_LIMITED') || error.message.includes('RESOURCE_EXHAUSTED'));
+    const statusCode = isRateLimited ? 429 : 500;
+    const headers: Record<string, string> = { ...corsHeaders, 'Content-Type': 'application/json' };
+    if (isRateLimited && lastRetryAfter) {
+      headers['Retry-After'] = lastRetryAfter;
+    }
+
     return new Response(JSON.stringify({ 
       error: errorMessage,
-      error_code: error instanceof Error && error.message.includes('429') ? 'RATE_LIMITED' : 'GENERATION_FAILED'
+      error_code: isRateLimited ? 'RATE_LIMITED' : 'GENERATION_FAILED'
     }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      status: statusCode,
+      headers,
     });
   }
 });
