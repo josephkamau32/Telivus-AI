@@ -1,9 +1,58 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.4';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
+// Input validation schema
+const validateInput = (data: any) => {
+  const errors: string[] = [];
+  
+  if (!data.feelings || typeof data.feelings !== 'string' || data.feelings.trim().length === 0) {
+    errors.push('Feeling is required');
+  }
+  
+  if (!Array.isArray(data.symptoms) || data.symptoms.length === 0) {
+    errors.push('At least one symptom is required');
+  }
+  
+  if (!data.age || typeof data.age !== 'number' || data.age < 0 || data.age > 130) {
+    errors.push('Age must be a number between 0 and 130');
+  }
+  
+  return errors;
+};
+
+// Retry function with exponential backoff
+const retryWithBackoff = async (fn: () => Promise<any>, maxRetries = 2) => {
+  let lastError: Error | unknown;
+  
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (error) {
+      lastError = error;
+      
+      // Don't retry on client errors (4xx) or if it's an Error with message
+      if (error instanceof Error) {
+        if (error.message.includes('400') || error.message.includes('401') || error.message.includes('403')) {
+          throw error;
+        }
+      }
+      
+      // Wait before retry (exponential backoff)
+      if (attempt < maxRetries) {
+        const delay = Math.pow(2, attempt) * 1000; // 1s, 2s, 4s
+        console.log(`Attempt ${attempt + 1} failed, retrying in ${delay}ms...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    }
+  }
+  
+  throw lastError;
 };
 
 serve(async (req) => {
@@ -11,8 +60,62 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const supabase = createClient(
+    Deno.env.get('SUPABASE_URL') ?? '',
+    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+  );
+
+  let healthReportId: string | null = null;
+
   try {
-    const { feelings, symptoms, age } = await req.json();
+    const requestBody = await req.json();
+    const { feelings, symptoms, age, userId } = requestBody;
+    
+    // Input validation
+    const validationErrors = validateInput({ feelings, symptoms, age });
+    if (validationErrors.length > 0) {
+      // Log validation failure
+      await supabase.from('report_logs').insert({
+        event_type: 'validation_failed',
+        payload: { validationErrors, requestBody }
+      });
+      
+      return new Response(JSON.stringify({ 
+        error: 'Validation failed', 
+        details: validationErrors 
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Create initial health report record
+    const { data: healthReport, error: insertError } = await supabase
+      .from('health_reports')
+      .insert({
+        user_id: userId || null,
+        age,
+        feeling: feelings,
+        symptoms,
+        status: 'processing'
+      })
+      .select()
+      .single();
+
+    if (insertError) {
+      console.error('Error creating health report:', insertError);
+      throw new Error('Failed to create health report record');
+    }
+
+    healthReportId = healthReport.id;
+
+    // Log request start
+    await supabase.from('report_logs').insert({
+      health_report_id: healthReportId,
+      event_type: 'request_started',
+      payload: { feelings, symptoms, age, userId }
+    });
+
     const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
 
     if (!GEMINI_API_KEY) {
@@ -26,79 +129,154 @@ PATIENT PRESENTATION:
 - Patient's Subjective Feeling: ${feelings}
 - Age: ${age} years old
 
-Please provide a structured, professional medical assessment report with the following sections:
+Please provide a structured, professional medical assessment report. Return your response as a JSON object with the following structure:
 
-**CLINICAL ASSESSMENT:**
-1. **Primary Differential Diagnoses** (3-4 most likely conditions based on symptoms)
-   - List conditions in order of clinical probability
-   - Provide brief rationale for each diagnosis
+{
+  "possible_conditions": [
+    {
+      "condition": "Condition Name",
+      "probability": "High/Medium/Low",
+      "rationale": "Brief explanation"
+    }
+  ],
+  "recommendations": [
+    {
+      "category": "Immediate Care/Lifestyle/Monitoring/Follow-up",
+      "instruction": "Specific recommendation"
+    }
+  ],
+  "otc_medicines": [
+    {
+      "name": "Brand/Generic Name",
+      "dosage": "Specific dosage",
+      "instructions": "How to take",
+      "contraindications": "When to avoid"
+    }
+  ],
+  "confidence_scores": {
+    "overall_assessment": 0-100,
+    "medication_recommendations": 0-100
+  },
+  "red_flags": [
+    "Symptom or condition requiring immediate medical attention"
+  ],
+  "disclaimer": "This assessment is for informational purposes only and does not replace professional medical consultation, diagnosis, or treatment."
+}
 
-2. **PHARMACEUTICAL RECOMMENDATIONS:**
-   - **Over-the-Counter Medications:** Specific brand names, dosages, and administration instructions
-   - **Symptomatic Relief Options:** Include alternatives for different severity levels
-   - **Drug Interactions & Contraindications:** Important safety considerations
+Format the response as valid JSON only, no additional text.`;
 
-3. **CLINICAL RECOMMENDATIONS:**
-   - **Immediate Care Instructions:** What to do in the next 24-48 hours
-   - **Lifestyle Modifications:** Diet, activity, rest recommendations
-   - **Monitoring Guidelines:** Symptoms to watch for, when to seek emergency care
-   - **Follow-up Timeline:** When to see a healthcare provider
+    // Call Gemini API with retry logic
+    const geminiResponse = await retryWithBackoff(async () => {
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${GEMINI_API_KEY}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          contents: [{
+            parts: [{
+              text: prompt
+            }]
+          }],
+          generationConfig: {
+            temperature: 0.7,
+            maxOutputTokens: 2000,
+          }
+        }),
+      });
 
-4. **PREVENTIVE MEASURES:**
-   - Risk factor modifications
-   - Health maintenance recommendations
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Gemini API error response:', errorText);
+        throw new Error(`Gemini API error: ${response.status} - ${errorText}`);
+      }
 
-5. **RED FLAG SYMPTOMS:**
-   - Critical symptoms requiring immediate medical attention
-   - Emergency department criteria
-
-Format the response professionally as a medical consultation report. Be specific with medication names, dosages, and instructions while maintaining appropriate medical disclaimers.
-
-**IMPORTANT MEDICAL DISCLAIMER:** This assessment is for informational purposes only and does not replace professional medical consultation, diagnosis, or treatment.`;
-
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${GEMINI_API_KEY}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        contents: [{
-          parts: [{
-            text: prompt
-          }]
-        }],
-        generationConfig: {
-          temperature: 0.7,
-          maxOutputTokens: 1000,
-        }
-      }),
+      return response;
     });
 
-    if (!response.ok) {
-      throw new Error(`Gemini API error: ${response.status}`);
-    }
-
-    const data = await response.json();
+    const data = await geminiResponse.json();
     const reportText = data.candidates?.[0]?.content?.parts?.[0]?.text;
 
     if (!reportText) {
       throw new Error('No response from Gemini AI');
     }
 
-    console.log('Generated medical report for user:', { feelings, symptoms, age });
+    // Try to parse as JSON, fallback to text format if parsing fails
+    let parsedReport;
+    try {
+      // Clean the response to extract JSON
+      const jsonMatch = reportText.match(/\{[\s\S]*\}/);
+      const jsonString = jsonMatch ? jsonMatch[0] : reportText;
+      parsedReport = JSON.parse(jsonString);
+    } catch (parseError) {
+      console.warn('Failed to parse JSON response, using text format:', parseError);
+      parsedReport = {
+        text_report: reportText,
+        possible_conditions: [],
+        recommendations: [],
+        otc_medicines: [],
+        confidence_scores: { overall_assessment: 75, medication_recommendations: 70 },
+        disclaimer: "This assessment is for informational purposes only and does not replace professional medical consultation, diagnosis, or treatment."
+      };
+    }
+
+    // Update health report with success
+    const { error: updateError } = await supabase
+      .from('health_reports')
+      .update({
+        status: 'completed',
+        report: parsedReport,
+        otc_medicines: parsedReport.otc_medicines || []
+      })
+      .eq('id', healthReportId);
+
+    if (updateError) {
+      console.error('Error updating health report:', updateError);
+    }
+
+    // Log successful completion
+    await supabase.from('report_logs').insert({
+      health_report_id: healthReportId,
+      event_type: 'request_completed',
+      payload: { success: true, reportLength: reportText.length }
+    });
+
+    console.log(`Successfully generated medical report for health_report_id: ${healthReportId}`);
 
     return new Response(JSON.stringify({ 
-      report: reportText,
+      ...parsedReport,
       timestamp: new Date().toISOString(),
-      disclaimer: "MediSense AI is not a substitute for professional medical advice. Please consult a licensed healthcare provider for diagnosis and treatment."
+      health_report_id: healthReportId
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
   } catch (error) {
     console.error('Error in generate-medical-report:', error);
+    
+    const errorMessage = error instanceof Error ? error.message : 'Failed to generate medical report';
+    
+    // Update health report with error if we have an ID
+    if (healthReportId) {
+      await supabase
+        .from('health_reports')
+        .update({
+          status: 'failed',
+          error_message: errorMessage
+        })
+        .eq('id', healthReportId);
+
+      // Log error
+      await supabase.from('report_logs').insert({
+        health_report_id: healthReportId,
+        event_type: 'request_failed',
+        payload: { error: errorMessage, stack: error instanceof Error ? error.stack : undefined }
+      });
+    }
+
     return new Response(JSON.stringify({ 
-      error: error instanceof Error ? error.message : 'Failed to generate medical report' 
+      error: errorMessage,
+      error_code: error instanceof Error && error.message.includes('429') ? 'RATE_LIMITED' : 'GENERATION_FAILED'
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

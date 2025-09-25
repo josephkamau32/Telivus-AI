@@ -30,25 +30,48 @@ const Index = () => {
     setAppState('loading');
     setAssessmentData(data);
 
+    // Client-side validation
+    const validationErrors: string[] = [];
+    if (!data.feelings?.trim()) validationErrors.push('Feeling is required');
+    if (!data.symptoms?.length) validationErrors.push('At least one symptom is required');
+    if (!data.age || data.age < 0 || data.age > 130) validationErrors.push('Age must be between 0 and 130');
+
+    if (validationErrors.length > 0) {
+      toast({
+        title: "Validation Error",
+        description: validationErrors.join(', '),
+        variant: "destructive",
+      });
+      setAppState('assessment');
+      return;
+    }
+
     try {
       const { data: reportData, error } = await supabase.functions.invoke('generate-medical-report', {
-        body: data
+        body: {
+          feelings: data.feelings,
+          symptoms: data.symptoms,
+          age: Number(data.age),
+          userId: null // We don't have user auth yet
+        }
       });
 
       if (error) {
-        throw new Error(error.message);
+        throw new Error(error.message || 'Failed to generate report');
       }
 
-      const { report, timestamp } = reportData;
+      // Handle both structured JSON and text responses
+      const report = reportData.text_report || reportData;
+      const timestamp = reportData.timestamp || new Date().toISOString();
       
       // Save to local storage
       addReport({
         timestamp,
         userInfo: data,
-        report,
+        report: typeof report === 'string' ? report : JSON.stringify(report, null, 2),
       });
 
-      setCurrentReport(report);
+      setCurrentReport(typeof report === 'string' ? report : JSON.stringify(report, null, 2));
       setReportTimestamp(timestamp);
       setAppState('report');
 
@@ -59,9 +82,15 @@ const Index = () => {
 
     } catch (error) {
       console.error('Error generating report:', error);
+      
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      const isRateLimited = errorMessage.includes('429') || errorMessage.includes('RATE_LIMITED');
+      
       toast({
-        title: "Error",
-        description: "Failed to generate your health report. Please try again.",
+        title: isRateLimited ? "Rate Limited" : "Generation Failed",
+        description: isRateLimited 
+          ? "Too many requests. Please wait a moment and try again." 
+          : "Failed to generate your health report. Please try again.",
         variant: "destructive",
       });
       setAppState('assessment');
@@ -81,10 +110,24 @@ const Index = () => {
   if (appState === 'loading') {
     return (
       <div className="min-h-screen bg-gradient-to-br from-primary-light to-secondary-light flex items-center justify-center">
-        <div className="text-center">
+        <div className="text-center max-w-md mx-auto p-6">
           <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary mx-auto mb-4"></div>
           <h2 className="text-2xl font-semibold text-foreground mb-2">Generating Your Report</h2>
-          <p className="text-muted-foreground">AI is analyzing your symptoms and creating personalized recommendations...</p>
+          <p className="text-muted-foreground mb-4">AI is analyzing your symptoms and creating personalized recommendations...</p>
+          <div className="bg-background/20 backdrop-blur-sm rounded-lg p-4">
+            <div className="flex items-center justify-center space-x-2 text-sm text-muted-foreground">
+              <div className="w-2 h-2 bg-primary rounded-full animate-pulse"></div>
+              <span>Processing your health data</span>
+            </div>
+            <div className="flex items-center justify-center space-x-2 text-sm text-muted-foreground mt-2">
+              <div className="w-2 h-2 bg-primary rounded-full animate-pulse" style={{animationDelay: '0.5s'}}></div>
+              <span>Consulting medical databases</span>
+            </div>
+            <div className="flex items-center justify-center space-x-2 text-sm text-muted-foreground mt-2">
+              <div className="w-2 h-2 bg-primary rounded-full animate-pulse" style={{animationDelay: '1s'}}></div>
+              <span>Generating recommendations</span>
+            </div>
+          </div>
         </div>
       </div>
     );
