@@ -19,18 +19,42 @@ serve(async (req) => {
       throw new Error('Gemini API key not configured');
     }
 
-    const prompt = `You are a medical AI assistant. Based on the following information, provide a comprehensive medical assessment:
+    const prompt = `You are Dr. MediSense AI, an experienced medical doctor with a PhD in Medicine and Pharmacy, with over 20 years of clinical experience. Based on the comprehensive patient information provided, generate a detailed professional medical assessment report.
 
-Feelings: ${feelings}
-Symptoms: ${symptoms.join(', ')}
-Age: ${age} years old
+PATIENT PRESENTATION:
+- Current Symptoms: ${symptoms.join(', ')}
+- Patient's Subjective Feeling: ${feelings}
+- Age: ${age} years old
 
-Please provide a structured response with:
-1. Possible conditions (list 2-3 most likely conditions)
-2. Recommendations (lifestyle adjustments, rest, hydration, when to see a doctor)
-3. Over-the-counter medicines that might help (if applicable)
+Please provide a structured, professional medical assessment report with the following sections:
 
-Important: Keep recommendations general and emphasize consulting a healthcare professional for proper diagnosis. Do not provide specific medical diagnoses.`;
+**CLINICAL ASSESSMENT:**
+1. **Primary Differential Diagnoses** (3-4 most likely conditions based on symptoms)
+   - List conditions in order of clinical probability
+   - Provide brief rationale for each diagnosis
+
+2. **PHARMACEUTICAL RECOMMENDATIONS:**
+   - **Over-the-Counter Medications:** Specific brand names, dosages, and administration instructions
+   - **Symptomatic Relief Options:** Include alternatives for different severity levels
+   - **Drug Interactions & Contraindications:** Important safety considerations
+
+3. **CLINICAL RECOMMENDATIONS:**
+   - **Immediate Care Instructions:** What to do in the next 24-48 hours
+   - **Lifestyle Modifications:** Diet, activity, rest recommendations
+   - **Monitoring Guidelines:** Symptoms to watch for, when to seek emergency care
+   - **Follow-up Timeline:** When to see a healthcare provider
+
+4. **PREVENTIVE MEASURES:**
+   - Risk factor modifications
+   - Health maintenance recommendations
+
+5. **RED FLAG SYMPTOMS:**
+   - Critical symptoms requiring immediate medical attention
+   - Emergency department criteria
+
+Format the response professionally as a medical consultation report. Be specific with medication names, dosages, and instructions while maintaining appropriate medical disclaimers.
+
+**IMPORTANT MEDICAL DISCLAIMER:** This assessment is for informational purposes only and does not replace professional medical consultation, diagnosis, or treatment.`;
 
     const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${GEMINI_API_KEY}`, {
       method: 'POST',
