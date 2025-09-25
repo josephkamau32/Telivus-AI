@@ -32,7 +32,7 @@ Please provide a structured response with:
 
 Important: Keep recommendations general and emphasize consulting a healthcare professional for proper diagnosis. Do not provide specific medical diagnoses.`;
 
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${GEMINI_API_KEY}`, {
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${GEMINI_API_KEY}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -74,7 +74,7 @@ Important: Keep recommendations general and emphasize consulting a healthcare pr
   } catch (error) {
     console.error('Error in generate-medical-report:', error);
     return new Response(JSON.stringify({ 
-      error: error.message || 'Failed to generate medical report' 
+      error: error instanceof Error ? error.message : 'Failed to generate medical report' 
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
