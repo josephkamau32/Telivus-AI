@@ -34,7 +34,7 @@ const Index = () => {
     const validationErrors: string[] = [];
     if (!data.feelings?.trim()) validationErrors.push('Feeling is required');
     if (!data.symptoms?.length) validationErrors.push('At least one symptom is required');
-    if (!data.age || data.age < 0 || data.age > 130) validationErrors.push('Age must be between 0 and 130');
+    if ((data.age === null || data.age === undefined) || data.age < 0 || data.age > 130) validationErrors.push('Age must be between 0 and 130');
 
     if (validationErrors.length > 0) {
       toast({
@@ -84,13 +84,17 @@ const Index = () => {
       console.error('Error generating report:', error);
       
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-      const isRateLimited = errorMessage.includes('429') || errorMessage.includes('RATE_LIMITED');
+      const lower = errorMessage.toLowerCase();
+      const isRateLimited = lower.includes('429') || lower.includes('rate limited') || lower.includes('rate limit');
+      const isContentBlocked = lower.includes('blocked');
       
       toast({
-        title: isRateLimited ? "Rate Limited" : "Generation Failed",
+        title: isRateLimited ? "Rate Limited" : isContentBlocked ? "Content Blocked" : "Generation Failed",
         description: isRateLimited 
           ? "Too many requests. Please wait a moment and try again." 
-          : "Failed to generate your health report. Please try again.",
+          : isContentBlocked
+            ? "Your request was blocked by safety settings. Try adjusting inputs."
+            : "Failed to generate your health report. Please try again.",
         variant: "destructive",
       });
       setAppState('assessment');

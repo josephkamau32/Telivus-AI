@@ -7,7 +7,9 @@
 Add these secrets to your Supabase project:
 
 ```bash
-GEMINI_API_KEY=your_gemini_api_key_here
+GEMINI_API_KEY=your_gemini_api_key_here # or set GOOGLE_API_KEY
+GEMINI_MODEL=gemini-1.5-pro-latest
+GEMINI_FALLBACK_MODEL=gemini-1.5-flash-latest
 SUPABASE_URL=your_supabase_url
 SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
 ```

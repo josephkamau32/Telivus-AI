@@ -1,3 +1,5 @@
+// @ts-nocheck
+/* eslint-disable */
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.4';
@@ -19,7 +21,7 @@ const validateInput = (data: any) => {
     errors.push('At least one symptom is required');
   }
   
-  if (!data.age || typeof data.age !== 'number' || data.age < 0 || data.age > 130) {
+  if ((data.age === undefined || data.age === null) || typeof data.age !== 'number' || data.age < 0 || data.age > 130) {
     errors.push('Age must be a number between 0 and 130');
   }
   
@@ -53,6 +55,31 @@ const retryWithBackoff = async (fn: () => Promise<any>, maxRetries = 2) => {
   }
   
   throw lastError;
+};
+
+// Network timeout for external API calls
+const DEFAULT_REQUEST_TIMEOUT_MS = 30000;
+
+const fetchWithTimeout = async (url: string, options: RequestInit = {}, timeoutMs = DEFAULT_REQUEST_TIMEOUT_MS) => {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...options, signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+};
+
+const extractTextFromCandidates = (data: any): string | null => {
+  const parts = data?.candidates?.[0]?.content?.parts;
+  if (!Array.isArray(parts)) return null;
+  const textChunks: string[] = [];
+  for (const part of parts) {
+    if (typeof (part?.text) === 'string') {
+      textChunks.push(part.text);
+    }
+  }
+  return textChunks.length > 0 ? textChunks.join('') : null;
 };
 
 serve(async (req) => {
@@ -116,7 +143,9 @@ serve(async (req) => {
       payload: { feelings, symptoms, age, userId }
     });
 
-    const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
+    const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY') || Deno.env.get('GOOGLE_API_KEY');
+    const PRIMARY_MODEL = Deno.env.get('GEMINI_MODEL') || 'gemini-1.5-pro-latest';
+    const FALLBACK_MODEL = Deno.env.get('GEMINI_FALLBACK_MODEL') || 'gemini-1.5-flash-latest';
 
     if (!GEMINI_API_KEY) {
       throw new Error('Gemini API key not configured');
@@ -165,25 +194,28 @@ Please provide a structured, professional medical assessment report. Return your
 
 Format the response as valid JSON only, no additional text.`;
 
-    // Call Gemini API with retry logic
-    const geminiResponse = await retryWithBackoff(async () => {
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${GEMINI_API_KEY}`, {
+    // Call Gemini API with retry + model fallback logic
+    let modelUsed = PRIMARY_MODEL;
+    const callGemini = async (model: string) => {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
+      const response = await fetchWithTimeout(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           contents: [{
-            parts: [{
-              text: prompt
-            }]
+            role: 'user',
+            parts: [{ text: prompt }]
           }],
           generationConfig: {
             temperature: 0.7,
             maxOutputTokens: 2000,
+            candidateCount: 1,
+            responseMimeType: 'application/json'
           }
         }),
-      });
+      }, DEFAULT_REQUEST_TIMEOUT_MS);
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -192,10 +224,24 @@ Format the response as valid JSON only, no additional text.`;
       }
 
       return response;
+    };
+
+    const geminiResponse = await retryWithBackoff(async () => {
+      try {
+        modelUsed = PRIMARY_MODEL;
+        return await callGemini(PRIMARY_MODEL);
+      } catch (primaryError) {
+        console.warn(`Primary model ${PRIMARY_MODEL} failed, trying fallback ${FALLBACK_MODEL}`, primaryError);
+        modelUsed = FALLBACK_MODEL;
+        return await callGemini(FALLBACK_MODEL);
+      }
     });
 
     const data = await geminiResponse.json();
-    const reportText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (data?.promptFeedback?.blockReason) {
+      throw new Error(`Gemini blocked content: ${data.promptFeedback.blockReason}`);
+    }
+    const reportText = extractTextFromCandidates(data);
 
     if (!reportText) {
       throw new Error('No response from Gemini AI');
@@ -238,7 +284,7 @@ Format the response as valid JSON only, no additional text.`;
     await supabase.from('report_logs').insert({
       health_report_id: healthReportId,
       event_type: 'request_completed',
-      payload: { success: true, reportLength: reportText.length }
+      payload: { success: true, reportLength: reportText.length, modelUsed }
     });
 
     console.log(`Successfully generated medical report for health_report_id: ${healthReportId}`);
@@ -255,6 +301,8 @@ Format the response as valid JSON only, no additional text.`;
     console.error('Error in generate-medical-report:', error);
     
     const errorMessage = error instanceof Error ? error.message : 'Failed to generate medical report';
+    const isRateLimited = typeof errorMessage === 'string' && (errorMessage.includes('429') || errorMessage.toLowerCase().includes('rate limit'));
+    const isContentBlocked = typeof errorMessage === 'string' && errorMessage.toLowerCase().includes('blocked');
     
     // Update health report with error if we have an ID
     if (healthReportId) {
@@ -276,7 +324,7 @@ Format the response as valid JSON only, no additional text.`;
 
     return new Response(JSON.stringify({ 
       error: errorMessage,
-      error_code: error instanceof Error && error.message.includes('429') ? 'RATE_LIMITED' : 'GENERATION_FAILED'
+      error_code: isRateLimited ? 'RATE_LIMITED' : (isContentBlocked ? 'CONTENT_BLOCKED' : 'GENERATION_FAILED')
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

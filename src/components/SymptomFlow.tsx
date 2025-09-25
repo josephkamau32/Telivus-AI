@@ -76,7 +76,7 @@ export const SymptomFlow = ({ onComplete, onBack }: SymptomFlowProps) => {
       return;
     }
     
-    if (!age || age < 0 || age > 130) {
+    if ((age === null || age === undefined) || age < 0 || age > 130) {
       alert('Please enter a valid age between 0 and 130');
       return;
     }
@@ -93,7 +93,7 @@ export const SymptomFlow = ({ onComplete, onBack }: SymptomFlowProps) => {
     switch (step) {
       case 1: return feelings !== '';
       case 2: return symptoms.length > 0;
-      case 3: return age !== null && age > 0 && age <= 130;
+      case 3: return age !== null && age >= 0 && age <= 130;
       default: return false;
     }
   };

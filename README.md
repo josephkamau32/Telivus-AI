@@ -36,6 +36,24 @@ npm i
 npm run dev
 ```
 
+### Test Edge Function (curl)
+
+Use your Supabase project URL and anon key:
+
+```bash
+SUPABASE_URL="https://YOUR_PROJECT.supabase.co" \
+ANON_KEY="YOUR_ANON_KEY" \
+curl -X POST "$SUPABASE_URL/functions/v1/generate-medical-report" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $ANON_KEY" \
+  -d '{
+    "feelings": "unwell",
+    "symptoms": ["Headache", "Fever"],
+    "age": 30,
+    "userId": null
+  }'
+```
+
 **Edit a file directly in GitHub**
 
 - Navigate to the desired file(s).
