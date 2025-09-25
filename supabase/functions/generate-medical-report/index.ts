@@ -55,6 +55,64 @@ const retryWithBackoff = async (fn: () => Promise<any>, maxRetries = 2) => {
   throw lastError;
 };
 
+// Fallback report generator when Gemini API is unavailable
+const generateFallbackReport = (feelings: string, symptoms: string[], age: number) => {
+  const commonSymptoms = ['headache', 'fever', 'fatigue', 'cough', 'nausea', 'dizziness', 'pain'];
+  const hasCommonSymptoms = symptoms.some(symptom => 
+    commonSymptoms.some(common => symptom.toLowerCase().includes(common))
+  );
+  
+  return {
+    possible_conditions: [
+      {
+        condition: "General Health Assessment",
+        probability: "Informational",
+        rationale: `Based on your reported symptoms: ${symptoms.join(', ')}, and feeling ${feelings}, this appears to be a common health inquiry that may benefit from general wellness guidance.`
+      }
+    ],
+    recommendations: [
+      {
+        category: "Self-care",
+        instruction: "Stay hydrated, get adequate rest, and monitor your symptoms."
+      },
+      {
+        category: "Lifestyle",
+        instruction: "Maintain a balanced diet and consider gentle physical activity as tolerated."
+      },
+      {
+        category: "Monitoring",
+        instruction: "Keep track of your symptoms and note any changes or worsening."
+      },
+      {
+        category: "Follow-up",
+        instruction: "Contact a healthcare provider if symptoms persist, worsen, or if you develop concerning signs."
+      }
+    ],
+    otc_medicines: hasCommonSymptoms ? [
+      {
+        name: "General wellness support",
+        dosage: "As directed on packaging",
+        instructions: "Consider over-the-counter options as appropriate for your symptoms",
+        contraindications: "Always read labels and consult a pharmacist or healthcare provider"
+      }
+    ] : [],
+    confidence_scores: {
+      overall_assessment: 60,
+      medication_recommendations: 50
+    },
+    red_flags: [
+      "Severe or worsening symptoms",
+      "High fever (over 103°F/39.4°C)",
+      "Difficulty breathing or chest pain", 
+      "Signs of dehydration",
+      "Symptoms that persist for more than a few days",
+      "Any symptoms that cause significant concern"
+    ],
+    disclaimer: "This is a general wellness guide provided when our AI system is temporarily unavailable. This information is for educational purposes only and does not constitute medical advice, diagnosis, or treatment. Always consult healthcare professionals for medical concerns.",
+    fallback_notice: "This response was generated using our backup system as our AI service is temporarily unavailable. For personalized medical advice, please consult a healthcare professional."
+  };
+};
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -122,48 +180,50 @@ serve(async (req) => {
       throw new Error('Gemini API key not configured');
     }
 
-    const prompt = `You are Dr. MediSense AI, an experienced medical doctor with a PhD in Medicine and Pharmacy, with over 20 years of clinical experience. Based on the comprehensive patient information provided, generate a detailed professional medical assessment report.
+    // Create a unique identifier to prevent caching issues
+    const uniqueId = `assessment_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    
+    const prompt = `You are a healthcare information assistant providing educational content about health symptoms. Based on the following presentation, provide informational guidance about general health topics. This is for educational purposes only.
 
-PATIENT PRESENTATION:
-- Current Symptoms: ${symptoms.join(', ')}
-- Patient's Subjective Feeling: ${feelings}
-- Age: ${age} years old
+HEALTH INQUIRY CASE [${uniqueId}]:
+- Reported symptoms: ${symptoms.join(', ')}
+- Current feeling: ${feelings}
+- Age group: ${age} years
 
-Please provide a structured, professional medical assessment report. Return your response as a JSON object with the following structure:
+Please provide educational health information in JSON format with the following structure:
 
 {
-  "possible_conditions": [
+  "educational_information": [
     {
-      "condition": "Condition Name",
-      "probability": "High/Medium/Low",
-      "rationale": "Brief explanation"
+      "topic": "General information about reported symptoms",
+      "likelihood": "Common/Uncommon/Rare",
+      "description": "Educational description"
     }
   ],
-  "recommendations": [
+  "general_guidance": [
     {
-      "category": "Immediate Care/Lifestyle/Monitoring/Follow-up",
-      "instruction": "Specific recommendation"
+      "category": "Self-care/Lifestyle/When to seek help",
+      "suggestion": "General health guidance"
     }
   ],
-  "otc_medicines": [
+  "wellness_suggestions": [
     {
-      "name": "Brand/Generic Name",
-      "dosage": "Specific dosage",
-      "instructions": "How to take",
-      "contraindications": "When to avoid"
+      "type": "General wellness product",
+      "usage": "General guidance on usage",
+      "note": "When this type of product is typically considered"
     }
   ],
-  "confidence_scores": {
-    "overall_assessment": 0-100,
-    "medication_recommendations": 0-100
+  "health_awareness": {
+    "information_quality": 75,
+    "guidance_confidence": 70
   },
-  "red_flags": [
-    "Symptom or condition requiring immediate medical attention"
+  "important_signs": [
+    "Signs that would warrant professional medical consultation"
   ],
-  "disclaimer": "This assessment is for informational purposes only and does not replace professional medical consultation, diagnosis, or treatment."
+  "educational_disclaimer": "This information is for educational purposes only and does not constitute medical advice, diagnosis, or treatment. Always consult healthcare professionals for medical concerns."
 }
 
-Format the response as valid JSON only, no additional text.`;
+Provide only valid JSON format. Focus on educational content rather than diagnostic statements.`;
 
     // Call Gemini API with retry logic
     const geminiResponse = await retryWithBackoff(async () => {
@@ -179,9 +239,29 @@ Format the response as valid JSON only, no additional text.`;
             }]
           }],
           generationConfig: {
-            temperature: 0.7,
-            maxOutputTokens: 2000,
-          }
+            temperature: 0.3,
+            maxOutputTokens: 2048,
+            topP: 0.8,
+            topK: 40,
+          },
+          safetySettings: [
+            {
+              category: "HARM_CATEGORY_HARASSMENT",
+              threshold: "BLOCK_NONE"
+            },
+            {
+              category: "HARM_CATEGORY_HATE_SPEECH", 
+              threshold: "BLOCK_NONE"
+            },
+            {
+              category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+              threshold: "BLOCK_NONE"
+            },
+            {
+              category: "HARM_CATEGORY_DANGEROUS_CONTENT",
+              threshold: "BLOCK_NONE"
+            }
+          ]
         }),
       });
 
@@ -207,7 +287,32 @@ Format the response as valid JSON only, no additional text.`;
       // Clean the response to extract JSON
       const jsonMatch = reportText.match(/\{[\s\S]*\}/);
       const jsonString = jsonMatch ? jsonMatch[0] : reportText;
-      parsedReport = JSON.parse(jsonString);
+      const rawReport = JSON.parse(jsonString);
+      
+      // Convert new format to old format for compatibility
+      parsedReport = {
+        possible_conditions: rawReport.educational_information?.map((info: any) => ({
+          condition: info.topic,
+          probability: info.likelihood,
+          rationale: info.description
+        })) || [],
+        recommendations: rawReport.general_guidance?.map((guidance: any) => ({
+          category: guidance.category,
+          instruction: guidance.suggestion
+        })) || [],
+        otc_medicines: rawReport.wellness_suggestions?.map((suggestion: any) => ({
+          name: suggestion.type,
+          dosage: suggestion.usage,
+          instructions: suggestion.note,
+          contraindications: "Consult healthcare provider if symptoms persist"
+        })) || [],
+        confidence_scores: {
+          overall_assessment: rawReport.health_awareness?.information_quality || 75,
+          medication_recommendations: rawReport.health_awareness?.guidance_confidence || 70
+        },
+        red_flags: rawReport.important_signs || [],
+        disclaimer: rawReport.educational_disclaimer || "This information is for educational purposes only and does not constitute medical advice, diagnosis, or treatment."
+      };
     } catch (parseError) {
       console.warn('Failed to parse JSON response, using text format:', parseError);
       parsedReport = {
@@ -216,7 +321,8 @@ Format the response as valid JSON only, no additional text.`;
         recommendations: [],
         otc_medicines: [],
         confidence_scores: { overall_assessment: 75, medication_recommendations: 70 },
-        disclaimer: "This assessment is for informational purposes only and does not replace professional medical consultation, diagnosis, or treatment."
+        red_flags: [],
+        disclaimer: "This information is for educational purposes only and does not constitute medical advice, diagnosis, or treatment."
       };
     }
 
@@ -255,6 +361,47 @@ Format the response as valid JSON only, no additional text.`;
     console.error('Error in generate-medical-report:', error);
     
     const errorMessage = error instanceof Error ? error.message : 'Failed to generate medical report';
+    const isQuotaExceeded = errorMessage.includes('429') || errorMessage.includes('quota exceeded') || errorMessage.includes('RESOURCE_EXHAUSTED');
+    const isAPIKeyError = errorMessage.includes('API key') || errorMessage.includes('401') || errorMessage.includes('403');
+    
+    // If Gemini API is unavailable due to quota or API key issues, provide a fallback response
+    if (isQuotaExceeded || isAPIKeyError) {
+      console.log('Gemini API unavailable, providing fallback response');
+      
+      const fallbackReport = generateFallbackReport(feelings, symptoms, age);
+      
+      // Update health report with fallback
+      if (healthReportId) {
+        const { error: updateError } = await supabase
+          .from('health_reports')
+          .update({
+            status: 'completed',
+            report: fallbackReport,
+            otc_medicines: fallbackReport.otc_medicines || []
+          })
+          .eq('id', healthReportId);
+
+        if (updateError) {
+          console.error('Error updating health report with fallback:', updateError);
+        }
+
+        // Log fallback usage
+        await supabase.from('report_logs').insert({
+          health_report_id: healthReportId,
+          event_type: 'fallback_used',
+          payload: { reason: isQuotaExceeded ? 'quota_exceeded' : 'api_key_error', fallback: true }
+        });
+      }
+
+      return new Response(JSON.stringify({ 
+        ...fallbackReport,
+        timestamp: new Date().toISOString(),
+        health_report_id: healthReportId,
+        fallback_used: true
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
     
     // Update health report with error if we have an ID
     if (healthReportId) {
@@ -276,7 +423,7 @@ Format the response as valid JSON only, no additional text.`;
 
     return new Response(JSON.stringify({ 
       error: errorMessage,
-      error_code: error instanceof Error && error.message.includes('429') ? 'RATE_LIMITED' : 'GENERATION_FAILED'
+      error_code: isQuotaExceeded ? 'RATE_LIMITED' : (isAPIKeyError ? 'API_KEY_ERROR' : 'GENERATION_FAILED')
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

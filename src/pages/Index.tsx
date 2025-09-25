@@ -14,6 +14,59 @@ interface AssessmentData {
   age: number;
 }
 
+const formatStructuredReport = (data: any): string => {
+  let report = "# Health Assessment Report\n\n";
+  
+  if (data.possible_conditions && data.possible_conditions.length > 0) {
+    report += "## Possible Conditions\n";
+    data.possible_conditions.forEach((condition: any, index: number) => {
+      report += `${index + 1}. **${condition.condition}** (${condition.probability} likelihood)\n`;
+      report += `   ${condition.rationale}\n\n`;
+    });
+  }
+  
+  if (data.recommendations && data.recommendations.length > 0) {
+    report += "## Recommendations\n";
+    data.recommendations.forEach((rec: any, index: number) => {
+      report += `${index + 1}. **${rec.category}**: ${rec.instruction}\n\n`;
+    });
+  }
+  
+  if (data.otc_medicines && data.otc_medicines.length > 0) {
+    report += "## Wellness Suggestions\n";
+    data.otc_medicines.forEach((med: any, index: number) => {
+      report += `${index + 1}. **${med.name}**\n`;
+      report += `   - Usage: ${med.dosage}\n`;
+      report += `   - Instructions: ${med.instructions}\n`;
+      if (med.contraindications) {
+        report += `   - Note: ${med.contraindications}\n`;
+      }
+      report += "\n";
+    });
+  }
+  
+  if (data.red_flags && data.red_flags.length > 0) {
+    report += "## Important Signs to Watch For\n";
+    data.red_flags.forEach((flag: any, index: number) => {
+      report += `${index + 1}. ${flag}\n`;
+    });
+    report += "\n";
+  }
+  
+  if (data.confidence_scores) {
+    report += "## Assessment Confidence\n";
+    report += `- Overall Assessment: ${data.confidence_scores.overall_assessment}%\n`;
+    report += `- Recommendations: ${data.confidence_scores.medication_recommendations}%\n\n`;
+  }
+  
+  if (data.disclaimer) {
+    report += "## Important Disclaimer\n";
+    report += data.disclaimer + "\n";
+  }
+  
+  return report;
+};
+
 const Index = () => {
   const [appState, setAppState] = useState<AppState>('home');
   const [currentReport, setCurrentReport] = useState<string>('');
@@ -57,21 +110,41 @@ const Index = () => {
       });
 
       if (error) {
+        console.error('Supabase function error:', error);
         throw new Error(error.message || 'Failed to generate report');
       }
 
+      // Check if we have valid data
+      if (!reportData) {
+        throw new Error('No data received from the report generation service');
+      }
+
       // Handle both structured JSON and text responses
-      const report = reportData.text_report || reportData;
+      let report;
+      if (reportData.text_report) {
+        report = reportData.text_report;
+      } else if (reportData.possible_conditions || reportData.educational_information) {
+        // Format structured data as readable text
+        report = formatStructuredReport(reportData);
+        
+        // Add fallback notice if applicable
+        if (reportData.fallback_used) {
+          report = `**⚠️ Notice: AI Service Temporarily Unavailable**\n\n${reportData.fallback_notice || 'This response was generated using our backup system.'}\n\n---\n\n${report}`;
+        }
+      } else {
+        report = JSON.stringify(reportData, null, 2);
+      }
+      
       const timestamp = reportData.timestamp || new Date().toISOString();
       
       // Save to local storage
       addReport({
         timestamp,
         userInfo: data,
-        report: typeof report === 'string' ? report : JSON.stringify(report, null, 2),
+        report,
       });
 
-      setCurrentReport(typeof report === 'string' ? report : JSON.stringify(report, null, 2));
+      setCurrentReport(report);
       setReportTimestamp(timestamp);
       setAppState('report');
 
@@ -84,13 +157,27 @@ const Index = () => {
       console.error('Error generating report:', error);
       
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-      const isRateLimited = errorMessage.includes('429') || errorMessage.includes('RATE_LIMITED');
+      const isRateLimited = errorMessage.includes('429') || errorMessage.includes('RATE_LIMITED') || errorMessage.includes('quota exceeded');
+      const isAPIKeyError = errorMessage.includes('API key') || errorMessage.includes('401') || errorMessage.includes('403');
+      const isContentBlocked = errorMessage.includes('safety') || errorMessage.includes('blocked') || errorMessage.includes('filtered');
+      
+      let title = "Generation Failed";
+      let description = "Failed to generate your health report. Please try again.";
+      
+      if (isRateLimited) {
+        title = "Service Temporarily Unavailable";
+        description = "Too many requests. Please wait a moment and try again.";
+      } else if (isAPIKeyError) {
+        title = "Configuration Error";
+        description = "The service is not properly configured. Please contact support.";
+      } else if (isContentBlocked) {
+        title = "Content Review Required";
+        description = "Your request needs review. Please try rephrasing your symptoms or contact support.";
+      }
       
       toast({
-        title: isRateLimited ? "Rate Limited" : "Generation Failed",
-        description: isRateLimited 
-          ? "Too many requests. Please wait a moment and try again." 
-          : "Failed to generate your health report. Please try again.",
+        title,
+        description,
         variant: "destructive",
       });
       setAppState('assessment');
