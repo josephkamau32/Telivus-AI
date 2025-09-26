@@ -165,9 +165,9 @@ Please provide a structured, professional medical assessment report. Return your
 
 Format the response as valid JSON only, no additional text.`;
 
-    // Call Gemini API with retry logic
+    // Call Gemini API with retry logic - using Flash for higher free tier quota
     const geminiResponse = await retryWithBackoff(async () => {
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${GEMINI_API_KEY}`, {
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -179,8 +179,8 @@ Format the response as valid JSON only, no additional text.`;
             }]
           }],
           generationConfig: {
-            temperature: 0.7,
-            maxOutputTokens: 2000,
+            temperature: 0.3,
+            maxOutputTokens: 1500,
           }
         }),
       });
@@ -274,11 +274,21 @@ Format the response as valid JSON only, no additional text.`;
       });
     }
 
-    return new Response(JSON.stringify({ 
-      error: errorMessage,
-      error_code: error instanceof Error && error.message.includes('429') ? 'RATE_LIMITED' : 'GENERATION_FAILED'
-    }), {
-      status: 500,
+    // Provide specific guidance for quota issues
+    const isQuotaError = error instanceof Error && error.message.includes('429');
+    const errorResponse = {
+      error: isQuotaError 
+        ? 'Gemini API quota exceeded. Please upgrade to a paid plan or try again later.'
+        : errorMessage,
+      error_code: isQuotaError ? 'QUOTA_EXCEEDED' : 'GENERATION_FAILED',
+      ...(isQuotaError && {
+        retry_after: '1 hour',
+        upgrade_info: 'Consider upgrading to Gemini API Pro for higher quotas'
+      })
+    };
+
+    return new Response(JSON.stringify(errorResponse), {
+      status: isQuotaError ? 429 : 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }

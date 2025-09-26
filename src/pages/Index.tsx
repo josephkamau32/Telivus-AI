@@ -84,11 +84,14 @@ const Index = () => {
       console.error('Error generating report:', error);
       
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      const isQuotaExceeded = errorMessage.includes('quota') || errorMessage.includes('QUOTA_EXCEEDED');
       const isRateLimited = errorMessage.includes('429') || errorMessage.includes('RATE_LIMITED');
       
       toast({
-        title: isRateLimited ? "Rate Limited" : "Generation Failed",
-        description: isRateLimited 
+        title: isQuotaExceeded ? "API Quota Exceeded" : isRateLimited ? "Rate Limited" : "Generation Failed",
+        description: isQuotaExceeded 
+          ? "The AI service quota has been exceeded. Please upgrade to a paid plan or try again in an hour."
+          : isRateLimited 
           ? "Too many requests. Please wait a moment and try again." 
           : "Failed to generate your health report. Please try again.",
         variant: "destructive",
