@@ -14,7 +14,72 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      health_reports: {
+        Row: {
+          age: number
+          created_at: string | null
+          error_message: string | null
+          feeling: string
+          id: string
+          otc_medicines: Json | null
+          report: Json | null
+          status: string
+          symptoms: Json
+          user_id: string | null
+        }
+        Insert: {
+          age: number
+          created_at?: string | null
+          error_message?: string | null
+          feeling: string
+          id?: string
+          otc_medicines?: Json | null
+          report?: Json | null
+          status: string
+          symptoms: Json
+          user_id?: string | null
+        }
+        Update: {
+          age?: number
+          created_at?: string | null
+          error_message?: string | null
+          feeling?: string
+          id?: string
+          otc_medicines?: Json | null
+          report?: Json | null
+          status?: string
+          symptoms?: Json
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      report_logs: {
+        Row: {
+          created_at: string | null
+          event_type: string | null
+          health_report_id: string | null
+          id: string
+          payload: Json | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          event_type?: string | null
+          health_report_id?: string | null
+          id?: string
+          payload?: Json | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          event_type?: string | null
+          health_report_id?: string | null
+          id?: string
+          payload?: Json | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

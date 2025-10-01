@@ -77,7 +77,8 @@ serve(async (req) => {
       // Log validation failure
       await supabase.from('report_logs').insert({
         event_type: 'validation_failed',
-        payload: { validationErrors, requestBody }
+        payload: { validationErrors, requestBody },
+        user_id: userId || null
       });
       
       return new Response(JSON.stringify({ 
@@ -113,7 +114,8 @@ serve(async (req) => {
     await supabase.from('report_logs').insert({
       health_report_id: healthReportId,
       event_type: 'request_started',
-      payload: { feelings, symptoms, age, userId }
+      payload: { feelings, symptoms, age, userId },
+      user_id: userId || null
     });
 
     const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
@@ -238,7 +240,8 @@ Format the response as valid JSON only, no additional text.`;
     await supabase.from('report_logs').insert({
       health_report_id: healthReportId,
       event_type: 'request_completed',
-      payload: { success: true, reportLength: reportText.length }
+      payload: { success: true, reportLength: reportText.length },
+      user_id: userId || null
     });
 
     console.log(`Successfully generated medical report for health_report_id: ${healthReportId}`);
@@ -270,7 +273,8 @@ Format the response as valid JSON only, no additional text.`;
       await supabase.from('report_logs').insert({
         health_report_id: healthReportId,
         event_type: 'request_failed',
-        payload: { error: errorMessage, stack: error instanceof Error ? error.stack : undefined }
+        payload: { error: errorMessage, stack: error instanceof Error ? error.stack : undefined },
+        user_id: userId || null
       });
     }
 
