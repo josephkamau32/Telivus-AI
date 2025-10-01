@@ -1,13 +1,23 @@
 import { Button } from '@/components/ui/button';
-import { Heart, Shield, Zap } from 'lucide-react';
+import { Heart, Shield, Zap, LogOut } from 'lucide-react';
 
 interface HeroSectionProps {
   onStartAssessment: () => void;
+  onSignOut: () => void;
 }
 
-export const HeroSection = ({ onStartAssessment }: HeroSectionProps) => {
+export const HeroSection = ({ onStartAssessment, onSignOut }: HeroSectionProps) => {
   return (
     <div className="relative min-h-[80vh] flex items-center justify-center bg-gradient-to-br from-primary-light to-secondary-light">
+      <Button
+        onClick={onSignOut}
+        variant="outline"
+        className="absolute top-4 right-4"
+      >
+        <LogOut className="w-4 h-4 mr-2" />
+        Sign Out
+      </Button>
+      
       <div className="container mx-auto px-6 text-center">
         <div className="max-w-4xl mx-auto">
           <div className="flex justify-center mb-6">

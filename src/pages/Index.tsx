@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { HeroSection } from '@/components/HeroSection';
 import { SymptomFlow } from '@/components/SymptomFlow';
 import { MedicalReport } from '@/components/MedicalReport';
 import { useToast } from '@/hooks/use-toast';
-import { useHealthReports } from '@/hooks/useLocalStorage';
 import { supabase } from '@/integrations/supabase/client';
+import type { User } from '@supabase/supabase-js';
 
 type AppState = 'home' | 'assessment' | 'report' | 'loading';
 
@@ -15,12 +16,42 @@ interface AssessmentData {
 }
 
 const Index = () => {
+  const navigate = useNavigate();
+  const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [appState, setAppState] = useState<AppState>('home');
   const [currentReport, setCurrentReport] = useState<string>('');
   const [reportTimestamp, setReportTimestamp] = useState<string>('');
   const [assessmentData, setAssessmentData] = useState<AssessmentData | null>(null);
   const { toast } = useToast();
-  const { addReport } = useHealthReports();
+
+  useEffect(() => {
+    // Set up auth state listener FIRST
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        setUser(session?.user ?? null);
+        if (!session) {
+          navigate('/auth');
+        }
+      }
+    );
+
+    // THEN check for existing session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+      if (!session) {
+        navigate('/auth');
+      }
+      setIsLoading(false);
+    });
+
+    return () => subscription.unsubscribe();
+  }, [navigate]);
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    navigate('/auth');
+  };
 
   const handleStartAssessment = () => {
     setAppState('assessment');
@@ -47,12 +78,16 @@ const Index = () => {
     }
 
     try {
+      if (!user) {
+        throw new Error('User not authenticated');
+      }
+
       const { data: reportData, error } = await supabase.functions.invoke('generate-medical-report', {
         body: {
           feelings: data.feelings,
           symptoms: data.symptoms,
           age: Number(data.age),
-          userId: null // We don't have user auth yet
+          userId: user.id
         }
       });
 
@@ -63,13 +98,6 @@ const Index = () => {
       // Handle both structured JSON and text responses
       const report = reportData.text_report || reportData;
       const timestamp = reportData.timestamp || new Date().toISOString();
-      
-      // Save to local storage
-      addReport({
-        timestamp,
-        userInfo: data,
-        report: typeof report === 'string' ? report : JSON.stringify(report, null, 2),
-      });
 
       setCurrentReport(typeof report === 'string' ? report : JSON.stringify(report, null, 2));
       setReportTimestamp(timestamp);
@@ -109,6 +137,14 @@ const Index = () => {
   const handleBackFromAssessment = () => {
     setAppState('home');
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   if (appState === 'loading') {
     return (
@@ -156,7 +192,7 @@ const Index = () => {
     );
   }
 
-  return <HeroSection onStartAssessment={handleStartAssessment} />;
+  return <HeroSection onStartAssessment={handleStartAssessment} onSignOut={handleSignOut} />;
 };
 
 export default Index;
