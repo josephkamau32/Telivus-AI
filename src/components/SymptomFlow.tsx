@@ -42,9 +42,13 @@ export const SymptomFlow = ({ onComplete, onBack }: SymptomFlowProps) => {
   };
 
   const handleAddCustomSymptom = () => {
-    if (customSymptom.trim() && !symptoms.includes(customSymptom.trim())) {
-      setSymptoms(prev => [...prev, customSymptom.trim()]);
-      setCustomSymptom('');
+    if (customSymptom.trim() && customSymptom.length <= 100) {
+      // Basic sanitization: remove special characters that could be used for XSS
+      const sanitized = customSymptom.trim().replace(/[<>\"']/g, '');
+      if (sanitized && !symptoms.includes(sanitized)) {
+        setSymptoms(prev => [...prev, sanitized]);
+        setCustomSymptom('');
+      }
     }
   };
 
@@ -165,10 +169,11 @@ export const SymptomFlow = ({ onComplete, onBack }: SymptomFlowProps) => {
 
               <div className="flex gap-2">
                 <Input
-                  placeholder="Add custom symptom..."
+                  placeholder="Add custom symptom (max 100 chars)"
                   value={customSymptom}
                   onChange={(e) => setCustomSymptom(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && handleAddCustomSymptom()}
+                  maxLength={100}
                 />
                 <Button onClick={handleAddCustomSymptom} variant="outline">
                   Add
