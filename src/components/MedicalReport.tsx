@@ -8,7 +8,7 @@ import { Download, Home, AlertTriangle, Clock, User, FileText } from 'lucide-rea
 import jsPDF from 'jspdf';
 
 interface MedicalReportProps {
-  report: string;
+  report: any;
   userInfo: {
     feelings: string;
     symptoms: string[];
@@ -21,13 +21,8 @@ interface MedicalReportProps {
 export const MedicalReport = ({ report, userInfo, timestamp, onBackToHome }: MedicalReportProps) => {
   const [isDownloading, setIsDownloading] = useState(false);
 
-  // Parse the JSON report
-  let parsedReport;
-  try {
-    parsedReport = typeof report === 'string' ? JSON.parse(report) : report;
-  } catch {
-    parsedReport = null;
-  }
+  // Handle report object directly
+  const parsedReport = typeof report === 'object' && report !== null ? report : null;
 
   const handleDownloadPDF = async () => {
     setIsDownloading(true);
