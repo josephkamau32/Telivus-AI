@@ -124,48 +124,33 @@ serve(async (req) => {
       throw new Error('Gemini API key not configured');
     }
 
-    const prompt = `You are Dr. MediSense AI, an experienced medical doctor with a PhD in Medicine and Pharmacy, with over 20 years of clinical experience. Based on the comprehensive patient information provided, generate a detailed professional medical assessment report.
+    const prompt = `You are a medical assistant generating a professional medical report. Generate ONLY the information explicitly provided below. Do NOT invent, guess, or add information. If information is missing, state "Not provided."
 
-PATIENT PRESENTATION:
-- Current Symptoms: ${symptoms.join(', ')}
-- Patient's Subjective Feeling: ${feelings}
+PATIENT INFORMATION PROVIDED:
 - Age: ${age} years old
+- Symptoms: ${symptoms.join(', ')}
+- How they feel: ${feelings}
 
-Please provide a structured, professional medical assessment report. Return your response as a JSON object with the following structure:
+Generate a JSON response with this EXACT structure:
 
 {
-  "possible_conditions": [
-    {
-      "condition": "Condition Name",
-      "probability": "High/Medium/Low",
-      "rationale": "Brief explanation"
-    }
-  ],
-  "recommendations": [
-    {
-      "category": "Immediate Care/Lifestyle/Monitoring/Follow-up",
-      "instruction": "Specific recommendation"
-    }
-  ],
-  "otc_medicines": [
-    {
-      "name": "Brand/Generic Name",
-      "dosage": "Specific dosage",
-      "instructions": "How to take",
-      "contraindications": "When to avoid"
-    }
-  ],
-  "confidence_scores": {
-    "overall_assessment": 0-100,
-    "medication_recommendations": 0-100
+  "demographic_header": {
+    "name": "Not provided",
+    "age": "${age}",
+    "gender": "Not provided",
+    "date": "${new Date().toISOString().split('T')[0]}"
   },
-  "red_flags": [
-    "Symptom or condition requiring immediate medical attention"
-  ],
-  "disclaimer": "This assessment is for informational purposes only and does not replace professional medical consultation, diagnosis, or treatment."
+  "chief_complaint": "Brief statement of primary symptom based on: ${symptoms[0] || 'general discomfort'}",
+  "history_present_illness": "Description based on: ${feelings} with symptoms including ${symptoms.join(', ')}. Duration and onset not specified.",
+  "past_medical_history": "Not provided",
+  "past_surgical_history": "Not provided",
+  "medications": "Not provided",
+  "allergies": "Not provided",
+  "assessment": "Based on the reported symptoms (${symptoms.join(', ')}) and patient description (${feelings}), possible causes may include [list 2-3 general possibilities with cautious language like 'may include', 'could suggest', 'possibly indicates']. Further evaluation needed for definitive diagnosis.",
+  "diagnostic_plan": "Recommend seeing a licensed healthcare provider for comprehensive evaluation, physical examination, and appropriate diagnostic tests. Patient should seek immediate care if symptoms worsen or new concerning symptoms develop."
 }
 
-Format the response as valid JSON only, no additional text.`;
+CRITICAL: Use ONLY the information provided above. Be cautious and neutral in assessment. Avoid absolute diagnoses. Return ONLY valid JSON, no additional text.`;
 
     // Call Gemini API with retry logic - using Gemini 2.5 Flash
     const geminiResponse = await retryWithBackoff(async () => {
