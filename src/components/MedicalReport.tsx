@@ -116,6 +116,23 @@ export const MedicalReport = ({ report, userInfo, timestamp, onBackToHome }: Med
         // Diagnostic Plan
         addText('DIAGNOSTIC PLAN', 14, true);
         addText(parsedReport.diagnostic_plan || 'Not provided', 11);
+        yPos += 5;
+
+        // OTC Recommendations
+        if (parsedReport.otc_recommendations && parsedReport.otc_recommendations.length > 0) {
+          addText('OVER-THE-COUNTER MEDICINE RECOMMENDATIONS', 14, true);
+          parsedReport.otc_recommendations.forEach((otc: any, index: number) => {
+            addText(`${index + 1}. ${otc.medicine}`, 12, true);
+            addText(`Dosage: ${otc.dosage}`, 10);
+            addText(`Purpose: ${otc.purpose}`, 10);
+            addText(`Instructions: ${otc.instructions}`, 10);
+            addText(`Precautions: ${otc.precautions}`, 10);
+            addText(`Max Duration: ${otc.max_duration}`, 10);
+            yPos += 3;
+          });
+          addText('Note: Always read medicine labels and consult a pharmacist or doctor if you have questions.', 9);
+          yPos += 5;
+        }
       } else {
         addText('Report content unavailable', 11);
       }
@@ -303,6 +320,42 @@ export const MedicalReport = ({ report, userInfo, timestamp, onBackToHome }: Med
                 <p className="leading-relaxed">{parsedReport.diagnostic_plan || 'Not provided'}</p>
               </CardContent>
             </Card>
+
+            {/* OTC Recommendations */}
+            {parsedReport.otc_recommendations && parsedReport.otc_recommendations.length > 0 && (
+              <Card className="border-green-500/20 bg-green-50/50 dark:bg-green-950/20">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    Over-the-Counter Medicine Recommendations
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {parsedReport.otc_recommendations.map((otc: any, index: number) => (
+                      <div key={index} className="border border-border rounded-lg p-4 bg-background">
+                        <div className="font-semibold text-lg mb-2">{otc.medicine}</div>
+                        <div className="grid gap-2 text-sm">
+                          <div><span className="font-medium">Dosage:</span> {otc.dosage}</div>
+                          <div><span className="font-medium">Purpose:</span> {otc.purpose}</div>
+                          <div><span className="font-medium">Instructions:</span> {otc.instructions}</div>
+                          <div><span className="font-medium">Precautions:</span> {otc.precautions}</div>
+                          <div><span className="font-medium">Max Duration:</span> {otc.max_duration}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <Alert className="mt-4 border-yellow-500/50 bg-yellow-50/50 dark:bg-yellow-950/20">
+                    <AlertTriangle className="h-4 w-4 text-yellow-600 dark:text-yellow-500" />
+                    <AlertDescription className="text-sm">
+                      These are general recommendations. Always read medicine labels, follow package instructions, and consult a pharmacist or doctor if you have questions or concerns.
+                    </AlertDescription>
+                  </Alert>
+                </CardContent>
+              </Card>
+            )}
           </>
         ) : (
           <Card>

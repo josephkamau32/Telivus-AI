@@ -147,10 +147,25 @@ Generate a JSON response with this EXACT structure:
   "medications": "Not provided",
   "allergies": "Not provided",
   "assessment": "Based on the reported symptoms (${symptoms.join(', ')}) and patient description (${feelings}), possible causes may include [list 2-3 general possibilities with cautious language like 'may include', 'could suggest', 'possibly indicates']. Further evaluation needed for definitive diagnosis.",
-  "diagnostic_plan": "Recommend seeing a licensed healthcare provider for comprehensive evaluation, physical examination, and appropriate diagnostic tests. Patient should seek immediate care if symptoms worsen or new concerning symptoms develop."
+  "diagnostic_plan": "Recommend seeing a licensed healthcare provider for comprehensive evaluation, physical examination, and appropriate diagnostic tests. Patient should seek immediate care if symptoms worsen or new concerning symptoms develop.",
+  "otc_recommendations": [
+    {
+      "medicine": "Generic/Brand name of OTC medicine",
+      "dosage": "Recommended dosage (e.g., 500mg every 6 hours)",
+      "purpose": "What it helps with",
+      "instructions": "How and when to take it",
+      "precautions": "Important warnings or when to avoid",
+      "max_duration": "Maximum days to use without consulting a doctor"
+    }
+  ]
 }
 
-CRITICAL: Use ONLY the information provided above. Be cautious and neutral in assessment. Avoid absolute diagnoses. Return ONLY valid JSON, no additional text.`;
+CRITICAL: 
+- Use ONLY the information provided above for patient details
+- For OTC recommendations, suggest 2-4 appropriate over-the-counter medicines based on the symptoms
+- Be cautious and neutral in assessment. Avoid absolute diagnoses
+- Include clear precautions and maximum usage duration for each OTC medicine
+- Return ONLY valid JSON, no additional text`;
 
     // Call Gemini API with retry logic - using Gemini 2.5 Flash
     const geminiResponse = await retryWithBackoff(async () => {
