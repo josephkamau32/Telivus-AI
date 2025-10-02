@@ -20,7 +20,7 @@ const Index = () => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [appState, setAppState] = useState<AppState>('home');
-  const [currentReport, setCurrentReport] = useState<string>('');
+  const [currentReport, setCurrentReport] = useState<any>(null);
   const [reportTimestamp, setReportTimestamp] = useState<string>('');
   const [assessmentData, setAssessmentData] = useState<AssessmentData | null>(null);
   const { toast } = useToast();
@@ -95,11 +95,10 @@ const Index = () => {
         throw new Error(error.message || 'Failed to generate report');
       }
 
-      // Handle both structured JSON and text responses
-      const report = reportData.text_report || reportData;
+      // Pass the full report object directly to the component
       const timestamp = reportData.timestamp || new Date().toISOString();
 
-      setCurrentReport(typeof report === 'string' ? report : JSON.stringify(report, null, 2));
+      setCurrentReport(reportData);
       setReportTimestamp(timestamp);
       setAppState('report');
 
@@ -130,7 +129,7 @@ const Index = () => {
 
   const handleBackToHome = () => {
     setAppState('home');
-    setCurrentReport('');
+    setCurrentReport(null);
     setAssessmentData(null);
   };
 
