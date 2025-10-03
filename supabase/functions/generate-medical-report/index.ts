@@ -75,7 +75,6 @@ serve(async (req) => {
     const validationErrors = validateInput({ feelings, symptoms, age, name, gender, medicalHistory, surgicalHistory, currentMedications, allergies });
     if (validationErrors.length > 0) {
       // Log validation failure
-{{ ... }}
       await supabase.from('report_logs').insert({
         event_type: 'validation_failed',
         payload: { validationErrors, requestBody },
@@ -283,6 +282,15 @@ CRITICAL INSTRUCTIONS:
     
     const errorMessage = error instanceof Error ? error.message : 'Failed to generate medical report';
     
+    // Extract userId from request for error logging
+    let errorUserId: string | null = null;
+    try {
+      const errorBody = await req.clone().json();
+      errorUserId = errorBody.userId || null;
+    } catch {
+      // If we can't parse the request body, proceed without userId
+    }
+    
     // Update health report with error if we have an ID
     if (healthReportId) {
       await supabase
@@ -298,7 +306,7 @@ CRITICAL INSTRUCTIONS:
         health_report_id: healthReportId,
         event_type: 'request_failed',
         payload: { error: errorMessage, stack: error instanceof Error ? error.stack : undefined },
-        user_id: userId || null
+        user_id: errorUserId
       });
     }
 
