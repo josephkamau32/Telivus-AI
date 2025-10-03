@@ -142,11 +142,13 @@ ${allergies ? `- Known Allergies: ${allergies}` : ''}
 
 ${patientProfile}
 
-Based on the above patient information, generate a comprehensive medical assessment report in JSON format. Use your extensive medical knowledge and pharmaceutical expertise to provide:
+Based on the above patient information, generate a comprehensive medical assessment report. Use your extensive medical knowledge and pharmaceutical expertise to provide:
 
 1. A thorough clinical assessment considering the patient's age, gender, symptoms, and medical history
 2. Evidence-based OTC medication recommendations with precise dosing, considering any drug interactions with current medications and known allergies
 3. Clear guidance on when to seek immediate medical attention
+
+CRITICAL: Return ONLY a valid JSON object with no markdown formatting, no code blocks, no extra text. Start directly with { and end with }.
 
 Generate a JSON response with this EXACT structure:
 
@@ -186,7 +188,7 @@ CRITICAL INSTRUCTIONS:
 - Use precise medical terminology but explain in patient-friendly language
 - Be conservative and emphasize when professional medical evaluation is needed
 - Include specific dosing based on patient age
-- Return ONLY valid JSON with no markdown formatting or additional text`;
+- CRITICAL: Return ONLY a pure JSON object. Do not wrap in markdown code blocks. Do not add any text before or after the JSON. Start with { and end with }.`;
 
     // Call Gemini API with retry logic - using Gemini 2.5 Flash
     const geminiResponse = await retryWithBackoff(async () => {
@@ -202,10 +204,11 @@ CRITICAL INSTRUCTIONS:
             }]
           }],
           generationConfig: {
-            temperature: 0.4,
-            maxOutputTokens: 2048,
-            topP: 0.95,
-            topK: 40
+            temperature: 0.3,
+            maxOutputTokens: 3048,
+            topP: 0.9,
+            topK: 20,
+            responseMimeType: "application/json"
           }
         }),
       });
@@ -229,19 +232,39 @@ CRITICAL INSTRUCTIONS:
     // Try to parse as JSON, fallback to text format if parsing fails
     let parsedReport;
     try {
-      // Clean the response to extract JSON
-      const jsonMatch = reportText.match(/\{[\s\S]*\}/);
-      const jsonString = jsonMatch ? jsonMatch[0] : reportText;
+      // Clean the response - remove markdown code blocks if present
+      let cleanedText = reportText.trim();
+      
+      // Remove markdown code blocks (```json ... ``` or ``` ... ```)
+      if (cleanedText.startsWith('```')) {
+        cleanedText = cleanedText.replace(/^```(?:json)?\n?/i, '').replace(/\n?```$/, '');
+      }
+      
+      // Extract JSON object
+      const jsonMatch = cleanedText.match(/\{[\s\S]*\}/);
+      const jsonString = jsonMatch ? jsonMatch[0] : cleanedText;
+      
       parsedReport = JSON.parse(jsonString);
+      
+      // Ensure otc_recommendations exists
+      if (!parsedReport.otc_recommendations) {
+        parsedReport.otc_recommendations = [];
+      }
     } catch (parseError) {
-      console.warn('Failed to parse JSON response, using text format:', parseError);
+      console.error('Failed to parse JSON response:', parseError);
+      console.error('Raw response:', reportText.substring(0, 500));
       parsedReport = {
-        text_report: reportText,
-        possible_conditions: [],
-        recommendations: [],
-        otc_medicines: [],
-        confidence_scores: { overall_assessment: 75, medication_recommendations: 70 },
-        disclaimer: "This assessment is for informational purposes only and does not replace professional medical consultation, diagnosis, or treatment."
+        chief_complaint: 'Unable to parse report',
+        history_present_illness: reportText,
+        assessment: 'Please consult a healthcare professional for proper assessment.',
+        diagnostic_plan: 'Seek medical attention for accurate diagnosis.',
+        otc_recommendations: [],
+        demographic_header: {
+          name: name || 'Not provided',
+          age: age,
+          gender: gender || 'Not provided',
+          date: new Date().toISOString().split('T')[0]
+        }
       };
     }
 
