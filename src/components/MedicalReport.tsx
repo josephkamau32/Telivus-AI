@@ -24,6 +24,24 @@ export const MedicalReport = ({ report, userInfo, timestamp, onBackToHome }: Med
   // Handle report object directly
   const parsedReport = typeof report === 'object' && report !== null ? report : null;
 
+  // Helper function to check if a field has meaningful content
+  const hasContent = (value: any): boolean => {
+    if (!value) return false;
+    if (typeof value === 'string') {
+      const normalized = value.toLowerCase().trim();
+      return normalized !== '' &&
+             normalized !== 'not provided' &&
+             normalized !== 'not specified' &&
+             normalized !== 'no significant past medical history reported' &&
+             normalized !== 'no surgical history reported' &&
+             normalized !== 'no current medications reported' &&
+             normalized !== 'no known allergies reported' &&
+             !normalized.includes('not provided') &&
+             !normalized.includes('not specified');
+    }
+    return true;
+  };
+
   const handleDownloadPDF = async () => {
     setIsDownloading(true);
     
@@ -257,44 +275,55 @@ export const MedicalReport = ({ report, userInfo, timestamp, onBackToHome }: Med
               </CardContent>
             </Card>
 
-            {/* Medical History Grid */}
-            <div className="grid md:grid-cols-2 gap-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Past Medical History (PMH)</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="leading-relaxed">{parsedReport.past_medical_history || 'Not provided'}</p>
-                </CardContent>
-              </Card>
+            {/* Medical History Grid - Only show fields with content */}
+            {(hasContent(parsedReport.past_medical_history) || hasContent(parsedReport.past_surgical_history) || 
+              hasContent(parsedReport.medications) || hasContent(parsedReport.allergies)) && (
+              <div className="grid md:grid-cols-2 gap-6">
+                {hasContent(parsedReport.past_medical_history) && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Past Medical History (PMH)</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="leading-relaxed">{parsedReport.past_medical_history}</p>
+                    </CardContent>
+                  </Card>
+                )}
 
-              <Card>
-                <CardHeader>
-                  <CardTitle>Past Surgical History (PSH)</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="leading-relaxed">{parsedReport.past_surgical_history || 'Not provided'}</p>
-                </CardContent>
-              </Card>
+                {hasContent(parsedReport.past_surgical_history) && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Past Surgical History (PSH)</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="leading-relaxed">{parsedReport.past_surgical_history}</p>
+                    </CardContent>
+                  </Card>
+                )}
 
-              <Card>
-                <CardHeader>
-                  <CardTitle>Medications</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="leading-relaxed">{parsedReport.medications || 'Not provided'}</p>
-                </CardContent>
-              </Card>
+                {hasContent(parsedReport.medications) && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Current Medications</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="leading-relaxed">{parsedReport.medications}</p>
+                    </CardContent>
+                  </Card>
+                )}
 
-              <Card>
-                <CardHeader>
-                  <CardTitle>Allergies</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="leading-relaxed">{parsedReport.allergies || 'Not provided'}</p>
-                </CardContent>
-              </Card>
-            </div>
+                {hasContent(parsedReport.allergies) && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Allergies</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="leading-relaxed">{parsedReport.allergies}</p>
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+            )}
 
             {/* Assessment */}
             <Card className="border-primary/20">

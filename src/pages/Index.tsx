@@ -1,19 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { HeroSection } from '@/components/HeroSection';
-import { SymptomFlow } from '@/components/SymptomFlow';
+import { SymptomFlow, type PatientData } from '@/components/SymptomFlow';
 import { MedicalReport } from '@/components/MedicalReport';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import type { User } from '@supabase/supabase-js';
 
 type AppState = 'home' | 'assessment' | 'report' | 'loading';
-
-interface AssessmentData {
-  feelings: string;
-  symptoms: string[];
-  age: number;
-}
 
 const Index = () => {
   const navigate = useNavigate();
@@ -22,7 +16,7 @@ const Index = () => {
   const [appState, setAppState] = useState<AppState>('home');
   const [currentReport, setCurrentReport] = useState<any>(null);
   const [reportTimestamp, setReportTimestamp] = useState<string>('');
-  const [assessmentData, setAssessmentData] = useState<AssessmentData | null>(null);
+  const [assessmentData, setAssessmentData] = useState<PatientData | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -57,7 +51,7 @@ const Index = () => {
     setAppState('assessment');
   };
 
-  const handleAssessmentComplete = async (data: AssessmentData) => {
+  const handleAssessmentComplete = async (data: PatientData) => {
     setAppState('loading');
     setAssessmentData(data);
 
@@ -87,6 +81,12 @@ const Index = () => {
           feelings: data.feelings,
           symptoms: data.symptoms,
           age: Number(data.age),
+          name: data.name,
+          gender: data.gender,
+          medicalHistory: data.medicalHistory,
+          surgicalHistory: data.surgicalHistory,
+          currentMedications: data.currentMedications,
+          allergies: data.allergies,
           userId: user.id
         }
       });

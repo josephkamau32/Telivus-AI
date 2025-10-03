@@ -69,12 +69,13 @@ serve(async (req) => {
 
   try {
     const requestBody = await req.json();
-    const { feelings, symptoms, age, userId } = requestBody;
+    const { feelings, symptoms, age, name, gender, medicalHistory, surgicalHistory, currentMedications, allergies, userId } = requestBody;
     
     // Input validation
-    const validationErrors = validateInput({ feelings, symptoms, age });
+    const validationErrors = validateInput({ feelings, symptoms, age, name, gender, medicalHistory, surgicalHistory, currentMedications, allergies });
     if (validationErrors.length > 0) {
       // Log validation failure
+{{ ... }}
       await supabase.from('report_logs').insert({
         event_type: 'validation_failed',
         payload: { validationErrors, requestBody },
@@ -124,48 +125,69 @@ serve(async (req) => {
       throw new Error('Gemini API key not configured');
     }
 
-    const prompt = `You are a medical assistant generating a professional medical report. Generate ONLY the information explicitly provided below. Do NOT invent, guess, or add information. If information is missing, state "Not provided."
-
-PATIENT INFORMATION PROVIDED:
+    // Build comprehensive patient profile
+    const patientProfile = `
+PATIENT INFORMATION:
 - Age: ${age} years old
-- Symptoms: ${symptoms.join(', ')}
+- Gender: ${gender || 'Not specified'}
+- Name: ${name || 'Not provided'}
+- Current Symptoms: ${symptoms.join(', ')}
 - How they feel: ${feelings}
+${medicalHistory ? `- Past Medical History: ${medicalHistory}` : ''}
+${surgicalHistory ? `- Past Surgical History: ${surgicalHistory}` : ''}
+${currentMedications ? `- Current Medications: ${currentMedications}` : ''}
+${allergies ? `- Known Allergies: ${allergies}` : ''}
+`;
+
+    const prompt = `You are a senior medical doctor with 20+ years of experience and dual certification as a clinical pharmacist. You are known for your thorough assessments, evidence-based recommendations, and patient-centered care approach.
+
+${patientProfile}
+
+Based on the above patient information, generate a comprehensive medical assessment report in JSON format. Use your extensive medical knowledge and pharmaceutical expertise to provide:
+
+1. A thorough clinical assessment considering the patient's age, gender, symptoms, and medical history
+2. Evidence-based OTC medication recommendations with precise dosing, considering any drug interactions with current medications and known allergies
+3. Clear guidance on when to seek immediate medical attention
 
 Generate a JSON response with this EXACT structure:
 
 {
   "demographic_header": {
-    "name": "Not provided",
-    "age": "${age}",
-    "gender": "Not provided",
+    "name": "${name || 'Not provided'}",
+    "age": ${age},
+    "gender": "${gender || 'Not provided'}",
     "date": "${new Date().toISOString().split('T')[0]}"
   },
-  "chief_complaint": "Brief statement of primary symptom based on: ${symptoms[0] || 'general discomfort'}",
-  "history_present_illness": "Description based on: ${feelings} with symptoms including ${symptoms.join(', ')}. Duration and onset not specified.",
-  "past_medical_history": "Not provided",
-  "past_surgical_history": "Not provided",
-  "medications": "Not provided",
-  "allergies": "Not provided",
-  "assessment": "Based on the reported symptoms (${symptoms.join(', ')}) and patient description (${feelings}), possible causes may include [list 2-3 general possibilities with cautious language like 'may include', 'could suggest', 'possibly indicates']. Further evaluation needed for definitive diagnosis.",
-  "diagnostic_plan": "Recommend seeing a licensed healthcare provider for comprehensive evaluation, physical examination, and appropriate diagnostic tests. Patient should seek immediate care if symptoms worsen or new concerning symptoms develop.",
+  "chief_complaint": "Concise statement of the primary presenting symptom",
+  "history_present_illness": "Detailed narrative of current symptoms, their onset, duration, severity, and how they affect the patient. Consider the patient's description of feeling ${feelings}.",
+  "past_medical_history": "${medicalHistory || 'No significant past medical history reported'}",
+  "past_surgical_history": "${surgicalHistory || 'No surgical history reported'}",
+  "medications": "${currentMedications || 'No current medications reported'}",
+  "allergies": "${allergies || 'No known allergies reported'}",
+  "assessment": "Professional clinical assessment: Based on the presenting symptoms (${symptoms.join(', ')}), patient age (${age}), and clinical presentation, the differential diagnosis may include [list 2-4 possible conditions with medical reasoning]. ${medicalHistory ? 'Consider patient\'s medical history in the assessment.' : ''} ${allergies ? 'Note: Patient has reported allergies - exercise caution with recommendations.' : ''} Emphasize this is a preliminary assessment and definitive diagnosis requires in-person evaluation.",
+  "diagnostic_plan": "Comprehensive plan: 1) Recommend consultation with appropriate specialist based on symptoms. 2) Suggest relevant diagnostic tests or examinations. 3) Provide clear red flag symptoms requiring immediate emergency care. 4) Follow-up recommendations and timeline.",
   "otc_recommendations": [
     {
-      "medicine": "Generic/Brand name of OTC medicine",
-      "dosage": "Recommended dosage (e.g., 500mg every 6 hours)",
-      "purpose": "What it helps with",
-      "instructions": "How and when to take it",
-      "precautions": "Important warnings or when to avoid",
-      "max_duration": "Maximum days to use without consulting a doctor"
+      "medicine": "Specific OTC medication name (generic and common brand)",
+      "dosage": "Age-appropriate dosage with frequency (e.g., Adults: 200-400mg every 4-6 hours)",
+      "purpose": "Therapeutic indication and mechanism of action",
+      "instructions": "Detailed administration instructions: timing, with/without food, duration",
+      "precautions": "Important warnings, contraindications, potential side effects, and drug interactions${currentMedications ? ' (checked against current medications)' : ''}${allergies ? ' (verified against known allergies)' : ''}",
+      "max_duration": "Maximum self-treatment duration before medical consultation required"
     }
   ]
 }
 
-CRITICAL: 
-- Use ONLY the information provided above for patient details
-- For OTC recommendations, suggest 2-4 appropriate over-the-counter medicines based on the symptoms
-- Be cautious and neutral in assessment. Avoid absolute diagnoses
-- Include clear precautions and maximum usage duration for each OTC medicine
-- Return ONLY valid JSON, no additional text`;
+CRITICAL INSTRUCTIONS:
+- Act as a senior physician - be thorough, evidence-based, and professional
+- Provide 2-4 specific OTC medications appropriate for the symptoms
+- Consider patient's age, gender, medical history, current medications, and allergies in ALL recommendations
+- If allergies are reported, explicitly check for contraindications
+- If current medications are reported, check for drug interactions
+- Use precise medical terminology but explain in patient-friendly language
+- Be conservative and emphasize when professional medical evaluation is needed
+- Include specific dosing based on patient age
+- Return ONLY valid JSON with no markdown formatting or additional text`;
 
     // Call Gemini API with retry logic - using Gemini 2.5 Flash
     const geminiResponse = await retryWithBackoff(async () => {
@@ -181,8 +203,10 @@ CRITICAL:
             }]
           }],
           generationConfig: {
-            temperature: 0.3,
-            maxOutputTokens: 1500,
+            temperature: 0.4,
+            maxOutputTokens: 2048,
+            topP: 0.95,
+            topK: 40
           }
         }),
       });
