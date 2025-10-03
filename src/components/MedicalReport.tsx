@@ -266,14 +266,25 @@ export const MedicalReport = ({ report, userInfo, timestamp, onBackToHome }: Med
             </Card>
 
             {/* History of Present Illness */}
-            <Card>
-              <CardHeader>
-                <CardTitle>History of Present Illness (HPI)</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="leading-relaxed">{parsedReport.history_present_illness || 'Not provided'}</p>
-              </CardContent>
-            </Card>
+            {hasContent(parsedReport.history_present_illness) && (
+              <Card className="bg-gradient-to-r from-blue-50/50 to-white dark:from-blue-950/20 dark:to-background">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <FileText className="w-5 h-5 text-blue-600" />
+                    History of Present Illness
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3 text-gray-700 dark:text-gray-300">
+                    {parsedReport.history_present_illness.split(/\.\s+/).filter((sentence: string) => sentence.trim()).map((sentence: string, idx: number) => (
+                      <p key={idx} className="text-sm md:text-base leading-relaxed pl-4 border-l-2 border-blue-300">
+                        {sentence.trim()}.
+                      </p>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
             {/* Medical History Grid - Only show fields with content */}
             {(hasContent(parsedReport.past_medical_history) || hasContent(parsedReport.past_surgical_history) || 
@@ -326,47 +337,99 @@ export const MedicalReport = ({ report, userInfo, timestamp, onBackToHome }: Med
             )}
 
             {/* Assessment */}
-            <Card className="border-primary/20">
-              <CardHeader>
-                <CardTitle>Assessment (Impression)</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="leading-relaxed">{parsedReport.assessment || 'Not provided'}</p>
-              </CardContent>
-            </Card>
-
-            {/* Diagnostic Plan */}
-            <Card className="border-primary/20">
-              <CardHeader>
-                <CardTitle>Diagnostic Plan</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="leading-relaxed">{parsedReport.diagnostic_plan || 'Not provided'}</p>
-              </CardContent>
-            </Card>
-
-            {/* OTC Recommendations */}
-            {parsedReport.otc_recommendations && parsedReport.otc_recommendations.length > 0 && (
-              <Card className="border-green-500/20 bg-green-50/50 dark:bg-green-950/20">
+            {hasContent(parsedReport.assessment) && (
+              <Card className="border-l-4 border-l-primary bg-primary/5">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                    Over-the-Counter Medicine Recommendations
+                    <span className="text-primary">●</span> Clinical Assessment
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-4">
+                  <div className="space-y-3 text-gray-700 dark:text-gray-300">
+                    {parsedReport.assessment.split(/\.\s+/).filter((sentence: string) => sentence.trim()).map((sentence: string, idx: number) => (
+                      <p key={idx} className="text-sm md:text-base leading-relaxed">
+                        {sentence.trim()}.
+                      </p>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Diagnostic Plan */}
+            {hasContent(parsedReport.diagnostic_plan) && (
+              <Card className="border-l-4 border-l-blue-500 bg-blue-50/50 dark:bg-blue-950/20">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <span className="text-blue-500">●</span> Diagnostic & Treatment Plan
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4 text-gray-700 dark:text-gray-300">
+                    {parsedReport.diagnostic_plan.split(/\d+\)\s+/).filter((section: string) => section.trim()).map((section: string, idx: number) => {
+                      const [title, ...content] = section.split(':');
+                      return (
+                        <div key={idx} className="pl-4 border-l-2 border-gray-300 dark:border-gray-600">
+                          {title.includes('**') ? (
+                            <p className="font-bold text-gray-900 dark:text-gray-100 mb-2">
+                              {title.replace(/\*\*/g, '').trim()}:
+                            </p>
+                          ) : (
+                            <p className="font-bold text-gray-900 dark:text-gray-100 mb-2">{title.trim()}:</p>
+                          )}
+                          <p className="text-sm md:text-base leading-relaxed">
+                            {content.join(':').trim()}
+                          </p>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* OTC Recommendations */}
+            {parsedReport.otc_recommendations && parsedReport.otc_recommendations.length > 0 && (
+              <Card className="border-l-4 border-l-green-600 bg-gradient-to-r from-green-50 to-white dark:from-green-950/20 dark:to-background">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <span className="text-2xl">💊</span>
+                    <span className="text-green-700 dark:text-green-400">Over-the-Counter Medication Recommendations</span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-5">
                     {parsedReport.otc_recommendations.map((otc: any, index: number) => (
-                      <div key={index} className="border border-border rounded-lg p-4 bg-background">
-                        <div className="font-semibold text-lg mb-2">{otc.medicine}</div>
-                        <div className="grid gap-2 text-sm">
-                          <div><span className="font-medium">Dosage:</span> {otc.dosage}</div>
-                          <div><span className="font-medium">Purpose:</span> {otc.purpose}</div>
-                          <div><span className="font-medium">Instructions:</span> {otc.instructions}</div>
-                          <div><span className="font-medium">Precautions:</span> {otc.precautions}</div>
-                          <div><span className="font-medium">Max Duration:</span> {otc.max_duration}</div>
+                      <div key={index} className="p-5 bg-white dark:bg-gray-800 rounded-lg border-2 border-green-200 dark:border-green-800 shadow-sm hover:shadow-md transition-shadow">
+                        <div className="flex items-start gap-3 mb-3">
+                          <span className="flex-shrink-0 w-8 h-8 bg-green-600 text-white rounded-full flex items-center justify-center font-bold text-sm">
+                            {index + 1}
+                          </span>
+                          <h4 className="font-bold text-green-900 dark:text-green-100 text-lg mt-1">{otc.medicine}</h4>
+                        </div>
+                        <div className="space-y-3 ml-11">
+                          <div>
+                            <p className="font-semibold text-gray-900 dark:text-gray-100 mb-1">💉 Dosage:</p>
+                            <p className="text-sm md:text-base text-gray-700 dark:text-gray-300 pl-6">{otc.dosage}</p>
+                          </div>
+                          <div>
+                            <p className="font-semibold text-gray-900 dark:text-gray-100 mb-1">🎯 Purpose:</p>
+                            <p className="text-sm md:text-base text-gray-700 dark:text-gray-300 pl-6">{otc.purpose}</p>
+                          </div>
+                          <div>
+                            <p className="font-semibold text-gray-900 dark:text-gray-100 mb-1">📋 Instructions:</p>
+                            <p className="text-sm md:text-base text-gray-700 dark:text-gray-300 pl-6">{otc.instructions}</p>
+                          </div>
+                          <div className="bg-yellow-50 dark:bg-yellow-900/20 p-3 rounded border-l-4 border-yellow-400">
+                            <p className="font-semibold text-yellow-900 dark:text-yellow-400 mb-1">⚠️ Precautions:</p>
+                            <p className="text-sm text-yellow-900 dark:text-yellow-200 pl-6">{otc.precautions}</p>
+                          </div>
+                          {otc.max_duration && (
+                            <div className="bg-red-50 dark:bg-red-900/20 p-3 rounded border-l-4 border-red-400">
+                              <p className="font-semibold text-red-900 dark:text-red-400 mb-1">⏱️ Maximum Duration:</p>
+                              <p className="text-sm text-red-900 dark:text-red-200 pl-6">{otc.max_duration}</p>
+                            </div>
+                          )}
                         </div>
                       </div>
                     ))}

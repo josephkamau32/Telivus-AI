@@ -138,17 +138,20 @@ ${currentMedications ? `- Current Medications: ${currentMedications}` : ''}
 ${allergies ? `- Known Allergies: ${allergies}` : ''}
 `;
 
-    const prompt = `You are a senior medical doctor with 20+ years of experience and dual certification as a clinical pharmacist. You are known for your thorough assessments, evidence-based recommendations, and patient-centered care approach.
+    const prompt = `You are Dr. Sarah Mitchell, MD, PharmD - a board-certified internal medicine physician with 20+ years of clinical experience and dual certification as a clinical pharmacist. You are known for your thorough diagnostic assessments, evidence-based treatment recommendations, and exceptional patient communication skills. Your approach combines clinical excellence with compassionate care.
 
 ${patientProfile}
 
-Based on the above patient information, generate a comprehensive medical assessment report. Use your extensive medical knowledge and pharmaceutical expertise to provide:
+TASK: Generate a comprehensive, professional medical assessment report based on the patient information above. This report should demonstrate your expertise while being accessible to the patient.
 
-1. A thorough clinical assessment considering the patient's age, gender, symptoms, and medical history
-2. Evidence-based OTC medication recommendations with precise dosing, considering any drug interactions with current medications and known allergies
-3. Clear guidance on when to seek immediate medical attention
+REQUIREMENTS:
+1. Provide a thorough clinical assessment considering all patient factors
+2. Offer evidence-based OTC medication recommendations with precise dosing
+3. Check for drug interactions and contraindications
+4. Include clear red flag symptoms requiring immediate care
+5. Write in a professional yet patient-friendly tone
 
-CRITICAL: Return ONLY a valid JSON object with no markdown formatting, no code blocks, no extra text. Start directly with { and end with }.
+CRITICAL OUTPUT FORMAT: Return ONLY a valid JSON object. No markdown, no code blocks, no extra text. Start with { and end with }.
 
 Generate a JSON response with this EXACT structure:
 
@@ -159,14 +162,14 @@ Generate a JSON response with this EXACT structure:
     "gender": "${gender || 'Not provided'}",
     "date": "${new Date().toISOString().split('T')[0]}"
   },
-  "chief_complaint": "Concise statement of the primary presenting symptom",
-  "history_present_illness": "Detailed narrative of current symptoms, their onset, duration, severity, and how they affect the patient. Consider the patient's description of feeling ${feelings}.",
+  "chief_complaint": "Brief, clear statement of the primary presenting symptom (e.g., 'Acute onset headache and persistent cough')",
+  "history_present_illness": "Professional narrative describing: 1) Symptom onset and duration, 2) Severity and character, 3) Impact on daily activities, 4) Associated symptoms. Write 3-5 clear sentences in professional medical language but understandable to patients.",
   "past_medical_history": "${medicalHistory || 'No significant past medical history reported'}",
   "past_surgical_history": "${surgicalHistory || 'No surgical history reported'}",
   "medications": "${currentMedications || 'No current medications reported'}",
   "allergies": "${allergies || 'No known allergies reported'}",
-  "assessment": "Professional clinical assessment: Based on the presenting symptoms (${symptoms.join(', ')}), patient age (${age}), and clinical presentation, the differential diagnosis may include [list 2-4 possible conditions with medical reasoning]. ${medicalHistory ? 'Consider patient\'s medical history in the assessment.' : ''} ${allergies ? 'Note: Patient has reported allergies - exercise caution with recommendations.' : ''} Emphasize this is a preliminary assessment and definitive diagnosis requires in-person evaluation.",
-  "diagnostic_plan": "Comprehensive plan: 1) Recommend consultation with appropriate specialist based on symptoms. 2) Suggest relevant diagnostic tests or examinations. 3) Provide clear red flag symptoms requiring immediate emergency care. 4) Follow-up recommendations and timeline.",
+  "assessment": "Provide a thorough clinical assessment in 4-6 well-structured sentences. Include: 1) Most likely diagnosis based on symptoms and patient factors, 2) 2-3 differential diagnoses with brief rationale, 3) Clinical reasoning for your assessment, 4) Risk factors or considerations from patient history. Use professional medical language while remaining clear.",
+  "diagnostic_plan": "Structured plan with clear sections: 1) **Recommended Consultations**: Which specialist to see and when, 2) **Suggested Diagnostic Tests**: What tests or exams would help confirm diagnosis, 3) **RED FLAG SYMPTOMS**: List 4-5 symptoms that require IMMEDIATE emergency care, 4) **Follow-up Timeline**: When to seek care if symptoms persist or worsen.",
   "otc_recommendations": [
     {
       "medicine": "Specific OTC medication name (generic and common brand)",
@@ -179,16 +182,17 @@ Generate a JSON response with this EXACT structure:
   ]
 }
 
-CRITICAL INSTRUCTIONS:
-- Act as a senior physician - be thorough, evidence-based, and professional
-- Provide 2-4 specific OTC medications appropriate for the symptoms
-- Consider patient's age, gender, medical history, current medications, and allergies in ALL recommendations
-- If allergies are reported, explicitly check for contraindications
-- If current medications are reported, check for drug interactions
-- Use precise medical terminology but explain in patient-friendly language
-- Be conservative and emphasize when professional medical evaluation is needed
-- Include specific dosing based on patient age
-- CRITICAL: Return ONLY a pure JSON object. Do not wrap in markdown code blocks. Do not add any text before or after the JSON. Start with { and end with }.`;
+CRITICAL INSTRUCTIONS FOR DR. MITCHELL:
+- Write as a senior physician - thorough, evidence-based, professional, and caring
+- Provide 2-4 specific OTC medications most appropriate for the symptoms
+- MANDATORY: Consider patient age, gender, medical history, current medications, and allergies
+- Check for drug interactions and contraindications explicitly
+- Use professional medical language but ensure patient comprehension
+- Be appropriately conservative - emphasize when professional care is needed
+- Include age-appropriate dosing with clear instructions
+- Make recommendations realistic and practical
+- Write in complete, well-structured sentences
+- CRITICAL: Return ONLY a pure JSON object. No markdown. No code blocks. No extra text. Start with { end with }.`;
 
     // Call Gemini API with retry logic - using Gemini 2.5 Flash
     const geminiResponse = await retryWithBackoff(async () => {
@@ -229,43 +233,54 @@ CRITICAL INSTRUCTIONS:
       throw new Error('No response from Gemini AI');
     }
 
-    // Try to parse as JSON, fallback to text format if parsing fails
+    // Parse JSON response with robust error handling
     let parsedReport;
     try {
-      // Clean the response - remove markdown code blocks if present
+      // Clean the response - remove any markdown or extra formatting
       let cleanedText = reportText.trim();
       
-      // Remove markdown code blocks (```json ... ``` or ``` ... ```)
+      // Remove markdown code blocks if present
       if (cleanedText.startsWith('```')) {
-        cleanedText = cleanedText.replace(/^```(?:json)?\n?/i, '').replace(/\n?```$/, '');
+        cleanedText = cleanedText.replace(/^```(?:json)?\n?/gi, '').replace(/\n?```$/g, '');
       }
       
-      // Extract JSON object
+      // Extract the first complete JSON object
       const jsonMatch = cleanedText.match(/\{[\s\S]*\}/);
-      const jsonString = jsonMatch ? jsonMatch[0] : cleanedText;
+      if (!jsonMatch) {
+        throw new Error('No JSON object found in response');
+      }
       
+      const jsonString = jsonMatch[0];
       parsedReport = JSON.parse(jsonString);
       
-      // Ensure otc_recommendations exists
-      if (!parsedReport.otc_recommendations) {
+      // Validate required fields
+      if (!parsedReport.chief_complaint || !parsedReport.assessment) {
+        throw new Error('Missing required fields in parsed report');
+      }
+      
+      // Ensure otc_recommendations exists and is an array
+      if (!Array.isArray(parsedReport.otc_recommendations)) {
         parsedReport.otc_recommendations = [];
       }
-    } catch (parseError) {
-      console.error('Failed to parse JSON response:', parseError);
-      console.error('Raw response:', reportText.substring(0, 500));
-      parsedReport = {
-        chief_complaint: 'Unable to parse report',
-        history_present_illness: reportText,
-        assessment: 'Please consult a healthcare professional for proper assessment.',
-        diagnostic_plan: 'Seek medical attention for accurate diagnosis.',
-        otc_recommendations: [],
-        demographic_header: {
+      
+      // Ensure demographic_header exists
+      if (!parsedReport.demographic_header) {
+        parsedReport.demographic_header = {
           name: name || 'Not provided',
           age: age,
           gender: gender || 'Not provided',
           date: new Date().toISOString().split('T')[0]
-        }
-      };
+        };
+      }
+      
+      console.log('Successfully parsed medical report');
+      
+    } catch (parseError) {
+      console.error('Failed to parse JSON response:', parseError);
+      console.error('Raw response (first 1000 chars):', reportText.substring(0, 1000));
+      
+      // Return a proper error report instead of falling back
+      throw new Error(`Failed to parse AI response: ${parseError instanceof Error ? parseError.message : 'Unknown error'}`);
     }
 
     // Update health report with success
