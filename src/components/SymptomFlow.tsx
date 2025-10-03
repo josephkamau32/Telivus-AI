@@ -4,10 +4,24 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ChevronLeft, ChevronRight, CheckCircle } from 'lucide-react';
 
+export interface PatientData {
+  feelings: string;
+  symptoms: string[];
+  age: number;
+  name?: string;
+  gender?: string;
+  medicalHistory?: string;
+  surgicalHistory?: string;
+  currentMedications?: string;
+  allergies?: string;
+}
+
 interface SymptomFlowProps {
-  onComplete: (data: { feelings: string; symptoms: string[]; age: number }) => void;
+  onComplete: (data: PatientData) => void;
   onBack: () => void;
 }
 
@@ -31,6 +45,12 @@ export const SymptomFlow = ({ onComplete, onBack }: SymptomFlowProps) => {
   const [symptoms, setSymptoms] = useState<string[]>([]);
   const [customSymptom, setCustomSymptom] = useState('');
   const [age, setAge] = useState<number | null>(null);
+  const [name, setName] = useState('');
+  const [gender, setGender] = useState('');
+  const [medicalHistory, setMedicalHistory] = useState('');
+  const [surgicalHistory, setSurgicalHistory] = useState('');
+  const [currentMedications, setCurrentMedications] = useState('');
+  const [allergies, setAllergies] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSymptomToggle = (symptom: string) => {
@@ -53,7 +73,7 @@ export const SymptomFlow = ({ onComplete, onBack }: SymptomFlowProps) => {
   };
 
   const handleNext = () => {
-    if (step < 3) {
+    if (step < 5) {
       setStep(step + 1);
     }
   };
@@ -87,7 +107,18 @@ export const SymptomFlow = ({ onComplete, onBack }: SymptomFlowProps) => {
     
     setIsSubmitting(true);
     try {
-      await onComplete({ feelings, symptoms, age });
+      const data: PatientData = {
+        feelings,
+        symptoms,
+        age,
+        ...(name.trim() && { name: name.trim() }),
+        ...(gender && { gender }),
+        ...(medicalHistory.trim() && { medicalHistory: medicalHistory.trim() }),
+        ...(surgicalHistory.trim() && { surgicalHistory: surgicalHistory.trim() }),
+        ...(currentMedications.trim() && { currentMedications: currentMedications.trim() }),
+        ...(allergies.trim() && { allergies: allergies.trim() })
+      };
+      await onComplete(data);
     } finally {
       setIsSubmitting(false);
     }
@@ -98,6 +129,8 @@ export const SymptomFlow = ({ onComplete, onBack }: SymptomFlowProps) => {
       case 1: return feelings !== '';
       case 2: return symptoms.length > 0;
       case 3: return age !== null && age > 0 && age <= 130;
+      case 4: return true; // Optional fields
+      case 5: return true; // Optional fields
       default: return false;
     }
   };
@@ -107,11 +140,11 @@ export const SymptomFlow = ({ onComplete, onBack }: SymptomFlowProps) => {
       <Card className="w-full max-w-2xl">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl text-foreground">
-            Health Assessment - Step {step} of 3
+            Health Assessment - Step {step} of 5
           </CardTitle>
           <div className="flex justify-center mt-4">
             <div className="flex space-x-2">
-              {[1, 2, 3].map((i) => (
+              {[1, 2, 3, 4, 5].map((i) => (
                 <div
                   key={i}
                   className={`w-3 h-3 rounded-full ${
@@ -198,29 +231,127 @@ export const SymptomFlow = ({ onComplete, onBack }: SymptomFlowProps) => {
           {step === 3 && (
             <div className="space-y-4">
               <div className="text-center">
-                <h3 className="text-lg font-semibold">What is your age?</h3>
-                <p className="text-muted-foreground mt-2">This helps us provide more accurate recommendations.</p>
+                <h3 className="text-lg font-semibold">Basic Information</h3>
+                <p className="text-muted-foreground mt-2">Help us personalize your report</p>
               </div>
               
-              <div className="max-w-xs mx-auto">
-                <Label htmlFor="age">Age (required)</Label>
-                <Input
-                  id="age"
-                  type="number"
-                  min="0"
-                  max="130"
-                  placeholder="Enter your age"
-                  value={age || ''}
-                  onChange={(e) => {
-                    const value = parseInt(e.target.value);
-                    if (isNaN(value) || value < 0 || value > 130) {
-                      setAge(null);
-                    } else {
-                      setAge(value);
-                    }
-                  }}
-                  className="text-center text-lg"
-                />
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="age">Age (required) *</Label>
+                  <Input
+                    id="age"
+                    type="number"
+                    min="0"
+                    max="130"
+                    placeholder="Enter your age"
+                    value={age || ''}
+                    onChange={(e) => {
+                      const value = parseInt(e.target.value);
+                      if (isNaN(value) || value < 0 || value > 130) {
+                        setAge(null);
+                      } else {
+                        setAge(value);
+                      }
+                    }}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="name">Full Name (optional)</Label>
+                  <Input
+                    id="name"
+                    type="text"
+                    placeholder="Enter your full name"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    maxLength={100}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="gender">Gender (optional)</Label>
+                  <Select value={gender} onValueChange={setGender}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select gender" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="male">Male</SelectItem>
+                      <SelectItem value="female">Female</SelectItem>
+                      <SelectItem value="other">Other</SelectItem>
+                      <SelectItem value="prefer-not-to-say">Prefer not to say</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {step === 4 && (
+            <div className="space-y-4">
+              <div className="text-center">
+                <h3 className="text-lg font-semibold">Medical History</h3>
+                <p className="text-muted-foreground mt-2">Optional - Provide any relevant medical history</p>
+              </div>
+              
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="medicalHistory">Past Medical History (optional)</Label>
+                  <Textarea
+                    id="medicalHistory"
+                    placeholder="Any chronic conditions, past illnesses, etc."
+                    value={medicalHistory}
+                    onChange={(e) => setMedicalHistory(e.target.value)}
+                    rows={3}
+                    maxLength={500}
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">{medicalHistory.length}/500 characters</p>
+                </div>
+                <div>
+                  <Label htmlFor="surgicalHistory">Past Surgical History (optional)</Label>
+                  <Textarea
+                    id="surgicalHistory"
+                    placeholder="Any previous surgeries or procedures"
+                    value={surgicalHistory}
+                    onChange={(e) => setSurgicalHistory(e.target.value)}
+                    rows={3}
+                    maxLength={500}
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">{surgicalHistory.length}/500 characters</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {step === 5 && (
+            <div className="space-y-4">
+              <div className="text-center">
+                <h3 className="text-lg font-semibold">Medications & Allergies</h3>
+                <p className="text-muted-foreground mt-2">Optional - Help us provide safer recommendations</p>
+              </div>
+              
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="currentMedications">Current Medications (optional)</Label>
+                  <Textarea
+                    id="currentMedications"
+                    placeholder="List any medications you're currently taking"
+                    value={currentMedications}
+                    onChange={(e) => setCurrentMedications(e.target.value)}
+                    rows={3}
+                    maxLength={500}
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">{currentMedications.length}/500 characters</p>
+                </div>
+                <div>
+                  <Label htmlFor="allergies">Allergies (optional)</Label>
+                  <Textarea
+                    id="allergies"
+                    placeholder="Any drug allergies, food allergies, or other allergies"
+                    value={allergies}
+                    onChange={(e) => setAllergies(e.target.value)}
+                    rows={3}
+                    maxLength={500}
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">{allergies.length}/500 characters</p>
+                </div>
               </div>
             </div>
           )}
@@ -230,8 +361,7 @@ export const SymptomFlow = ({ onComplete, onBack }: SymptomFlowProps) => {
               <ChevronLeft className="w-4 h-4 mr-2" />
               {step === 1 ? 'Back to Home' : 'Previous'}
             </Button>
-
-            {step < 3 ? (
+            {step < 5 ? (
               <Button onClick={handleNext} disabled={!canProceed()}>
                 Next
                 <ChevronRight className="w-4 h-4 ml-2" />
