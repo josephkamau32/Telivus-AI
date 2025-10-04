@@ -43,7 +43,7 @@ export const HeroSection = ({ onStartAssessment, onSignOut }: HeroSectionProps) 
           </div>
           
           {/* Title with gradient text */}
-          <h1 className="text-6xl md:text-7xl font-bold mb-6 bg-gradient-to-r from-primary via-secondary to-primary bg-clip-text text-transparent animate-shimmer">
+          <h1 className="text-6xl md:text-7xl font-bold mb-6 bg-gradient-to-r from-primary via-secondary to-primary bg-clip-text text-transparent animate-gradient-shift">
             MediSense AI
           </h1>
           
