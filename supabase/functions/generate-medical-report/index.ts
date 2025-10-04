@@ -1,13 +1,12 @@
-import "https://deno.land/x/xhr@0.1.0/mod.ts";
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.4';
+import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import { createClient } from 'npm:@supabase/supabase-js@2.57.4';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Client-Info, Apikey',
 };
 
-// Input validation schema
 const validateInput = (data: any) => {
   const errors: string[] = [];
   
@@ -26,36 +25,45 @@ const validateInput = (data: any) => {
   return errors;
 };
 
-// Retry function with exponential backoff
+const generateCacheKey = async (symptoms: string[], feelings: string, age: number) => {
+  const sortedSymptoms = [...symptoms].sort().join(',');
+  const cacheString = `${sortedSymptoms}|${feelings}|${Math.floor(age / 5) * 5}`;
+
+  const msgUint8 = new TextEncoder().encode(cacheString);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+
+  return hashHex;
+};
+
 const retryWithBackoff = async (fn: () => Promise<any>, maxRetries = 2) => {
   let lastError: Error | unknown;
-  
+
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
       return await fn();
     } catch (error) {
       lastError = error;
-      
-      // Don't retry on client errors (4xx) or if it's an Error with message
+
       if (error instanceof Error) {
         if (error.message.includes('400') || error.message.includes('401') || error.message.includes('403')) {
           throw error;
         }
       }
-      
-      // Wait before retry (exponential backoff)
+
       if (attempt < maxRetries) {
-        const delay = Math.pow(2, attempt) * 1000; // 1s, 2s, 4s
+        const delay = Math.pow(2, attempt) * 1000;
         console.log(`Attempt ${attempt + 1} failed, retrying in ${delay}ms...`);
         await new Promise(resolve => setTimeout(resolve, delay));
       }
     }
   }
-  
+
   throw lastError;
 };
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -71,10 +79,8 @@ serve(async (req) => {
     const requestBody = await req.json();
     const { feelings, symptoms, age, name, gender, medicalHistory, surgicalHistory, currentMedications, allergies, userId } = requestBody;
     
-    // Input validation
     const validationErrors = validateInput({ feelings, symptoms, age, name, gender, medicalHistory, surgicalHistory, currentMedications, allergies });
     if (validationErrors.length > 0) {
-      // Log validation failure
       await supabase.from('report_logs').insert({
         event_type: 'validation_failed',
         payload: { validationErrors, requestBody },
@@ -90,7 +96,6 @@ serve(async (req) => {
       });
     }
 
-    // Create initial health report record
     const { data: healthReport, error: insertError } = await supabase
       .from('health_reports')
       .insert({
@@ -110,7 +115,6 @@ serve(async (req) => {
 
     healthReportId = healthReport.id;
 
-    // Log request start
     await supabase.from('report_logs').insert({
       health_report_id: healthReportId,
       event_type: 'request_started',
@@ -118,13 +122,70 @@ serve(async (req) => {
       user_id: userId || null
     });
 
+    const cacheKey = await generateCacheKey(symptoms, feelings, age);
+    const { data: cachedReport } = await supabase
+      .from('report_cache')
+      .select('*')
+      .eq('cache_key', cacheKey)
+      .gt('expires_at', new Date().toISOString())
+      .maybeSingle();
+
+    if (cachedReport) {
+      console.log(`Cache HIT for key: ${cacheKey}`);
+
+      await supabase
+        .from('report_cache')
+        .update({ hit_count: cachedReport.hit_count + 1 })
+        .eq('id', cachedReport.id);
+
+      const cachedData = cachedReport.report_data;
+
+      cachedData.demographic_header = {
+        name: name || 'Not provided',
+        age: age,
+        gender: gender || 'Not provided',
+        date: new Date().toISOString().split('T')[0]
+      };
+
+      if (medicalHistory) cachedData.past_medical_history = medicalHistory;
+      if (surgicalHistory) cachedData.past_surgical_history = surgicalHistory;
+      if (currentMedications) cachedData.medications = currentMedications;
+      if (allergies) cachedData.allergies = allergies;
+
+      await supabase
+        .from('health_reports')
+        .update({
+          status: 'completed',
+          report: cachedData,
+          otc_medicines: cachedData.otc_recommendations || []
+        })
+        .eq('id', healthReportId);
+
+      await supabase.from('report_logs').insert({
+        health_report_id: healthReportId,
+        event_type: 'cache_hit',
+        payload: { cacheKey, success: true },
+        user_id: userId || null
+      });
+
+      return new Response(JSON.stringify({
+        ...cachedData,
+        timestamp: new Date().toISOString(),
+        health_report_id: healthReportId,
+        cached: true
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    console.log(`Cache MISS for key: ${cacheKey} - generating new report`);
+
     const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
 
     if (!GEMINI_API_KEY) {
       throw new Error('Gemini API key not configured');
     }
 
-    // Build comprehensive patient profile
     const patientProfile = `
 PATIENT INFORMATION:
 - Age: ${age} years old
@@ -138,22 +199,31 @@ ${currentMedications ? `- Current Medications: ${currentMedications}` : ''}
 ${allergies ? `- Known Allergies: ${allergies}` : ''}
 `;
 
-    const prompt = `You are Dr. Sarah Mitchell, MD, PharmD - a board-certified internal medicine physician with 20+ years of clinical experience and dual certification as a clinical pharmacist. You are known for your thorough diagnostic assessments, evidence-based treatment recommendations, and exceptional patient communication skills. Your approach combines clinical excellence with compassionate care.
+    const prompt = `You are Dr. Sarah Mitchell, MD, PharmD - a board-certified internal medicine physician with 20+ years of clinical experience and dual certification as a clinical pharmacist.
 
 ${patientProfile}
 
-TASK: Generate a comprehensive, professional medical assessment report based on the patient information above. This report should demonstrate your expertise while being accessible to the patient.
+TASK: Generate a comprehensive, professional medical assessment report based STRICTLY on the patient information provided above.
 
-REQUIREMENTS:
-1. Provide a thorough clinical assessment considering all patient factors
-2. Offer evidence-based OTC medication recommendations with precise dosing
-3. Check for drug interactions and contraindications
-4. Include clear red flag symptoms requiring immediate care
-5. Write in a professional yet patient-friendly tone
+ANTI-HALLUCINATION REQUIREMENTS (CRITICAL):
+- Use ONLY the symptoms and information explicitly provided by the patient
+- DO NOT invent or assume symptoms not mentioned
+- DO NOT speculate about conditions without clear symptom evidence
+- If information is limited, acknowledge this in your assessment
+- Base your diagnosis ONLY on the presenting symptoms
+- Recommend ONLY FDA-approved OTC medications appropriate for the specific symptoms listed
+- DO NOT recommend prescription medications
+- Provide differential diagnoses that are directly supported by the reported symptoms
 
-CRITICAL OUTPUT FORMAT: Return ONLY a valid JSON object. No markdown, no code blocks, no extra text. Start with { and end with }.
+OUTPUT REQUIREMENTS:
+1. Base clinical assessment strictly on provided symptoms and patient data
+2. Offer evidence-based OTC recommendations matching the specific symptoms
+3. Check for drug interactions with listed medications and known allergies
+4. Include clear red flag symptoms for the condition being assessed
+5. Use professional yet patient-friendly language
+6. Return ONLY valid JSON. No markdown, no code blocks, no extra text.
 
-Generate a JSON response with this EXACT structure:
+JSON STRUCTURE (match exactly):
 
 {
   "demographic_header": {
@@ -162,41 +232,35 @@ Generate a JSON response with this EXACT structure:
     "gender": "${gender || 'Not provided'}",
     "date": "${new Date().toISOString().split('T')[0]}"
   },
-  "chief_complaint": "Brief, clear statement of the primary presenting symptom (e.g., 'Acute onset headache and persistent cough')",
-  "history_present_illness": "Professional narrative describing: 1) Symptom onset and duration, 2) Severity and character, 3) Impact on daily activities, 4) Associated symptoms. Write 3-5 clear sentences in professional medical language but understandable to patients.",
+  "chief_complaint": "Brief statement of primary presenting symptoms from the patient's report",
+  "history_present_illness": "Professional narrative based strictly on: 1) Reported symptoms, 2) Patient's stated feeling, 3) Age and gender context. Write 3-5 factual sentences. Do not invent details.",
   "past_medical_history": "${medicalHistory || 'No significant past medical history reported'}",
   "past_surgical_history": "${surgicalHistory || 'No surgical history reported'}",
   "medications": "${currentMedications || 'No current medications reported'}",
   "allergies": "${allergies || 'No known allergies reported'}",
-  "assessment": "Provide a thorough clinical assessment in 4-6 well-structured sentences. Include: 1) Most likely diagnosis based on symptoms and patient factors, 2) 2-3 differential diagnoses with brief rationale, 3) Clinical reasoning for your assessment, 4) Risk factors or considerations from patient history. Use professional medical language while remaining clear.",
-  "diagnostic_plan": "Structured plan with clear sections: 1) **Recommended Consultations**: Which specialist to see and when, 2) **Suggested Diagnostic Tests**: What tests or exams would help confirm diagnosis, 3) **RED FLAG SYMPTOMS**: List 4-5 symptoms that require IMMEDIATE emergency care, 4) **Follow-up Timeline**: When to seek care if symptoms persist or worsen.",
+  "assessment": "Clinical assessment in 4-6 sentences: 1) Most likely diagnosis based ONLY on reported symptoms, 2) 2-3 differential diagnoses that match the symptom pattern, 3) Clinical reasoning tied directly to reported symptoms, 4) Relevant risk factors from provided patient history. Stay factual and evidence-based.",
+  "diagnostic_plan": "Structured plan: 1) **Recommended Consultations**: Appropriate specialist referrals, 2) **Suggested Diagnostic Tests**: Tests to confirm suspected conditions, 3) **RED FLAG SYMPTOMS**: 4-5 specific warning signs requiring emergency care, 4) **Follow-up Timeline**: When to seek care if symptoms worsen.",
   "otc_recommendations": [
     {
-      "medicine": "Specific OTC medication name (generic and common brand)",
-      "dosage": "Age-appropriate dosage with frequency (e.g., Adults: 200-400mg every 4-6 hours)",
-      "purpose": "Therapeutic indication and mechanism of action",
-      "instructions": "Detailed administration instructions: timing, with/without food, duration",
-      "precautions": "Important warnings, contraindications, potential side effects, and drug interactions${currentMedications ? ' (checked against current medications)' : ''}${allergies ? ' (verified against known allergies)' : ''}",
-      "max_duration": "Maximum self-treatment duration before medical consultation required"
+      "medicine": "Specific FDA-approved OTC medication (generic name and brand)",
+      "dosage": "Age-appropriate dosage for ${age}-year-old (e.g., Adults: 200-400mg every 4-6 hours)",
+      "purpose": "Treats [specific symptom from patient's list]",
+      "instructions": "Detailed administration: timing, food requirements, duration",
+      "precautions": "Warnings, contraindications, side effects. ${currentMedications ? 'CHECKED AGAINST: ' + currentMedications : ''}${allergies ? ' VERIFIED SAFE WITH: ' + allergies : ''}",
+      "max_duration": "Maximum days before seeing a doctor"
     }
   ]
 }
 
-CRITICAL INSTRUCTIONS FOR DR. MITCHELL:
-- Write as a senior physician - thorough, evidence-based, professional, and caring
-- Provide 2-4 specific OTC medications most appropriate for the symptoms
-- MANDATORY: Consider patient age, gender, medical history, current medications, and allergies
-- Check for drug interactions and contraindications explicitly
-- Use professional medical language but ensure patient comprehension
-- Be appropriately conservative - emphasize when professional care is needed
-- Include age-appropriate dosing with clear instructions
-- Make recommendations realistic and practical
-- Write in complete, well-structured sentences
-- CRITICAL: Return ONLY a pure JSON object. No markdown. No code blocks. No extra text. Start with { end with }.`;
+GUIDELINES:
+- Provide 2-4 OTC medications directly targeting the reported symptoms
+- For age ${age}: Use age-appropriate dosing and safety considerations
+- Cross-reference all recommendations against: ${currentMedications || 'no current medications'} and ${allergies || 'no known allergies'}
+- Be conservative: emphasize when professional medical evaluation is needed
+- Return pure JSON only. Start with { and end with }.`;
 
-    // Call Gemini API with retry logic - using Gemini 2.5 Flash
     const geminiResponse = await retryWithBackoff(async () => {
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GEMINI_API_KEY}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -208,12 +272,16 @@ CRITICAL INSTRUCTIONS FOR DR. MITCHELL:
             }]
           }],
           generationConfig: {
-            temperature: 0.3,
-            maxOutputTokens: 3048,
-            topP: 0.9,
-            topK: 20,
+            temperature: 0.1,
+            maxOutputTokens: 4096,
+            topP: 0.85,
+            topK: 10,
             responseMimeType: "application/json"
-          }
+          },
+          safetySettings: [
+            { category: 'HARM_CATEGORY_MEDICAL', threshold: 'BLOCK_NONE' },
+            { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' }
+          ]
         }),
       });
 
@@ -233,18 +301,14 @@ CRITICAL INSTRUCTIONS FOR DR. MITCHELL:
       throw new Error('No response from Gemini AI');
     }
 
-    // Parse JSON response with robust error handling
     let parsedReport;
     try {
-      // Clean the response - remove any markdown or extra formatting
       let cleanedText = reportText.trim();
       
-      // Remove markdown code blocks if present
       if (cleanedText.startsWith('```')) {
         cleanedText = cleanedText.replace(/^```(?:json)?\n?/gi, '').replace(/\n?```$/g, '');
       }
       
-      // Extract the first complete JSON object
       const jsonMatch = cleanedText.match(/\{[\s\S]*\}/);
       if (!jsonMatch) {
         throw new Error('No JSON object found in response');
@@ -253,17 +317,58 @@ CRITICAL INSTRUCTIONS FOR DR. MITCHELL:
       const jsonString = jsonMatch[0];
       parsedReport = JSON.parse(jsonString);
       
-      // Validate required fields
-      if (!parsedReport.chief_complaint || !parsedReport.assessment) {
-        throw new Error('Missing required fields in parsed report');
+      const validationErrors = [];
+
+      if (!parsedReport.chief_complaint || typeof parsedReport.chief_complaint !== 'string') {
+        validationErrors.push('Missing or invalid chief_complaint');
       }
-      
-      // Ensure otc_recommendations exists and is an array
+
+      if (!parsedReport.assessment || typeof parsedReport.assessment !== 'string') {
+        validationErrors.push('Missing or invalid assessment');
+      }
+
+      if (!parsedReport.history_present_illness || typeof parsedReport.history_present_illness !== 'string') {
+        validationErrors.push('Missing or invalid history_present_illness');
+      }
+
+      if (!parsedReport.diagnostic_plan || typeof parsedReport.diagnostic_plan !== 'string') {
+        validationErrors.push('Missing or invalid diagnostic_plan');
+      }
+
+      const reportedSymptoms = symptoms.map((s: string) => s.toLowerCase());
+      const assessmentText = (parsedReport.assessment || '').toLowerCase();
+      const complaintText = (parsedReport.chief_complaint || '').toLowerCase();
+
+      let symptomMatchCount = 0;
+      reportedSymptoms.forEach((symptom: string) => {
+        if (assessmentText.includes(symptom) || complaintText.includes(symptom)) {
+          symptomMatchCount++;
+        }
+      });
+
+      if (symptomMatchCount === 0 && reportedSymptoms.length > 0) {
+        validationErrors.push('Assessment does not reference any reported symptoms - possible hallucination');
+      }
+
       if (!Array.isArray(parsedReport.otc_recommendations)) {
         parsedReport.otc_recommendations = [];
       }
-      
-      // Ensure demographic_header exists
+
+      parsedReport.otc_recommendations.forEach((otc: any, index: number) => {
+        if (!otc.medicine || typeof otc.medicine !== 'string') {
+          validationErrors.push(`OTC recommendation ${index + 1}: Missing medicine name`);
+        }
+        if (!otc.dosage || typeof otc.dosage !== 'string') {
+          validationErrors.push(`OTC recommendation ${index + 1}: Missing dosage`);
+        }
+        if (!otc.purpose || typeof otc.purpose !== 'string') {
+          validationErrors.push(`OTC recommendation ${index + 1}: Missing purpose`);
+        }
+        if (!otc.precautions || typeof otc.precautions !== 'string') {
+          validationErrors.push(`OTC recommendation ${index + 1}: Missing precautions`);
+        }
+      });
+
       if (!parsedReport.demographic_header) {
         parsedReport.demographic_header = {
           name: name || 'Not provided',
@@ -272,18 +377,21 @@ CRITICAL INSTRUCTIONS FOR DR. MITCHELL:
           date: new Date().toISOString().split('T')[0]
         };
       }
-      
-      console.log('Successfully parsed medical report');
+
+      if (validationErrors.length > 0) {
+        console.error('Report validation failed:', validationErrors);
+        throw new Error(`Report validation failed: ${validationErrors.join(', ')}`);
+      }
+
+      console.log(`Successfully parsed and validated medical report (symptom match: ${symptomMatchCount}/${reportedSymptoms.length})`);
       
     } catch (parseError) {
       console.error('Failed to parse JSON response:', parseError);
       console.error('Raw response (first 1000 chars):', reportText.substring(0, 1000));
       
-      // Return a proper error report instead of falling back
       throw new Error(`Failed to parse AI response: ${parseError instanceof Error ? parseError.message : 'Unknown error'}`);
     }
 
-    // Update health report with success
     const { error: updateError } = await supabase
       .from('health_reports')
       .update({
@@ -297,20 +405,40 @@ CRITICAL INSTRUCTIONS FOR DR. MITCHELL:
       console.error('Error updating health report:', updateError);
     }
 
-    // Log successful completion
+    const cacheData = {
+      chief_complaint: parsedReport.chief_complaint,
+      history_present_illness: parsedReport.history_present_illness,
+      assessment: parsedReport.assessment,
+      diagnostic_plan: parsedReport.diagnostic_plan,
+      otc_recommendations: parsedReport.otc_recommendations
+    };
+
+    const expiresAt = new Date();
+    expiresAt.setHours(expiresAt.getHours() + 24);
+
+    await supabase.from('report_cache').upsert({
+      cache_key: cacheKey,
+      report_data: cacheData,
+      expires_at: expiresAt.toISOString(),
+      hit_count: 0
+    }, {
+      onConflict: 'cache_key'
+    });
+
     await supabase.from('report_logs').insert({
       health_report_id: healthReportId,
       event_type: 'request_completed',
-      payload: { success: true, reportLength: reportText.length },
+      payload: { success: true, reportLength: reportText.length, cacheKey },
       user_id: userId || null
     });
 
     console.log(`Successfully generated medical report for health_report_id: ${healthReportId}`);
 
-    return new Response(JSON.stringify({ 
+    return new Response(JSON.stringify({
       ...parsedReport,
       timestamp: new Date().toISOString(),
-      health_report_id: healthReportId
+      health_report_id: healthReportId,
+      cached: false
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
@@ -320,16 +448,13 @@ CRITICAL INSTRUCTIONS FOR DR. MITCHELL:
     
     const errorMessage = error instanceof Error ? error.message : 'Failed to generate medical report';
     
-    // Extract userId from request for error logging
     let errorUserId: string | null = null;
     try {
       const errorBody = await req.clone().json();
       errorUserId = errorBody.userId || null;
     } catch {
-      // If we can't parse the request body, proceed without userId
     }
     
-    // Update health report with error if we have an ID
     if (healthReportId) {
       await supabase
         .from('health_reports')
@@ -339,7 +464,6 @@ CRITICAL INSTRUCTIONS FOR DR. MITCHELL:
         })
         .eq('id', healthReportId);
 
-      // Log error
       await supabase.from('report_logs').insert({
         health_report_id: healthReportId,
         event_type: 'request_failed',
@@ -348,7 +472,6 @@ CRITICAL INSTRUCTIONS FOR DR. MITCHELL:
       });
     }
 
-    // Provide specific guidance for quota issues
     const isQuotaError = error instanceof Error && error.message.includes('429');
     const errorResponse = {
       error: isQuotaError 
