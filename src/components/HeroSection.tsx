@@ -1,5 +1,6 @@
 import { Button } from '@/components/ui/button';
-import { Heart, Shield, Zap, LogOut } from 'lucide-react';
+import { Heart, Shield, Zap, LogOut, Brain, Sparkles } from 'lucide-react';
+import { ThemeToggle } from './ThemeToggle';
 
 interface HeroSectionProps {
   onStartAssessment: () => void;
@@ -8,62 +9,94 @@ interface HeroSectionProps {
 
 export const HeroSection = ({ onStartAssessment, onSignOut }: HeroSectionProps) => {
   return (
-    <div className="relative min-h-[80vh] flex items-center justify-center bg-gradient-to-br from-primary-light to-secondary-light">
-      <Button
-        onClick={onSignOut}
-        variant="outline"
-        className="absolute top-4 right-4"
-      >
-        <LogOut className="w-4 h-4 mr-2" />
-        Sign Out
-      </Button>
+    <div className="relative min-h-screen flex items-center justify-center overflow-hidden">
+      {/* Animated gradient background */}
+      <div className="absolute inset-0 bg-gradient-to-br from-primary-light via-background to-secondary-light dark:from-primary-light/10 dark:via-background dark:to-secondary-light/10 transition-colors duration-500" />
       
-      <div className="container mx-auto px-6 text-center">
+      {/* Floating orbs animation */}
+      <div className="absolute top-20 left-10 w-72 h-72 bg-primary/20 rounded-full blur-3xl animate-float" style={{ animationDelay: '0s' }} />
+      <div className="absolute bottom-20 right-10 w-96 h-96 bg-secondary/20 rounded-full blur-3xl animate-float" style={{ animationDelay: '1s' }} />
+      
+      {/* Top navigation */}
+      <div className="absolute top-4 right-4 flex gap-2 z-10">
+        <ThemeToggle />
+        <Button
+          onClick={onSignOut}
+          variant="outline"
+          className="backdrop-blur-sm"
+        >
+          <LogOut className="w-4 h-4 mr-2" />
+          Sign Out
+        </Button>
+      </div>
+      
+      <div className="container mx-auto px-6 text-center relative z-10">
         <div className="max-w-4xl mx-auto">
-          <div className="flex justify-center mb-6">
-            <div className="p-4 bg-primary rounded-full">
-              <Heart className="w-12 h-12 text-primary-foreground" />
+          {/* AI Icon with glow effect */}
+          <div className="flex justify-center mb-8">
+            <div className="relative">
+              <div className="absolute inset-0 bg-primary rounded-full blur-xl opacity-50 animate-glow-pulse" />
+              <div className="relative p-6 bg-gradient-to-br from-primary to-secondary rounded-full shadow-glow">
+                <Brain className="w-16 h-16 text-white" />
+              </div>
             </div>
           </div>
           
-          <h1 className="text-5xl md:text-6xl font-bold text-foreground mb-6">
+          {/* Title with gradient text */}
+          <h1 className="text-6xl md:text-7xl font-bold mb-6 bg-gradient-to-r from-primary via-secondary to-primary bg-clip-text text-transparent animate-shimmer">
             MediSense AI
           </h1>
           
-          <p className="text-xl md:text-2xl text-muted-foreground mb-8 font-medium">
-            Your AI-powered health companion for smarter self-care.
-          </p>
+          <div className="flex items-center justify-center gap-2 mb-8">
+            <Sparkles className="w-6 h-6 text-primary animate-pulse" />
+            <p className="text-xl md:text-2xl text-foreground font-medium">
+              Your AI-powered health companion for smarter self-care
+            </p>
+            <Sparkles className="w-6 h-6 text-secondary animate-pulse" style={{ animationDelay: '0.5s' }} />
+          </div>
           
-          <p className="text-lg text-muted-foreground mb-12 max-w-2xl mx-auto">
+          <p className="text-lg text-muted-foreground mb-12 max-w-2xl mx-auto leading-relaxed">
             Get personalized health insights and recommendations based on your symptoms. 
             Fast, reliable, and designed to help you make informed health decisions.
           </p>
           
+          {/* CTA Button with enhanced styling */}
           <Button 
             onClick={onStartAssessment}
             size="lg"
-            className="text-lg px-8 py-4 bg-primary hover:bg-primary-dark text-primary-foreground"
+            className="text-lg px-10 py-6 bg-gradient-to-r from-primary to-secondary hover:shadow-glow transform hover:scale-105 transition-all duration-300 font-semibold"
           >
+            <Zap className="w-5 h-5 mr-2" />
             Start Health Assessment
           </Button>
           
-          <div className="grid md:grid-cols-3 gap-8 mt-16">
-            <div className="bg-card/80 backdrop-blur-sm p-6 rounded-lg border">
-              <Shield className="w-8 h-8 text-primary mb-4 mx-auto" />
-              <h3 className="text-lg font-semibold mb-2">Secure & Private</h3>
-              <p className="text-muted-foreground">Your health data is processed securely and never stored permanently.</p>
+          {/* Feature cards with enhanced design */}
+          <div className="grid md:grid-cols-3 gap-6 mt-20">
+            <div className="group bg-card/60 backdrop-blur-md p-8 rounded-2xl border border-primary/20 hover:border-primary/40 shadow-card hover:shadow-glow transition-all duration-300 hover:-translate-y-2">
+              <div className="relative mb-4 mx-auto w-fit">
+                <div className="absolute inset-0 bg-primary/20 rounded-full blur-lg group-hover:blur-xl transition-all" />
+                <Shield className="relative w-10 h-10 text-primary mx-auto" />
+              </div>
+              <h3 className="text-xl font-bold mb-3 text-foreground">Secure & Private</h3>
+              <p className="text-muted-foreground">Your health data is processed securely with end-to-end encryption.</p>
             </div>
             
-            <div className="bg-card/80 backdrop-blur-sm p-6 rounded-lg border">
-              <Zap className="w-8 h-8 text-secondary mb-4 mx-auto" />
-              <h3 className="text-lg font-semibold mb-2">Instant Results</h3>
-              <p className="text-muted-foreground">Get AI-powered health insights in seconds, not hours.</p>
+            <div className="group bg-card/60 backdrop-blur-md p-8 rounded-2xl border border-secondary/20 hover:border-secondary/40 shadow-card hover:shadow-glow transition-all duration-300 hover:-translate-y-2">
+              <div className="relative mb-4 mx-auto w-fit">
+                <div className="absolute inset-0 bg-secondary/20 rounded-full blur-lg group-hover:blur-xl transition-all" />
+                <Zap className="relative w-10 h-10 text-secondary mx-auto" />
+              </div>
+              <h3 className="text-xl font-bold mb-3 text-foreground">Instant Results</h3>
+              <p className="text-muted-foreground">Get AI-powered health insights in seconds with advanced algorithms.</p>
             </div>
             
-            <div className="bg-card/80 backdrop-blur-sm p-6 rounded-lg border">
-              <Heart className="w-8 h-8 text-primary mb-4 mx-auto" />
-              <h3 className="text-lg font-semibold mb-2">Personalized Care</h3>
-              <p className="text-muted-foreground">Tailored recommendations based on your specific symptoms and profile.</p>
+            <div className="group bg-card/60 backdrop-blur-md p-8 rounded-2xl border border-primary/20 hover:border-primary/40 shadow-card hover:shadow-glow transition-all duration-300 hover:-translate-y-2">
+              <div className="relative mb-4 mx-auto w-fit">
+                <div className="absolute inset-0 bg-primary/20 rounded-full blur-lg group-hover:blur-xl transition-all" />
+                <Heart className="relative w-10 h-10 text-primary mx-auto" />
+              </div>
+              <h3 className="text-xl font-bold mb-3 text-foreground">Personalized Care</h3>
+              <p className="text-muted-foreground">Tailored recommendations based on your unique health profile.</p>
             </div>
           </div>
         </div>
