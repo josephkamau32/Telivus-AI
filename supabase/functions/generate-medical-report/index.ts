@@ -199,31 +199,18 @@ ${currentMedications ? `- Current Medications: ${currentMedications}` : ''}
 ${allergies ? `- Known Allergies: ${allergies}` : ''}
 `;
 
-    const prompt = `You are Dr. Sarah Mitchell, MD, PharmD - a board-certified internal medicine physician with 20+ years of clinical experience and dual certification as a clinical pharmacist.
+    const prompt = `You are Dr. Sarah Mitchell, MD, PharmD - a board-certified physician with 20+ years experience and clinical pharmacist certification.
 
 ${patientProfile}
 
-TASK: Generate a comprehensive, professional medical assessment report based STRICTLY on the patient information provided above.
+CRITICAL RULES:
+- Use ONLY the symptoms explicitly stated above
+- Base all assessments strictly on provided patient data
+- Recommend only FDA-approved OTC medications for stated symptoms
+- No hallucinations, no invented symptoms, no speculation
+- Return ONLY valid JSON (no markdown, no code blocks)
 
-ANTI-HALLUCINATION REQUIREMENTS (CRITICAL):
-- Use ONLY the symptoms and information explicitly provided by the patient
-- DO NOT invent or assume symptoms not mentioned
-- DO NOT speculate about conditions without clear symptom evidence
-- If information is limited, acknowledge this in your assessment
-- Base your diagnosis ONLY on the presenting symptoms
-- Recommend ONLY FDA-approved OTC medications appropriate for the specific symptoms listed
-- DO NOT recommend prescription medications
-- Provide differential diagnoses that are directly supported by the reported symptoms
-
-OUTPUT REQUIREMENTS:
-1. Base clinical assessment strictly on provided symptoms and patient data
-2. Offer evidence-based OTC recommendations matching the specific symptoms
-3. Check for drug interactions with listed medications and known allergies
-4. Include clear red flag symptoms for the condition being assessed
-5. Use professional yet patient-friendly language
-6. Return ONLY valid JSON. No markdown, no code blocks, no extra text.
-
-JSON STRUCTURE (match exactly):
+JSON OUTPUT (be concise):
 
 {
   "demographic_header": {
@@ -232,32 +219,27 @@ JSON STRUCTURE (match exactly):
     "gender": "${gender || 'Not provided'}",
     "date": "${new Date().toISOString().split('T')[0]}"
   },
-  "chief_complaint": "Brief statement of primary presenting symptoms from the patient's report",
-  "history_present_illness": "Professional narrative based strictly on: 1) Reported symptoms, 2) Patient's stated feeling, 3) Age and gender context. Write 3-5 factual sentences. Do not invent details.",
-  "past_medical_history": "${medicalHistory || 'No significant past medical history reported'}",
-  "past_surgical_history": "${surgicalHistory || 'No surgical history reported'}",
-  "medications": "${currentMedications || 'No current medications reported'}",
-  "allergies": "${allergies || 'No known allergies reported'}",
-  "assessment": "Clinical assessment in 4-6 sentences: 1) Most likely diagnosis based ONLY on reported symptoms, 2) 2-3 differential diagnoses that match the symptom pattern, 3) Clinical reasoning tied directly to reported symptoms, 4) Relevant risk factors from provided patient history. Stay factual and evidence-based.",
-  "diagnostic_plan": "Structured plan: 1) **Recommended Consultations**: Appropriate specialist referrals, 2) **Suggested Diagnostic Tests**: Tests to confirm suspected conditions, 3) **RED FLAG SYMPTOMS**: 4-5 specific warning signs requiring emergency care, 4) **Follow-up Timeline**: When to seek care if symptoms worsen.",
+  "chief_complaint": "Brief primary symptoms from patient report",
+  "history_present_illness": "Concise narrative: symptoms + how patient feels + age/gender context (3-4 sentences max)",
+  "past_medical_history": "${medicalHistory || 'None reported'}",
+  "past_surgical_history": "${surgicalHistory || 'None reported'}",
+  "medications": "${currentMedications || 'None reported'}",
+  "allergies": "${allergies || 'None reported'}",
+  "assessment": "Clinical assessment: Most likely diagnosis + 2 differential diagnoses + reasoning from symptoms only (4-5 sentences)",
+  "diagnostic_plan": "**Consultations**: Specialists to see | **Tests**: Diagnostic tests needed | **RED FLAGS**: 4 warning signs for ER | **Follow-up**: When to seek care",
   "otc_recommendations": [
     {
-      "medicine": "Specific FDA-approved OTC medication (generic name and brand)",
-      "dosage": "Age-appropriate dosage for ${age}-year-old (e.g., Adults: 200-400mg every 4-6 hours)",
-      "purpose": "Treats [specific symptom from patient's list]",
-      "instructions": "Detailed administration: timing, food requirements, duration",
-      "precautions": "Warnings, contraindications, side effects. ${currentMedications ? 'CHECKED AGAINST: ' + currentMedications : ''}${allergies ? ' VERIFIED SAFE WITH: ' + allergies : ''}",
-      "max_duration": "Maximum days before seeing a doctor"
+      "medicine": "FDA-approved OTC medication (generic + brand)",
+      "dosage": "Age-appropriate for ${age}yo",
+      "purpose": "Treats [specific symptom]",
+      "instructions": "How/when to take",
+      "precautions": "Warnings, contraindications. ${currentMedications ? 'Checked vs: ' + currentMedications : ''}${allergies ? ' Safe with: ' + allergies : ''}",
+      "max_duration": "Days before doctor visit"
     }
   ]
 }
 
-GUIDELINES:
-- Provide 2-4 OTC medications directly targeting the reported symptoms
-- For age ${age}: Use age-appropriate dosing and safety considerations
-- Cross-reference all recommendations against: ${currentMedications || 'no current medications'} and ${allergies || 'no known allergies'}
-- Be conservative: emphasize when professional medical evaluation is needed
-- Return pure JSON only. Start with { and end with }.`;
+Provide 2-3 OTC medications for reported symptoms. Age ${age} dosing. Cross-ref: ${currentMedications || 'none'} & ${allergies || 'none'}. Return pure JSON only.`;
 
     const geminiResponse = await retryWithBackoff(async () => {
       const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GEMINI_API_KEY}`, {
@@ -273,7 +255,7 @@ GUIDELINES:
           }],
           generationConfig: {
             temperature: 0.2,
-            maxOutputTokens: 3000,
+            maxOutputTokens: 4096,
             topP: 0.9,
             topK: 20,
             responseMimeType: "application/json"
@@ -382,7 +364,8 @@ GUIDELINES:
 
       if (validationErrors.length > 0) {
         console.error('Report validation failed:', validationErrors);
-        throw new Error(`Report validation failed: ${validationErrors.join(', ')}`);
+        console.error('Partial report received. This may indicate response truncation.');
+        throw new Error(`AI response incomplete or truncated. Please try again. Missing: ${validationErrors.join(', ')}`);
       }
 
       console.log(`Successfully parsed and validated medical report (symptom match: ${symptomMatchCount}/${reportedSymptoms.length})`);
