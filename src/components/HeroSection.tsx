@@ -1,6 +1,7 @@
 import { Button } from '@/components/ui/button';
-import { Heart, Shield, Zap, LogOut, Brain, Sparkles } from 'lucide-react';
+import { Heart, Shield, Zap, LogOut, Brain, Sparkles, MessageSquare } from 'lucide-react';
 import { ThemeToggle } from './ThemeToggle';
+import { useNavigate } from 'react-router-dom';
 
 interface HeroSectionProps {
   onStartAssessment: () => void;
@@ -8,6 +9,8 @@ interface HeroSectionProps {
 }
 
 export const HeroSection = ({ onStartAssessment, onSignOut }: HeroSectionProps) => {
+  const navigate = useNavigate();
+  
   return (
     <div className="relative min-h-screen flex items-center justify-center overflow-hidden">
       {/* Animated gradient background */}
@@ -60,15 +63,27 @@ export const HeroSection = ({ onStartAssessment, onSignOut }: HeroSectionProps) 
             Fast, reliable, and designed to help you make informed health decisions.
           </p>
           
-          {/* CTA Button with enhanced styling */}
-          <Button 
-            onClick={onStartAssessment}
-            size="lg"
-            className="text-lg px-10 py-6 bg-gradient-to-r from-primary to-secondary hover:shadow-glow transform hover:scale-105 transition-all duration-300 font-semibold"
-          >
-            <Zap className="w-5 h-5 mr-2" />
-            Start Health Assessment
-          </Button>
+          {/* CTA Buttons with enhanced styling */}
+          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+            <Button 
+              onClick={onStartAssessment}
+              size="lg"
+              className="text-lg px-10 py-6 bg-gradient-to-r from-primary to-secondary hover:shadow-glow transform hover:scale-105 transition-all duration-300 font-semibold"
+            >
+              <Zap className="w-5 h-5 mr-2" />
+              Start Health Assessment
+            </Button>
+            
+            <Button 
+              onClick={() => navigate('/chat')}
+              size="lg"
+              variant="outline"
+              className="text-lg px-10 py-6 border-primary/30 hover:shadow-glow transform hover:scale-105 transition-all duration-300 font-semibold backdrop-blur-sm"
+            >
+              <MessageSquare className="w-5 h-5 mr-2" />
+              AI Health Chat
+            </Button>
+          </div>
           
           {/* Feature cards with enhanced design */}
           <div className="grid md:grid-cols-3 gap-6 mt-20">
