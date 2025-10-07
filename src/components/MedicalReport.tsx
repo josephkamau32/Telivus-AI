@@ -459,7 +459,7 @@ export const MedicalReport = ({ report, userInfo, timestamp, onBackToHome }: Med
         <Alert className="border-destructive/50 bg-destructive/10">
           <AlertTriangle className="h-4 w-4 text-destructive" />
           <AlertDescription className="font-medium">
-            <strong>Important Disclaimer:</strong> MediSense AI is not a substitute for professional medical advice. 
+            <strong>Important Disclaimer:</strong> Telivus AI is not a substitute for professional medical advice. 
             Please consult a licensed healthcare provider for diagnosis and treatment. This assessment is for 
             informational purposes only and should not be used as the sole basis for medical decisions.
           </AlertDescription>

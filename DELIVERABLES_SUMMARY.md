@@ -1,4 +1,4 @@
-# 🏥 MediSense AI - Health Report System Deliverables
+# 🏥 Telivus AI - Health Report System Deliverables
 
 ## ✅ Completed Fixes & Implementations
 
