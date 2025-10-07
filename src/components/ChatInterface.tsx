@@ -122,11 +122,15 @@ const ChatInterface = ({ onBack }: ChatInterfaceProps) => {
         },
       });
 
+      // Check if payment is required (402 status)
+      if (response.error || response.data?.needsPayment) {
+        setShowPayment(true);
+        // Remove the temporary user message
+        setMessages(prev => prev.filter(m => m.id !== tempUserMessage.id));
+        return;
+      }
+
       if (response.error) {
-        if (response.error.message?.includes('Payment required')) {
-          setShowPayment(true);
-          throw new Error('Please purchase a chat plan to continue.');
-        }
         throw response.error;
       }
 
