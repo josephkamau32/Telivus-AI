@@ -97,8 +97,6 @@ Contributions are welcome! Please follow these steps:
 4. Push to the branch: `git push origin feature/your-feature-name`
 5. Open a pull request.
 
-Please read the [CONTRIBUTING.md](CONTRIBUTING.md) for more details.
-
 ---
 
 ## 📄 License
