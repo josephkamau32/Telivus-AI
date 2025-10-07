@@ -1,4 +1,4 @@
-# MediSense AI - Health Report System Setup & Usage
+# Telivus AI - Health Report System Setup & Usage
 
 ## 🚀 Quick Setup
 

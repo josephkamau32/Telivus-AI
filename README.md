@@ -1,73 +1,121 @@
-# Welcome to your Lovable project
+# Telivus-AI
 
-## Project info
+Telivus-AI is an intelligent web application designed to help users manage and improve their self-care routines using artificial intelligence. The platform provides personalized recommendations, progress tracking, and insightful analytics to empower users on their wellness journey.
 
-**URL**: https://lovable.dev/projects/7a457b73-076a-4f1d-ac7b-f2b0e48ed0ee
+## 🚀 Demo
 
-## How can I edit this code?
+[Live Demo](https://your-demo-link.com) <!-- Replace with actual live link if available -->
 
-There are several ways of editing your application.
+---
 
-**Use Lovable**
+## 📖 Project Overview
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/7a457b73-076a-4f1d-ac7b-f2b0e48ed0ee) and start prompting.
+Telivus-AI leverages modern web technologies and AI to deliver a seamless self-care experience. Users can set goals, receive tailored suggestions, track habits, and visualize their progress. The application is designed for ease of use, accessibility, and privacy.
 
-Changes made via Lovable will be committed automatically to this repo.
+---
 
-**Use your preferred IDE**
+## 🛠️ Technology Stack
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+- **Frontend:** React, Vite, JavaScript/TypeScript, CSS3
+- **Backend:** Node.js, Express (if applicable)
+- **AI/ML:** OpenAI API or custom ML models (if applicable)
+- **Database:** MongoDB / Firebase / PostgreSQL (specify as per your project)
+- **Deployment:** Vercel / Netlify / Heroku (specify as per your project)
+- **Other:** RESTful APIs, JWT Authentication, Chart.js (for analytics)
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+---
 
-Follow these steps:
+## ✨ Features
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+- Personalized self-care recommendations powered by AI
+- Habit and goal tracking with reminders
+- Progress analytics and visualizations
+- User authentication and secure data storage
+- Responsive and accessible UI
+- Integration with third-party wellness APIs (optional)
+- Dark mode support
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+---
 
-# Step 3: Install the necessary dependencies.
-npm i
+## 📸 Screenshots
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
+![Dashboard Screenshot](screenshots/dashboard.png)
+![Login-Page Screenshot](screenshots/login-page.png)
+![After-Login-screenshot](screenshots/after-login.png)
+![step 1-screenshot](screenshots/step1.png)
+![step 2-screenshot](screenshots/step2.png)
+![step 3-screenshot](screenshots/step3.png)
+![step 4-screenshot](screenshots/step4.png)
+![step 5-screenshot](screenshots/step5.png)
+![medical-report-screenshot](screenshots/medical-report.png)
+![health-chat1-screenshot](screenshots/health-chat1.png)
 
-**Edit a file directly in GitHub**
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## 📝 Installation
 
-**Use GitHub Codespaces**
+1. **Clone the repository:**
+   ```sh
+   git clone https://github.com/yourusername/telivus-ai.git
+   cd telivus-ai
+   ```
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+2. **Install dependencies:**
+   ```sh
+   npm install
+   ```
 
-## What technologies are used for this project?
+3. **Configure environment variables:**
+   - Copy `.env.example` to `.env` and update with your API keys and configuration.
 
-This project is built with:
+4. **Run the development server:**
+   ```sh
+   npm run dev
+   ```
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+5. **Open in your browser:**
+   - Visit [http://localhost:8080](http://localhost:8080) (or the port shown in your terminal).
 
-## How can I deploy this project?
+---
 
-Simply open [Lovable](https://lovable.dev/projects/7a457b73-076a-4f1d-ac7b-f2b0e48ed0ee) and click on Share -> Publish.
+## 💡 Usage
 
-## Can I connect a custom domain to my Lovable project?
+- Register or log in to your account.
+- Set your self-care goals and preferences.
+- Explore personalized recommendations.
+- Track your daily habits and progress.
+- View analytics and adjust your routines as needed.
 
-Yes, you can!
+---
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+## 🤝 Contributing
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+Contributions are welcome! Please follow these steps:
+
+1. Fork the repository.
+2. Create a new branch: `git checkout -b feature/your-feature-name`
+3. Commit your changes: `git commit -m 'Add some feature'`
+4. Push to the branch: `git push origin feature/your-feature-name`
+5. Open a pull request.
+
+Please read the [CONTRIBUTING.md](CONTRIBUTING.md) for more details.
+
+---
+
+## 📄 License
+
+This project is licensed under the [MIT License](LICENSE).
+
+---
+
+## 👤 Author & Contact
+
+**Joseph Kamau**  
+Email: [iamjosephkamau@gmail.com](mailto:iamjosephkamau@gmail.com)  
+Tel: +254725999285
+
+---
+
+## 🌐 Links
+
+- [Live Demo](https://your-demo-link.com) <!-- Replace with actual live link -->
+- [GitHub Repository](https://github.com/yourusername/telivus-ai)
