@@ -47,7 +47,7 @@ export const HeroSection = ({ onStartAssessment, onSignOut }: HeroSectionProps) 
           
           {/* Title with gradient text */}
           <h1 className="text-6xl md:text-7xl font-bold mb-6 bg-gradient-to-r from-primary via-secondary to-primary bg-clip-text text-transparent animate-gradient-shift">
-            MediSense AI
+            Telivus AI
           </h1>
           
           <div className="flex items-center justify-center gap-2 mb-8">
