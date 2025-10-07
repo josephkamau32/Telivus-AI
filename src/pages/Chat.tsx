@@ -21,12 +21,12 @@ const Chat = () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        navigate('/auth');
+        navigate('/');
         return;
       }
     } catch (error) {
       console.error('Auth check error:', error);
-      navigate('/auth');
+      navigate('/');
     } finally {
       setLoading(false);
     }
@@ -71,7 +71,7 @@ const Chat = () => {
   };
 
   const handleBack = () => {
-    navigate('/');
+    navigate('/dashboard');
   };
 
   if (loading || verifying) {

@@ -25,7 +25,7 @@ const Index = () => {
       (event, session) => {
         setUser(session?.user ?? null);
         if (!session) {
-          navigate('/auth');
+          navigate('/');
         }
       }
     );
@@ -34,7 +34,7 @@ const Index = () => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
       if (!session) {
-        navigate('/auth');
+        navigate('/');
       }
       setIsLoading(false);
     });
@@ -44,7 +44,7 @@ const Index = () => {
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
-    navigate('/auth');
+    navigate('/');
   };
 
   const handleStartAssessment = () => {
