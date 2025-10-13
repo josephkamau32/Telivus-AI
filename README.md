@@ -4,7 +4,7 @@ Telivus-AI is an intelligent web application designed to help users manage and i
 
 ## 🚀 Demo
 
-[Live Demo](https://telivus.netlify.app/)
+[Live Demo](https://https://telivus.co.ke/)
 
 ---
 [Live Pitch-Deck](https://www.canva.com/design/DAG1IAKFVoE/1Wwzv_5t9_z2VtBkBqroHw/edit?utm_content=DAG1IAKFVoE&utm_campaign=designshare&utm_medium=link2&utm_source=sharebutton)
@@ -118,5 +118,5 @@ Tel: +254725999285
 
 ## 🌐 Links
 
-- [Live Demo](https://telivus.netlify.app/) <!-- Replace with actual live link -->
+- [Live Demo](https://telivus.co.ke/) <!-- Replace with actual live link -->
 - [GitHub Repository](https://github.com/josephkamau32/telivus-ai)
