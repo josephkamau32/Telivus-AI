@@ -20,24 +20,37 @@ export default function Auth() {
   const [username, setUsername] = useState("");
 
   useEffect(() => {
-    // Check if user is already logged in
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
+    const checkSession = async () => {
+      const { data, error } = await supabase.auth.getSession();
+  
+      // If Supabase hasn't restored the session yet, wait a bit
+      if (!data.session && !error) {
+        // Try refreshing the session
+        const { data: refreshed } = await supabase.auth.refreshSession();
+        if (refreshed.session) {
+          navigate("/dashboard");
+          return;
+        }
+      }
+  
+      if (data.session) {
         navigate("/dashboard");
       }
+    };
+  
+    checkSession();
+  
+    // Listen for session changes (including Google OAuth redirect)
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session) navigate("/dashboard");
     });
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (session) {
-        navigate("/dashboard");
-      }
-    });
-
-    return () => subscription.unsubscribe();
+  
+    return () => {
+      listener.subscription.unsubscribe();
+    };
   }, [navigate]);
-
-  const handleSignUp = async (e: React.FormEvent) => {
+  
+    const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!email || !password) {
