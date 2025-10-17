@@ -111,7 +111,7 @@ This project is licensed under the [MIT License](LICENSE).
 ## 👤 Author & Contact
 
 **Joseph Kamau**  
-Email: [iamjosephkamau@gmail.com](mailto:iamjosephkamau@gmail.com)  
+Email: [info@telivus.co.ke](mailto:info@telivus.co.ke)  
 Tel: +254725999285
 
 ---

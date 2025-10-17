@@ -148,7 +148,7 @@ const Contact = () => {
                   </div>
                   <div>
                     <h3 className="font-semibold mb-1 text-foreground">Email</h3>
-                    <p className="text-muted-foreground">info@telivus.com</p>
+                    <p className="text-muted-foreground">info@telivus.co.ke</p>
                     <p className="text-sm text-muted-foreground mt-1">We'll respond within 24 hours</p>
                   </div>
                 </div>
