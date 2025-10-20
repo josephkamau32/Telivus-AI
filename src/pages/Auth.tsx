@@ -15,42 +15,58 @@ export default function Auth() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [username, setUsername] = useState("");
 
   useEffect(() => {
+    let mounted = true;
+
     const checkSession = async () => {
-      const { data, error } = await supabase.auth.getSession();
-  
-      // If Supabase hasn't restored the session yet, wait a bit
-      if (!data.session && !error) {
-        // Try refreshing the session
-        const { data: refreshed } = await supabase.auth.refreshSession();
-        if (refreshed.session) {
-          navigate("/dashboard");
+      try {
+        // First, check if there's an existing session
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error("Session check error:", error);
+        }
+
+        if (session && mounted) {
+          // Session exists, redirect to dashboard
+          navigate("/dashboard", { replace: true });
           return;
         }
-      }
-  
-      if (data.session) {
-        navigate("/dashboard");
+      } catch (error) {
+        console.error("Error checking session:", error);
+      } finally {
+        if (mounted) {
+          setIsCheckingAuth(false);
+        }
       }
     };
-  
+
     checkSession();
-  
-    // Listen for session changes (including Google OAuth redirect)
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session) navigate("/dashboard");
+
+    // Listen for auth state changes (handles OAuth redirects)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log("Auth state changed:", event, session?.user?.email);
+      
+      if (event === 'SIGNED_IN' && session && mounted) {
+        // User just signed in, redirect to dashboard
+        navigate("/dashboard", { replace: true });
+      } else if (event === 'SIGNED_OUT' && mounted) {
+        setIsCheckingAuth(false);
+      }
     });
-  
+
     return () => {
-      listener.subscription.unsubscribe();
+      mounted = false;
+      subscription.unsubscribe();
     };
   }, [navigate]);
-  
-    const handleSignUp = async (e: React.FormEvent) => {
+
+  const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!email || !password) {
@@ -73,7 +89,7 @@ export default function Auth() {
 
     setIsLoading(true);
 
-    const redirectUrl = `${window.location.origin}/dashboard`;
+    const redirectUrl = `${window.location.origin}/auth`;
     
     const { error } = await supabase.auth.signUp({
       email,
@@ -105,31 +121,39 @@ export default function Auth() {
   const handleGoogleSignIn = async () => {
     try {
       setIsLoading(true);
-      const redirectUrl = `${window.location.origin}/dashboard`;
+      
+      // Use the auth page as redirect URL (not dashboard)
+      // The useEffect will handle the redirect to dashboard after auth
+      const redirectUrl = `${window.location.origin}/auth`;
       
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: redirectUrl
+          redirectTo: redirectUrl,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          }
         }
       });
 
       if (error) {
+        setIsLoading(false);
         toast({
           title: "Authentication Error",
           description: error.message,
           variant: "destructive",
         });
       }
+      // Don't set isLoading to false here - user is being redirected
     } catch (error) {
       console.error('Google sign-in error:', error);
+      setIsLoading(false);
       toast({
         title: "Authentication Error",
         description: "Failed to sign in with Google",
         variant: "destructive",
       });
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -156,11 +180,10 @@ export default function Auth() {
         toast({
           title: "Authentication Error",
           description: error.message,
-        variant: "destructive",
+          variant: "destructive",
         });
-      } else {
-        navigate('/dashboard');
       }
+      // Don't navigate here - let onAuthStateChange handle it
     } catch (error) {
       console.error('Sign-in error:', error);
       toast({
@@ -172,6 +195,15 @@ export default function Auth() {
       setIsLoading(false);
     }
   };
+
+  // Show loading state while checking authentication
+  if (isCheckingAuth) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -186,13 +218,13 @@ export default function Auth() {
               Sign in or create an account to get started
             </CardDescription>
           </CardHeader>
-        <CardContent>
-          <Tabs defaultValue="signin" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="signin">Sign In</TabsTrigger>
-              <TabsTrigger value="signup">Sign Up</TabsTrigger>
-            </TabsList>
-            
+          <CardContent>
+            <Tabs defaultValue="signin" className="w-full">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="signin">Sign In</TabsTrigger>
+                <TabsTrigger value="signup">Sign Up</TabsTrigger>
+              </TabsList>
+              
               <TabsContent value="signin">
                 <form onSubmit={handleSignIn} className="space-y-4">
                   <Button
@@ -208,7 +240,7 @@ export default function Auth() {
                       <path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
                       <path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
                     </svg>
-                    Continue with Google
+                    {isLoading ? "Signing in..." : "Continue with Google"}
                   </Button>
                   
                   <div className="relative">
@@ -221,42 +253,42 @@ export default function Auth() {
                   </div>
                   
                   <div className="space-y-2">
-                  <Label htmlFor="signin-email">Email</Label>
-                  <Input
-                    id="signin-email"
-                    type="email"
-                    placeholder="you@example.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    disabled={isLoading}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="signin-password">Password</Label>
-                  <Input
-                    id="signin-password"
-                    type="password"
-                    placeholder="••••••••"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    disabled={isLoading}
-                    required
-                  />
-                </div>
-                <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Signing in...
-                    </>
-                  ) : (
-                    "Sign In"
-                  )}
-                </Button>
-              </form>
-            </TabsContent>
-            
+                    <Label htmlFor="signin-email">Email</Label>
+                    <Input
+                      id="signin-email"
+                      type="email"
+                      placeholder="you@example.com"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      disabled={isLoading}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="signin-password">Password</Label>
+                    <Input
+                      id="signin-password"
+                      type="password"
+                      placeholder="••••••••"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      disabled={isLoading}
+                      required
+                    />
+                  </div>
+                  <Button type="submit" className="w-full" disabled={isLoading}>
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Signing in...
+                      </>
+                    ) : (
+                      "Sign In"
+                    )}
+                  </Button>
+                </form>
+              </TabsContent>
+              
               <TabsContent value="signup">
                 <form onSubmit={handleSignUp} className="space-y-4">
                   <Button
@@ -272,7 +304,7 @@ export default function Auth() {
                       <path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
                       <path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
                     </svg>
-                    Sign up with Google
+                    {isLoading ? "Signing up..." : "Sign up with Google"}
                   </Button>
                   
                   <div className="relative">
@@ -285,58 +317,58 @@ export default function Auth() {
                   </div>
                   
                   <div className="space-y-2">
-                  <Label htmlFor="signup-username">Username (optional)</Label>
-                  <Input
-                    id="signup-username"
-                    type="text"
-                    placeholder="johndoe"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    disabled={isLoading}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="signup-email">Email</Label>
-                  <Input
-                    id="signup-email"
-                    type="email"
-                    placeholder="you@example.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    disabled={isLoading}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="signup-password">Password</Label>
-                  <Input
-                    id="signup-password"
-                    type="password"
-                    placeholder="••••••••"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    disabled={isLoading}
-                    required
-                    minLength={6}
-                  />
-                </div>
-                <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Creating account...
-                    </>
-                  ) : (
-                    "Create Account"
-                  )}
-                </Button>
-              </form>
-            </TabsContent>
-          </Tabs>
-        </CardContent>
-      </Card>
+                    <Label htmlFor="signup-username">Username (optional)</Label>
+                    <Input
+                      id="signup-username"
+                      type="text"
+                      placeholder="johndoe"
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value)}
+                      disabled={isLoading}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="signup-email">Email</Label>
+                    <Input
+                      id="signup-email"
+                      type="email"
+                      placeholder="you@example.com"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      disabled={isLoading}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="signup-password">Password</Label>
+                    <Input
+                      id="signup-password"
+                      type="password"
+                      placeholder="••••••••"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      disabled={isLoading}
+                      required
+                      minLength={6}
+                    />
+                  </div>
+                  <Button type="submit" className="w-full" disabled={isLoading}>
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Creating account...
+                      </>
+                    ) : (
+                      "Create Account"
+                    )}
+                  </Button>
+                </form>
+              </TabsContent>
+            </Tabs>
+          </CardContent>
+        </Card>
+      </div>
+      <Footer />
     </div>
-    <Footer />
-  </div>
   );
 }
