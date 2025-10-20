@@ -83,7 +83,7 @@ const ChatInterface = ({ onBack }: ChatInterfaceProps) => {
       setMessages([{
         id: 'greeting',
         role: 'assistant',
-        content: 'Hello! I\'m MediSense AI, your personal health assistant. I can help you with personalized nutrition plans, symptom follow-ups, and daily health check-ins. How can I assist you today?',
+        content: 'Hello! I\'m Telivus AI, your personal health assistant. I can help you with personalized nutrition plans, symptom follow-ups, and daily health check-ins. How can I assist you today?',
         created_at: new Date().toISOString()
       }]);
     } catch (error: any) {
@@ -256,7 +256,7 @@ const ChatInterface = ({ onBack }: ChatInterfaceProps) => {
 
         {/* Disclaimer */}
         <p className="text-xs text-muted-foreground text-center mt-4">
-          MediSense AI provides general health information only. Always consult healthcare professionals for medical advice.
+          Telivus AI provides general health information only. Always consult healthcare professionals for medical advice.
         </p>
       </div>
 
