@@ -19,6 +19,7 @@ export default function Auth() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [username, setUsername] = useState("");
+  const [currentUser, setCurrentUser] = useState<any>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -32,8 +33,21 @@ export default function Auth() {
           console.error("Session check error:", error);
         }
 
+        // Only redirect if there's a valid session AND we're not coming from a direct auth URL
         if (session && mounted) {
-          // Session exists, redirect to dashboard
+          // Check if this is a direct navigation to /auth (user wants to see login form)
+          const currentPath = window.location.pathname;
+          const searchParams = new URLSearchParams(window.location.search);
+          
+          // If user directly navigated to /auth, show the form instead of auto-redirecting
+          if (currentPath === '/auth' && !searchParams.has('redirected')) {
+            console.log("User navigated directly to auth page, showing login form");
+            setCurrentUser(session.user);
+            setIsCheckingAuth(false);
+            return;
+          }
+          
+          // Session exists and not direct navigation, redirect to dashboard
           navigate("/dashboard", { replace: true });
           return;
         }
@@ -118,6 +132,27 @@ export default function Auth() {
     }
   };
 
+  const handleSignOut = async () => {
+    try {
+      setIsLoading(true);
+      await supabase.auth.signOut();
+      setCurrentUser(null);
+      toast({
+        title: "Signed Out",
+        description: "You have been signed out successfully",
+      });
+    } catch (error) {
+      console.error('Sign out error:', error);
+      toast({
+        title: "Sign Out Error",
+        description: "Failed to sign out",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -176,10 +211,45 @@ export default function Auth() {
               Welcome to Telivus
             </CardTitle>
             <CardDescription className="text-center">
-              Sign in or create an account to get started
+              {currentUser ? `Already signed in as ${currentUser.email}` : "Sign in or create an account to get started"}
             </CardDescription>
           </CardHeader>
           <CardContent>
+            {currentUser ? (
+              <div className="space-y-4 text-center">
+                <div className="p-4 bg-green-50 dark:bg-green-950/20 rounded-lg border border-green-200 dark:border-green-800">
+                  <p className="text-green-800 dark:text-green-200 font-medium">
+                    ✅ You are already signed in
+                  </p>
+                  <p className="text-green-600 dark:text-green-400 text-sm mt-1">
+                    {currentUser.email}
+                  </p>
+                </div>
+                <div className="flex gap-2">
+                  <Button 
+                    onClick={() => navigate('/dashboard')}
+                    className="flex-1"
+                  >
+                    Go to Dashboard
+                  </Button>
+                  <Button 
+                    onClick={handleSignOut}
+                    variant="outline"
+                    disabled={isLoading}
+                    className="flex-1"
+                  >
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Signing out...
+                      </>
+                    ) : (
+                      "Sign Out"
+                    )}
+                  </Button>
+                </div>
+              </div>
+            ) : (
             <Tabs defaultValue="signin" className="w-full">
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="signin">Sign In</TabsTrigger>
@@ -276,6 +346,7 @@ export default function Auth() {
                 </form>
               </TabsContent>
             </Tabs>
+            )}
           </CardContent>
         </Card>
       </div>
