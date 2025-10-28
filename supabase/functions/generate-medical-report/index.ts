@@ -1,10 +1,16 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from 'npm:@supabase/supabase-js@2.57.4';
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Client-Info, Apikey',
+const getCorsHeaders = (req: Request) => {
+  const requestOrigin = req.headers.get('origin') || '*';
+  const requestHeaders = req.headers.get('access-control-request-headers') || 'authorization, x-client-info, apikey, content-type';
+  return {
+    'Access-Control-Allow-Origin': requestOrigin,
+    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+    'Access-Control-Allow-Headers': requestHeaders,
+    'Access-Control-Max-Age': '86400',
+    'Vary': 'Origin',
+  } as Record<string, string>;
 };
 
 const validateInput = (data: any) => {
@@ -64,8 +70,9 @@ const retryWithBackoff = async (fn: () => Promise<any>, maxRetries = 2) => {
 };
 
 Deno.serve(async (req) => {
+  const corsHeaders = getCorsHeaders(req);
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return new Response(null, { status: 204, headers: corsHeaders });
   }
 
   const supabase = createClient(
