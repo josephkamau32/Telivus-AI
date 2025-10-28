@@ -32,8 +32,18 @@ const validateInput = (data: any) => {
 };
 
 const generateCacheKey = async (symptoms: string[], feelings: string, age: number) => {
-  const sortedSymptoms = [...symptoms].sort().join(',');
-  const cacheString = `${sortedSymptoms}|${feelings}|${Math.floor(age / 5) * 5}`;
+  // Normalize inputs to maximize cache hits without changing report content
+  const normalizedSymptoms = [...symptoms]
+    .map(s => (s || '').toString().trim().toLowerCase())
+    .filter(Boolean)
+    .sort()
+    .join(',');
+  const normalizedFeelings = (feelings || '')
+    .toString()
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, ' ');
+  const cacheString = `${normalizedSymptoms}|${normalizedFeelings}|${Math.floor(age / 5) * 5}`;
 
   const msgUint8 = new TextEncoder().encode(cacheString);
   const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
@@ -103,6 +113,45 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Check cache FIRST to return immediately on hits
+    const cacheKey = await generateCacheKey(symptoms, feelings, age);
+    const { data: cachedReport } = await supabase
+      .from('report_cache')
+      .select('*')
+      .eq('cache_key', cacheKey)
+      .gt('expires_at', new Date().toISOString())
+      .maybeSingle();
+
+    if (cachedReport) {
+      console.log(`Cache HIT for key: ${cacheKey}`);
+
+      const cachedData = cachedReport.report_data;
+
+      cachedData.demographic_header = {
+        name: name || 'Not provided',
+        age: age,
+        gender: gender || 'Not provided',
+        date: new Date().toISOString().split('T')[0]
+      };
+
+      if (medicalHistory) cachedData.past_medical_history = medicalHistory;
+      if (surgicalHistory) cachedData.past_surgical_history = surgicalHistory;
+      if (currentMedications) cachedData.medications = currentMedications;
+      if (allergies) cachedData.allergies = allergies;
+
+      return new Response(JSON.stringify({
+        ...cachedData,
+        timestamp: new Date().toISOString(),
+        health_report_id: null,
+        cached: true
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    console.log(`Cache MISS for key: ${cacheKey} - generating new report`);
+
+    // Only if cache missed, create DB record and proceed
     const { data: healthReport, error: insertError } = await supabase
       .from('health_reports')
       .insert({
@@ -128,64 +177,6 @@ Deno.serve(async (req) => {
       payload: { feelings, symptoms, age, userId },
       user_id: userId || null
     });
-
-    const cacheKey = await generateCacheKey(symptoms, feelings, age);
-    const { data: cachedReport } = await supabase
-      .from('report_cache')
-      .select('*')
-      .eq('cache_key', cacheKey)
-      .gt('expires_at', new Date().toISOString())
-      .maybeSingle();
-
-    if (cachedReport) {
-      console.log(`Cache HIT for key: ${cacheKey}`);
-
-      await supabase
-        .from('report_cache')
-        .update({ hit_count: cachedReport.hit_count + 1 })
-        .eq('id', cachedReport.id);
-
-      const cachedData = cachedReport.report_data;
-
-      cachedData.demographic_header = {
-        name: name || 'Not provided',
-        age: age,
-        gender: gender || 'Not provided',
-        date: new Date().toISOString().split('T')[0]
-      };
-
-      if (medicalHistory) cachedData.past_medical_history = medicalHistory;
-      if (surgicalHistory) cachedData.past_surgical_history = surgicalHistory;
-      if (currentMedications) cachedData.medications = currentMedications;
-      if (allergies) cachedData.allergies = allergies;
-
-      await supabase
-        .from('health_reports')
-        .update({
-          status: 'completed',
-          report: cachedData,
-          otc_medicines: cachedData.otc_recommendations || []
-        })
-        .eq('id', healthReportId);
-
-      await supabase.from('report_logs').insert({
-        health_report_id: healthReportId,
-        event_type: 'cache_hit',
-        payload: { cacheKey, success: true },
-        user_id: userId || null
-      });
-
-      return new Response(JSON.stringify({
-        ...cachedData,
-        timestamp: new Date().toISOString(),
-        health_report_id: healthReportId,
-        cached: true
-      }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    console.log(`Cache MISS for key: ${cacheKey} - generating new report`);
 
     const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
 
@@ -249,6 +240,8 @@ JSON OUTPUT (be concise):
 Provide 2-3 OTC medications for reported symptoms. Age ${age} dosing. Cross-ref: ${currentMedications || 'none'} & ${allergies || 'none'}. Return pure JSON only.`;
 
     const geminiResponse = await retryWithBackoff(async () => {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 12000);
       const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GEMINI_API_KEY}`, {
         method: 'POST',
         headers: {
@@ -262,7 +255,7 @@ Provide 2-3 OTC medications for reported symptoms. Age ${age} dosing. Cross-ref:
           }],
           generationConfig: {
             temperature: 0.2,
-            maxOutputTokens: 4096,
+            maxOutputTokens: 1536,
             topP: 0.9,
             topK: 20,
             responseMimeType: "application/json"
@@ -274,7 +267,9 @@ Provide 2-3 OTC medications for reported symptoms. Age ${age} dosing. Cross-ref:
             { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_NONE' }
           ]
         }),
-      });
+        signal: controller.signal,
+        keepalive: true,
+      }).finally(() => clearTimeout(timeoutId));
 
       if (!response.ok) {
         const errorText = await response.text();
