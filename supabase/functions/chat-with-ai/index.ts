@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.4";
 
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -99,14 +100,15 @@ serve(async (req) => {
       .order('created_at', { ascending: true })
       .limit(20);
 
-    // Build conversation history for Gemini
-    const conversationHistory = messages?.map(m => ({
-      role: m.role === 'assistant' ? 'model' : 'user',
-      parts: [{ text: m.content }]
-    })) || [];
+    // Build conversation history for context (limit to last 10 messages for performance)
+    const conversationHistory = messages?.slice(-10) || [];
+
+    // Skip cache for health conversations to ensure personalized, accurate responses
+    // Health advice should be contextual and not cached across different conversations
+    console.log('Generating new response (cache disabled for health conversations)');
 
     // System prompt for health assistant
-    const systemPrompt = `You are MediSense AI, a compassionate and knowledgeable health assistant. Your role is to:
+    const systemPrompt = `You are Telivus AI, a compassionate and knowledgeable health assistant. Your role is to:
 
 1. Personalized Nutrition Plans: Provide tailored nutrition advice based on user's health conditions, age, dietary preferences, and goals.
 
@@ -121,14 +123,16 @@ Guidelines:
 - Ask clarifying questions when needed
 - Keep responses concise yet informative
 - Use simple, easy-to-understand language
-- Remember context from previous messages in the conversation
+- CRITICAL: Always maintain conversation context and refer back to previous messages when appropriate
+- If the user is following up on a previous topic, acknowledge what was discussed before and build upon it
+- Do not treat each message as isolated - remember the ongoing conversation
 - IMPORTANT: Do NOT use markdown formatting (no *, **, _, __, #, etc.)
 - Use plain text only - no asterisks, no bold markers, no italic markers
 - Write in natural, flowing paragraphs without formatting symbols
 
 IMPORTANT: You are NOT a replacement for professional medical advice. Always remind users to consult with healthcare providers for diagnosis and treatment.`;
 
-    // Call OpenAI API
+    // Call OpenAI API with optimized parameters
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -140,12 +144,13 @@ IMPORTANT: You are NOT a replacement for professional medical advice. Always rem
         messages: [
           { role: 'system', content: systemPrompt },
           ...conversationHistory.map(m => ({
-            role: m.role === 'model' ? 'assistant' : 'user',
-            content: m.parts?.[0]?.text || m.content
-          }))
+            role: m.role,
+            content: m.content
+          })),
+          { role: 'user', content: message }
         ],
-        max_tokens: 1024,
-        temperature: 0.7
+        max_tokens: 800, // Reduced for faster response
+        temperature: 0.6 // Slightly reduced for more consistent responses
       })
     });
 
