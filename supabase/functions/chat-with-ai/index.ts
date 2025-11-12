@@ -12,11 +12,11 @@ serve(async (req) => {
   }
 
   try {
-    const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
+    const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
     const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 
-    if (!GEMINI_API_KEY || !SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+    if (!OPENAI_API_KEY || !SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
       throw new Error('Missing required environment variables');
     }
 
@@ -108,11 +108,11 @@ serve(async (req) => {
     // System prompt for health assistant
     const systemPrompt = `You are MediSense AI, a compassionate and knowledgeable health assistant. Your role is to:
 
-1. **Personalized Nutrition Plans**: Provide tailored nutrition advice based on user's health conditions, age, dietary preferences, and goals.
+1. Personalized Nutrition Plans: Provide tailored nutrition advice based on user's health conditions, age, dietary preferences, and goals.
 
-2. **Symptom Follow-ups**: Ask relevant follow-up questions about symptoms, their duration, severity, and associated factors. Help users understand when to seek medical attention.
+2. Symptom Follow-ups: Ask relevant follow-up questions about symptoms, their duration, severity, and associated factors. Help users understand when to seek medical attention.
 
-3. **Daily Health Check-ins**: Conduct friendly daily check-ins about sleep, mood, exercise, water intake, and overall wellbeing.
+3. Daily Health Check-ins: Conduct friendly daily check-ins about sleep, mood, exercise, water intake, and overall wellbeing.
 
 Guidelines:
 - Always be empathetic and supportive
@@ -122,36 +122,54 @@ Guidelines:
 - Keep responses concise yet informative
 - Use simple, easy-to-understand language
 - Remember context from previous messages in the conversation
+- IMPORTANT: Do NOT use markdown formatting (no *, **, _, __, #, etc.)
+- Use plain text only - no asterisks, no bold markers, no italic markers
+- Write in natural, flowing paragraphs without formatting symbols
 
 IMPORTANT: You are NOT a replacement for professional medical advice. Always remind users to consult with healthcare providers for diagnosis and treatment.`;
 
-    // Call Gemini API
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GEMINI_API_KEY}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          system_instruction: {
-            parts: [{ text: systemPrompt }]
-          },
-          contents: conversationHistory,
-          generationConfig: {
-            temperature: 0.7,
-            maxOutputTokens: 1024,
-          }
-        })
-      }
-    );
+    // Call OpenAI API
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${OPENAI_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          ...conversationHistory.map(m => ({
+            role: m.role === 'model' ? 'assistant' : 'user',
+            content: m.parts?.[0]?.text || m.content
+          }))
+        ],
+        max_tokens: 1024,
+        temperature: 0.7
+      })
+    });
 
     if (!response.ok) {
       const errorData = await response.text();
-      console.error('Gemini API error:', errorData);
+      console.error('OpenAI API error:', errorData);
       throw new Error('Failed to get response from AI');
     }
 
     const data = await response.json();
-    const aiResponse = data.candidates?.[0]?.content?.parts?.[0]?.text || 'I apologize, but I could not generate a response. Please try again.';
+    let aiResponse = data.choices?.[0]?.message?.content || 'I apologize, but I could not generate a response. Please try again.';
+
+    // Clean up any remaining markdown formatting
+    aiResponse = aiResponse
+      .replace(/\*\*(.*?)\*\*/g, '$1') // Remove bold **
+      .replace(/\*(.*?)\*/g, '$1')     // Remove italic *
+      .replace(/__(.*?)__/g, '$1')     // Remove underline __
+      .replace(/_(.*?)_/g, '$1')       // Remove italic _
+      .replace(/```[\s\S]*?```/g, '')  // Remove code blocks
+      .replace(/`(.*?)`/g, '$1')       // Remove inline code
+      .replace(/^#+\s*/gm, '')         // Remove headers
+      .replace(/^\*\s*/gm, '')         // Remove bullet points
+      .replace(/^\d+\.\s*/gm, '')      // Remove numbered lists
+      .trim();
 
     // Save AI response
     await supabaseAdmin.from('chat_messages').insert({

@@ -13,6 +13,19 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     storage: localStorage,
     persistSession: true,
     autoRefreshToken: true,
-    detectSessionInUrl: true, 
+    detectSessionInUrl: true,
   },
+  global: {
+    headers: {
+      'X-Client-Info': 'telivus-ai-app',
+    },
+  },
+});
+
+// Handle auth errors globally
+supabase.auth.onAuthStateChange((event, session) => {
+  if (event === 'SIGNED_OUT' && !session) {
+    // Clear any stale session data
+    localStorage.removeItem('supabase.auth.token');
+  }
 });

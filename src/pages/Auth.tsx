@@ -28,9 +28,14 @@ export default function Auth() {
       try {
         // First, check if there's an existing session
         const { data: { session }, error } = await supabase.auth.getSession();
-        
+
         if (error) {
           console.error("Session check error:", error);
+          // If refresh token is invalid, clear the session
+          if (error.message?.includes('Invalid Refresh Token') || error.message?.includes('Refresh Token Not Found')) {
+            console.log("Invalid refresh token detected, clearing session");
+            await supabase.auth.signOut({ scope: 'local' });
+          }
         }
 
         // Only redirect if there's a valid session AND we're not coming from a direct auth URL
@@ -38,7 +43,7 @@ export default function Auth() {
           // Check if this is a direct navigation to /auth (user wants to see login form)
           const currentPath = window.location.pathname;
           const searchParams = new URLSearchParams(window.location.search);
-          
+
           // If user directly navigated to /auth, show the form instead of auto-redirecting
           if (currentPath === '/auth' && !searchParams.has('redirected')) {
             console.log("User navigated directly to auth page, showing login form");
@@ -46,13 +51,17 @@ export default function Auth() {
             setIsCheckingAuth(false);
             return;
           }
-          
+
           // Session exists and not direct navigation, redirect to dashboard
           navigate("/dashboard", { replace: true });
           return;
         }
       } catch (error) {
         console.error("Error checking session:", error);
+        // If there's an unexpected error, clear local session
+        if (error instanceof Error && (error.message.includes('Invalid Refresh Token') || error.message.includes('Refresh Token Not Found'))) {
+          await supabase.auth.signOut({ scope: 'local' });
+        }
       } finally {
         if (mounted) {
           setIsCheckingAuth(false);
@@ -65,12 +74,18 @@ export default function Auth() {
     // Listen for auth state changes (handles OAuth redirects)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log("Auth state changed:", event, session?.user?.email);
-      
+
       if (event === 'SIGNED_IN' && session && mounted) {
         // User just signed in, redirect to dashboard
         navigate("/dashboard", { replace: true });
       } else if (event === 'SIGNED_OUT' && mounted) {
+        // Clear user state and redirect to home
+        setCurrentUser(null);
         setIsCheckingAuth(false);
+        navigate("/", { replace: true });
+      } else if (event === 'TOKEN_REFRESHED' && session && mounted) {
+        // Token was successfully refreshed, update user state
+        setCurrentUser(session.user);
       }
     });
 
