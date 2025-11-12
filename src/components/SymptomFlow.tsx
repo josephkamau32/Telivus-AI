@@ -6,7 +6,11 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ChevronLeft, ChevronRight, CheckCircle } from 'lucide-react';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { ChevronLeft, ChevronRight, CheckCircle, ChevronDown, Image as ImageIcon } from 'lucide-react';
+import VoiceInput from './VoiceInput';
+import ImageAnalysis, { ImageAnalysisResult } from './ImageAnalysis';
+import { useTranslation } from '@/contexts/LanguageContext';
 
 export interface PatientData {
   feelings: string;
@@ -26,11 +30,11 @@ interface SymptomFlowProps {
 }
 
 const FEELING_OPTIONS = [
-  { label: 'Good', value: 'good', color: 'bg-secondary text-secondary-foreground' },
-  { label: 'Unwell', value: 'unwell', color: 'bg-destructive text-destructive-foreground' },
-  { label: 'Tired', value: 'tired', color: 'bg-muted text-muted-foreground' },
-  { label: 'Anxious', value: 'anxious', color: 'bg-primary text-primary-foreground' },
-  { label: 'Stressed', value: 'stressed', color: 'bg-accent text-accent-foreground' },
+  { labelKey: 'good', value: 'good', color: 'bg-secondary text-secondary-foreground' },
+  { labelKey: 'unwell', value: 'unwell', color: 'bg-destructive text-destructive-foreground' },
+  { labelKey: 'tired', value: 'tired', color: 'bg-muted text-muted-foreground' },
+  { labelKey: 'anxious', value: 'anxious', color: 'bg-primary text-primary-foreground' },
+  { labelKey: 'stressed', value: 'stressed', color: 'bg-accent text-accent-foreground' },
 ];
 
 const SYMPTOM_OPTIONS = [
@@ -40,6 +44,7 @@ const SYMPTOM_OPTIONS = [
 ];
 
 export const SymptomFlow = ({ onComplete, onBack }: SymptomFlowProps) => {
+  const { t } = useTranslation();
   const [step, setStep] = useState(1);
   const [feelings, setFeelings] = useState('');
   const [symptoms, setSymptoms] = useState<string[]>([]);
@@ -52,6 +57,8 @@ export const SymptomFlow = ({ onComplete, onBack }: SymptomFlowProps) => {
   const [currentMedications, setCurrentMedications] = useState('');
   const [allergies, setAllergies] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isImageAnalysisOpen, setIsImageAnalysisOpen] = useState(false);
+  const [imageAnalysisResults, setImageAnalysisResults] = useState<ImageAnalysisResult | null>(null);
 
   const handleSymptomToggle = (symptom: string) => {
     setSymptoms(prev => 
@@ -70,6 +77,67 @@ export const SymptomFlow = ({ onComplete, onBack }: SymptomFlowProps) => {
         setCustomSymptom('');
       }
     }
+  };
+
+  const handleVoiceTranscript = (transcript: string) => {
+    // Process the voice transcript to extract symptoms
+    // Convert to lowercase and split by common separators
+    const words = transcript.toLowerCase().split(/[,;.\s]+/);
+
+    // Common symptom keywords to look for
+    const symptomKeywords = [
+      'headache', 'migraine', 'fever', 'cough', 'nausea', 'vomiting', 'diarrhea',
+      'fatigue', 'tired', 'dizziness', 'pain', 'ache', 'sore', 'throat', 'stomach',
+      'abdominal', 'chest', 'back', 'joint', 'muscle', 'rash', 'itching', 'runny',
+      'nose', 'congestion', 'sneezing', 'chills', 'sweating', 'loss of appetite',
+      'constipation', 'heartburn', 'indigestion', 'bloating', 'cramps'
+    ];
+
+    // Find matching symptoms
+    const foundSymptoms = symptomKeywords.filter(keyword =>
+      words.some(word => word.includes(keyword) || keyword.includes(word))
+    );
+
+    // Also check for exact matches from predefined symptoms
+    const exactMatches = SYMPTOM_OPTIONS.filter(symptom =>
+      transcript.toLowerCase().includes(symptom.toLowerCase())
+    );
+
+    // Combine and deduplicate
+    const allFoundSymptoms = [...new Set([...foundSymptoms, ...exactMatches])];
+
+    if (allFoundSymptoms.length > 0) {
+      // Add found symptoms to the list
+      setSymptoms(prev => {
+        const newSymptoms = [...prev];
+        allFoundSymptoms.forEach(symptom => {
+          if (!newSymptoms.includes(symptom)) {
+            newSymptoms.push(symptom);
+          }
+        });
+        return newSymptoms;
+      });
+    } else {
+      // If no specific symptoms found, add the transcript as a custom symptom
+      const sanitized = transcript.trim().replace(/[<>\"']/g, '');
+      if (sanitized && !symptoms.includes(sanitized)) {
+        setSymptoms(prev => [...prev, sanitized]);
+      }
+    }
+  };
+
+  const handleImageAnalysisComplete = (results: ImageAnalysisResult) => {
+    setImageAnalysisResults(results);
+    // Add the detected symptoms to the symptoms list
+    setSymptoms(prev => {
+      const newSymptoms = [...prev];
+      results.symptoms.forEach(symptom => {
+        if (!newSymptoms.includes(symptom)) {
+          newSymptoms.push(symptom);
+        }
+      });
+      return newSymptoms;
+    });
   };
 
   const handleNext = () => {
@@ -91,17 +159,17 @@ export const SymptomFlow = ({ onComplete, onBack }: SymptomFlowProps) => {
     
     // Enhanced validation
     if (!feelings?.trim()) {
-      alert('Please select how you are feeling');
+      alert(t.selectFeelingAlert);
       return;
     }
-    
+
     if (symptoms.length === 0) {
-      alert('Please select at least one symptom');
+      alert(t.selectSymptomAlert);
       return;
     }
-    
+
     if (!age || age < 0 || age > 130) {
-      alert('Please enter a valid age between 0 and 130');
+      alert(t.validAgeAlert);
       return;
     }
     
@@ -140,7 +208,7 @@ export const SymptomFlow = ({ onComplete, onBack }: SymptomFlowProps) => {
       <Card className="w-full max-w-2xl">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl text-foreground">
-            Health Assessment - Step {step} of 5
+            {t.healthAssessmentStep.replace('{step}', step.toString())}
           </CardTitle>
           <div className="flex justify-center mt-4">
             <div className="flex space-x-2">
@@ -159,7 +227,29 @@ export const SymptomFlow = ({ onComplete, onBack }: SymptomFlowProps) => {
         <CardContent className="space-y-6">
           {step === 1 && (
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-center">How are you feeling today?</h3>
+              <h3 className="text-lg font-semibold text-center">{t.howFeelingToday}</h3>
+
+              {/* Voice Input Section */}
+              <div className="text-center p-4 bg-gradient-to-r from-primary/5 to-secondary/5 rounded-lg border border-primary/20">
+                <p className="text-sm text-muted-foreground mb-3">{t.tryVoiceInputFeeling}</p>
+                <div className="flex justify-center">
+                  <VoiceInput
+                    onTranscript={(transcript) => {
+                      // Process voice transcript to match feelings
+                      const lowerTranscript = transcript.toLowerCase();
+                      const matchedFeeling = FEELING_OPTIONS.find(option =>
+                        lowerTranscript.includes(option.value) ||
+                        t[option.labelKey].toLowerCase().split(' ').some(word => lowerTranscript.includes(word))
+                      );
+                      if (matchedFeeling) {
+                        setFeelings(matchedFeeling.value);
+                      }
+                    }}
+                    placeholder={t.describeFeeling}
+                  />
+                </div>
+              </div>
+
               <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                 {FEELING_OPTIONS.map((option) => (
                   <Button
@@ -170,7 +260,7 @@ export const SymptomFlow = ({ onComplete, onBack }: SymptomFlowProps) => {
                       feelings === option.value ? option.color : ''
                     }`}
                   >
-                    {option.label}
+                    {t[option.labelKey]}
                     {feelings === option.value && <CheckCircle className="ml-2 w-4 h-4" />}
                   </Button>
                 ))}
@@ -180,16 +270,27 @@ export const SymptomFlow = ({ onComplete, onBack }: SymptomFlowProps) => {
 
           {step === 2 && (
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-center">What symptoms are you experiencing?</h3>
-              
+              <h3 className="text-lg font-semibold text-center">{t.whatSymptoms}</h3>
+
+              {/* Voice Input Section */}
+              <div className="text-center p-4 bg-gradient-to-r from-primary/5 to-secondary/5 rounded-lg border border-primary/20">
+                <p className="text-sm text-muted-foreground mb-3">{t.tryVoiceInputSymptoms}</p>
+                <div className="flex justify-center">
+                  <VoiceInput
+                    onTranscript={handleVoiceTranscript}
+                    placeholder={t.describeSymptoms}
+                  />
+                </div>
+              </div>
+
               <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                 {SYMPTOM_OPTIONS.map((symptom) => (
                   <Badge
                     key={symptom}
                     variant={symptoms.includes(symptom) ? "default" : "outline"}
                     className={`cursor-pointer p-2 justify-center ${
-                      symptoms.includes(symptom) 
-                        ? 'bg-primary text-primary-foreground' 
+                      symptoms.includes(symptom)
+                        ? 'bg-primary text-primary-foreground'
                         : 'hover:bg-accent'
                     }`}
                     onClick={() => handleSymptomToggle(symptom)}
@@ -202,20 +303,20 @@ export const SymptomFlow = ({ onComplete, onBack }: SymptomFlowProps) => {
 
               <div className="flex gap-2">
                 <Input
-                  placeholder="Add custom symptom (max 100 chars)"
+                  placeholder={t.addCustomSymptom}
                   value={customSymptom}
                   onChange={(e) => setCustomSymptom(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && handleAddCustomSymptom()}
                   maxLength={100}
                 />
                 <Button onClick={handleAddCustomSymptom} variant="outline">
-                  Add
+                  {t.add}
                 </Button>
               </div>
 
               {symptoms.length > 0 && (
                 <div className="p-4 bg-accent rounded-lg">
-                  <p className="text-sm font-medium mb-2">Selected symptoms:</p>
+                  <p className="text-sm font-medium mb-2">{t.selectedSymptoms}</p>
                   <div className="flex flex-wrap gap-2">
                     {symptoms.map((symptom) => (
                       <Badge key={symptom} variant="secondary">
@@ -225,25 +326,39 @@ export const SymptomFlow = ({ onComplete, onBack }: SymptomFlowProps) => {
                   </div>
                 </div>
               )}
+
+              {/* Image Analysis Section */}
+              <Collapsible open={isImageAnalysisOpen} onOpenChange={setIsImageAnalysisOpen}>
+                <CollapsibleTrigger asChild>
+                  <Button variant="outline" className="w-full gap-2">
+                    <ImageIcon className="w-4 h-4" />
+                    {isImageAnalysisOpen ? t.hide : t.show} {t.imageAnalysis}
+                    <ChevronDown className={`w-4 h-4 transition-transform ${isImageAnalysisOpen ? 'rotate-180' : ''}`} />
+                  </Button>
+                </CollapsibleTrigger>
+                <CollapsibleContent className="mt-4">
+                  <ImageAnalysis onAnalysisComplete={handleImageAnalysisComplete} />
+                </CollapsibleContent>
+              </Collapsible>
             </div>
           )}
 
           {step === 3 && (
             <div className="space-y-4">
               <div className="text-center">
-                <h3 className="text-lg font-semibold">Basic Information</h3>
-                <p className="text-muted-foreground mt-2">Help us personalize your report</p>
+                <h3 className="text-lg font-semibold">{t.basicInformation}</h3>
+                <p className="text-muted-foreground mt-2">{t.personalizeReport}</p>
               </div>
-              
+
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="age">Age (required) *</Label>
+                  <Label htmlFor="age">{t.ageRequired}</Label>
                   <Input
                     id="age"
                     type="number"
                     min="0"
                     max="130"
-                    placeholder="Enter your age"
+                    placeholder={t.enterAge}
                     value={age || ''}
                     onChange={(e) => {
                       const value = parseInt(e.target.value);
@@ -256,27 +371,27 @@ export const SymptomFlow = ({ onComplete, onBack }: SymptomFlowProps) => {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="name">Full Name (optional)</Label>
+                  <Label htmlFor="name">{t.fullNameOptional}</Label>
                   <Input
                     id="name"
                     type="text"
-                    placeholder="Enter your full name"
+                    placeholder={t.enterFullName}
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     maxLength={100}
                   />
                 </div>
                 <div>
-                  <Label htmlFor="gender">Gender (optional)</Label>
+                  <Label htmlFor="gender">{t.genderOptional}</Label>
                   <Select value={gender} onValueChange={setGender}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select gender" />
+                      <SelectValue placeholder={t.selectGender} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="male">Male</SelectItem>
-                      <SelectItem value="female">Female</SelectItem>
-                      <SelectItem value="other">Other</SelectItem>
-                      <SelectItem value="prefer-not-to-say">Prefer not to say</SelectItem>
+                      <SelectItem value="male">{t.male}</SelectItem>
+                      <SelectItem value="female">{t.female}</SelectItem>
+                      <SelectItem value="other">{t.other}</SelectItem>
+                      <SelectItem value="prefer-not-to-say">{t.preferNotToSay}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -287,16 +402,16 @@ export const SymptomFlow = ({ onComplete, onBack }: SymptomFlowProps) => {
           {step === 4 && (
             <div className="space-y-4">
               <div className="text-center">
-                <h3 className="text-lg font-semibold">Medical History</h3>
-                <p className="text-muted-foreground mt-2">Optional - Provide any relevant medical history</p>
+                <h3 className="text-lg font-semibold">{t.medicalHistory}</h3>
+                <p className="text-muted-foreground mt-2">{t.provideMedicalHistory}</p>
               </div>
-              
+
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="medicalHistory">Past Medical History (optional)</Label>
+                  <Label htmlFor="medicalHistory">{t.pastMedicalHistory}</Label>
                   <Textarea
                     id="medicalHistory"
-                    placeholder="Any chronic conditions, past illnesses, etc."
+                    placeholder={t.chronicConditions}
                     value={medicalHistory}
                     onChange={(e) => setMedicalHistory(e.target.value)}
                     rows={3}
@@ -305,10 +420,10 @@ export const SymptomFlow = ({ onComplete, onBack }: SymptomFlowProps) => {
                   <p className="text-xs text-muted-foreground mt-1">{medicalHistory.length}/500 characters</p>
                 </div>
                 <div>
-                  <Label htmlFor="surgicalHistory">Past Surgical History (optional)</Label>
+                  <Label htmlFor="surgicalHistory">{t.pastSurgicalHistory}</Label>
                   <Textarea
                     id="surgicalHistory"
-                    placeholder="Any previous surgeries or procedures"
+                    placeholder={t.previousSurgeries}
                     value={surgicalHistory}
                     onChange={(e) => setSurgicalHistory(e.target.value)}
                     rows={3}
@@ -323,16 +438,16 @@ export const SymptomFlow = ({ onComplete, onBack }: SymptomFlowProps) => {
           {step === 5 && (
             <div className="space-y-4">
               <div className="text-center">
-                <h3 className="text-lg font-semibold">Medications & Allergies</h3>
-                <p className="text-muted-foreground mt-2">Optional - Help us provide safer recommendations</p>
+                <h3 className="text-lg font-semibold">{t.medicationsAllergies}</h3>
+                <p className="text-muted-foreground mt-2">{t.saferRecommendations}</p>
               </div>
-              
+
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="currentMedications">Current Medications (optional)</Label>
+                  <Label htmlFor="currentMedications">{t.currentMedications}</Label>
                   <Textarea
                     id="currentMedications"
-                    placeholder="List any medications you're currently taking"
+                    placeholder={t.listMedications}
                     value={currentMedications}
                     onChange={(e) => setCurrentMedications(e.target.value)}
                     rows={3}
@@ -341,10 +456,10 @@ export const SymptomFlow = ({ onComplete, onBack }: SymptomFlowProps) => {
                   <p className="text-xs text-muted-foreground mt-1">{currentMedications.length}/500 characters</p>
                 </div>
                 <div>
-                  <Label htmlFor="allergies">Allergies (optional)</Label>
+                  <Label htmlFor="allergies">{t.allergies}</Label>
                   <Textarea
                     id="allergies"
-                    placeholder="Any drug allergies, food allergies, or other allergies"
+                    placeholder={t.drugFoodAllergies}
                     value={allergies}
                     onChange={(e) => setAllergies(e.target.value)}
                     rows={3}
@@ -359,20 +474,20 @@ export const SymptomFlow = ({ onComplete, onBack }: SymptomFlowProps) => {
           <div className="flex justify-between pt-6">
             <Button variant="outline" onClick={handlePrevious}>
               <ChevronLeft className="w-4 h-4 mr-2" />
-              {step === 1 ? 'Back to Home' : 'Previous'}
+              {step === 1 ? t.backToHome : t.previous}
             </Button>
             {step < 5 ? (
               <Button onClick={handleNext} disabled={!canProceed()}>
-                Next
+                {t.next}
                 <ChevronRight className="w-4 h-4 ml-2" />
               </Button>
             ) : (
-              <Button 
-                onClick={handleComplete} 
+              <Button
+                onClick={handleComplete}
                 disabled={!canProceed() || isSubmitting}
                 className="bg-secondary hover:bg-secondary/90 text-secondary-foreground"
               >
-                {isSubmitting ? 'Generating...' : 'Generate Report'}
+                {isSubmitting ? t.generating : t.generateReport}
                 <CheckCircle className="w-4 h-4 ml-2" />
               </Button>
             )}

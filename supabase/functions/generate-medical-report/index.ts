@@ -108,7 +108,7 @@ Deno.serve(async (req) => {
     const { feelings, symptoms, age, name, gender, medicalHistory, surgicalHistory, currentMedications, allergies, userId } = requestBody;
 
     console.log('Request body received:', { feelings: feelings?.substring(0, 50), symptomsCount: symptoms?.length, age, userId });
-    
+
     const validationErrors = validateInput({ feelings, symptoms, age, name, gender, medicalHistory, surgicalHistory, currentMedications, allergies });
     if (validationErrors.length > 0) {
       await supabase.from('report_logs').insert({
@@ -116,10 +116,10 @@ Deno.serve(async (req) => {
         payload: { validationErrors, requestBody },
         user_id: userId || null
       });
-      
-      return new Response(JSON.stringify({ 
-        error: 'Validation failed', 
-        details: validationErrors 
+
+      return new Response(JSON.stringify({
+        error: 'Validation failed',
+        details: validationErrors
       }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -289,25 +289,25 @@ CRITICAL: Use ONLY stated symptoms. No hallucinations. FDA-approved OTC only. Re
     const reportText = data.choices?.[0]?.message?.content;
 
     if (!reportText) {
-      throw new Error('No response from Gemini AI');
+      throw new Error('No response from OpenAI API');
     }
 
     let parsedReport;
     try {
       let cleanedText = reportText.trim();
-      
+
       if (cleanedText.startsWith('```')) {
         cleanedText = cleanedText.replace(/^```(?:json)?\n?/gi, '').replace(/\n?```$/g, '');
       }
-      
+
       const jsonMatch = cleanedText.match(/\{[\s\S]*\}/);
       if (!jsonMatch) {
         throw new Error('No JSON object found in response');
       }
-      
+
       const jsonString = jsonMatch[0];
       parsedReport = JSON.parse(jsonString);
-      
+
       const validationErrors = [];
 
       if (!parsedReport.chief_complaint || typeof parsedReport.chief_complaint !== 'string') {
@@ -376,11 +376,11 @@ CRITICAL: Use ONLY stated symptoms. No hallucinations. FDA-approved OTC only. Re
       }
 
       console.log(`Successfully parsed and validated medical report (symptom match: ${symptomMatchCount}/${reportedSymptoms.length})`);
-      
+
     } catch (parseError) {
       console.error('Failed to parse JSON response:', parseError);
       console.error('Raw response (first 1000 chars):', reportText.substring(0, 1000));
-      
+
       throw new Error(`Failed to parse AI response: ${parseError instanceof Error ? parseError.message : 'Unknown error'}`);
     }
 
@@ -437,16 +437,16 @@ CRITICAL: Use ONLY stated symptoms. No hallucinations. FDA-approved OTC only. Re
 
   } catch (error) {
     console.error('Error in generate-medical-report:', error);
-    
+
     const errorMessage = error instanceof Error ? error.message : 'Failed to generate medical report';
-    
+
     let errorUserId: string | null = null;
     try {
       const errorBody = await req.clone().json();
       errorUserId = errorBody.userId || null;
     } catch {
     }
-    
+
     if (healthReportId) {
       await supabase
         .from('health_reports')
@@ -466,13 +466,13 @@ CRITICAL: Use ONLY stated symptoms. No hallucinations. FDA-approved OTC only. Re
 
     const isQuotaError = error instanceof Error && error.message.includes('429');
     const errorResponse = {
-      error: isQuotaError 
-        ? 'Gemini API quota exceeded. Please upgrade to a paid plan or try again later.'
+      error: isQuotaError
+        ? 'OpenAI API quota exceeded. Please upgrade to a paid plan or try again later.'
         : errorMessage,
       error_code: isQuotaError ? 'QUOTA_EXCEEDED' : 'GENERATION_FAILED',
       ...(isQuotaError && {
         retry_after: '1 hour',
-        upgrade_info: 'Consider upgrading to Gemini API Pro for higher quotas'
+        upgrade_info: 'Consider upgrading to OpenAI API Pro for higher quotas'
       })
     };
 

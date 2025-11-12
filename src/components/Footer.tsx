@@ -1,8 +1,11 @@
 import { Phone, MapPin, Mail, Facebook, Twitter, Linkedin, Instagram } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import telivusLogo from '@/assets/telivus-logo.png';
+import { useTranslation } from '@/contexts/LanguageContext';
 
 export const Footer = () => {
+  const { t } = useTranslation();
+
   return (
     <footer className="border-t border-border/40 bg-card/50 backdrop-blur-sm">
       <div className="container px-6 py-12">
@@ -16,32 +19,32 @@ export const Footer = () => {
               </span>
             </div>
             <p className="text-sm text-muted-foreground">
-              Your AI-powered health companion for smarter self-care and personalized health insights.
+              {t.footerDescription}
             </p>
           </div>
           
           {/* Quick Links */}
           <div>
-            <h3 className="font-semibold mb-4 text-foreground">Quick Links</h3>
+            <h3 className="font-semibold mb-4 text-foreground">{t.quickLinks}</h3>
             <ul className="space-y-2">
               <li>
                 <Link to="/" className="text-sm text-muted-foreground hover:text-primary transition-colors">
-                  Home
+                  {t.home}
                 </Link>
               </li>
               <li>
                 <Link to="/about" className="text-sm text-muted-foreground hover:text-primary transition-colors">
-                  About Us
+                  {t.aboutUs}
                 </Link>
               </li>
               <li>
                 <Link to="/contact" className="text-sm text-muted-foreground hover:text-primary transition-colors">
-                  Contact
+                  {t.contact}
                 </Link>
               </li>
               <li>
                 <Link to="/auth" className="text-sm text-muted-foreground hover:text-primary transition-colors">
-                  Get Started
+                  {t.getStarted}
                 </Link>
               </li>
             </ul>
@@ -49,7 +52,7 @@ export const Footer = () => {
           
           {/* Contact Information */}
           <div>
-            <h3 className="font-semibold mb-4 text-foreground">Contact Us</h3>
+            <h3 className="font-semibold mb-4 text-foreground">{t.contactUs}</h3>
             <ul className="space-y-3">
               <li className="flex items-start gap-2">
                 <Phone className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
@@ -72,7 +75,7 @@ export const Footer = () => {
           
           {/* Social Media */}
           <div>
-            <h3 className="font-semibold mb-4 text-foreground">Follow Us</h3>
+            <h3 className="font-semibold mb-4 text-foreground">{t.followUs}</h3>
             <div className="flex gap-3">
               <a 
                 href="https://facebook.com" 
@@ -113,7 +116,7 @@ export const Footer = () => {
         {/* Bottom Bar */}
         <div className="mt-8 pt-8 border-t border-border/40 text-center">
           <p className="text-sm text-muted-foreground">
-            © {new Date().getFullYear()} Telivus. All rights reserved. | Privacy Policy | Terms of Service
+            {t.copyright.replace('{year}', new Date().getFullYear().toString())} | {t.privacyPolicy} | {t.termsOfService}
           </p>
         </div>
       </div>
