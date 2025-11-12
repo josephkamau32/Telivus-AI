@@ -3,8 +3,11 @@ import { Link } from 'react-router-dom';
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
 import { Brain, Shield, Zap, Heart, CheckCircle, MessageSquare, ClipboardList, Sparkles } from 'lucide-react';
+import { useTranslation } from '@/contexts/LanguageContext';
 
 const Landing = () => {
+  const { t } = useTranslation();
+
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
@@ -32,41 +35,40 @@ const Landing = () => {
             
             {/* Title with gradient text */}
             <h1 className="text-5xl md:text-7xl font-bold mb-6 bg-gradient-to-r from-primary via-secondary to-primary bg-clip-text text-transparent animate-gradient-shift">
-              Your AI Health Companion
+              {t.landingHeroTitle}
             </h1>
-            
+
             <div className="flex items-center justify-center gap-2 mb-8">
               <Sparkles className="w-6 h-6 text-primary animate-pulse" />
               <p className="text-xl md:text-2xl text-foreground font-medium">
-                Smart healthcare insights at your fingertips
+                {t.landingHeroSubtitle}
               </p>
               <Sparkles className="w-6 h-6 text-secondary animate-pulse" style={{ animationDelay: '0.5s' }} />
             </div>
-            
+
             <p className="text-lg text-muted-foreground mb-12 max-w-2xl mx-auto leading-relaxed">
-              Telivus uses advanced AI to analyze your symptoms and provide personalized health recommendations. 
-              Get instant insights, connect with our AI health assistant, and take control of your wellness journey.
+              {t.landingHeroDescription}
             </p>
             
             {/* CTA Buttons */}
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
               <Link to="/auth">
-                <Button 
+                <Button
                   size="lg"
                   className="text-lg px-10 py-6 bg-gradient-to-r from-primary to-secondary hover:shadow-glow transform hover:scale-105 transition-all duration-300 font-semibold"
                 >
                   <Zap className="w-5 h-5 mr-2" />
-                  Get Started Free
+                  {t.landingGetStarted}
                 </Button>
               </Link>
               
               <Link to="/about">
-                <Button 
+                <Button
                   size="lg"
                   variant="outline"
                   className="text-lg px-10 py-6 border-primary/30 hover:shadow-glow transform hover:scale-105 transition-all duration-300 font-semibold backdrop-blur-sm"
                 >
-                  Learn More
+                  {t.landingLearnMore}
                 </Button>
               </Link>
             </div>
@@ -78,9 +80,9 @@ const Landing = () => {
       <section className="py-20 bg-muted/30">
         <div className="container mx-auto px-6">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold mb-4 text-foreground">How Telivus Helps You</h2>
+            <h2 className="text-4xl font-bold mb-4 text-foreground">{t.howTelivusHelps}</h2>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Experience the future of healthcare with our AI-powered platform
+              {t.experienceFutureHealthcare}
             </p>
           </div>
           
@@ -90,8 +92,8 @@ const Landing = () => {
                 <div className="absolute inset-0 bg-primary/20 rounded-full blur-lg group-hover:blur-xl transition-all" />
                 <ClipboardList className="relative w-12 h-12 text-primary mx-auto" />
               </div>
-              <h3 className="text-xl font-bold mb-3 text-center text-foreground">Health Assessment</h3>
-              <p className="text-muted-foreground text-center">Comprehensive symptom analysis with instant AI-powered insights</p>
+              <h3 className="text-xl font-bold mb-3 text-center text-foreground">{t.healthAssessment}</h3>
+              <p className="text-muted-foreground text-center">{t.comprehensiveSymptomAnalysis}</p>
             </div>
             
             <div className="group bg-card p-8 rounded-2xl border border-secondary/20 hover:border-secondary/40 shadow-card hover:shadow-glow transition-all duration-300 hover:-translate-y-2">
@@ -99,8 +101,8 @@ const Landing = () => {
                 <div className="absolute inset-0 bg-secondary/20 rounded-full blur-lg group-hover:blur-xl transition-all" />
                 <MessageSquare className="relative w-12 h-12 text-secondary mx-auto" />
               </div>
-              <h3 className="text-xl font-bold mb-3 text-center text-foreground">AI Health Chat</h3>
-              <p className="text-muted-foreground text-center">24/7 conversational AI assistant for health questions</p>
+              <h3 className="text-xl font-bold mb-3 text-center text-foreground">{t.aiHealthChat}</h3>
+              <p className="text-muted-foreground text-center">{t.conversationalAIAssistant}</p>
             </div>
             
             <div className="group bg-card p-8 rounded-2xl border border-primary/20 hover:border-primary/40 shadow-card hover:shadow-glow transition-all duration-300 hover:-translate-y-2">
@@ -108,8 +110,8 @@ const Landing = () => {
                 <div className="absolute inset-0 bg-primary/20 rounded-full blur-lg group-hover:blur-xl transition-all" />
                 <Shield className="relative w-12 h-12 text-primary mx-auto" />
               </div>
-              <h3 className="text-xl font-bold mb-3 text-center text-foreground">Secure & Private</h3>
-              <p className="text-muted-foreground text-center">Your health data protected with enterprise-grade security</p>
+              <h3 className="text-xl font-bold mb-3 text-center text-foreground">{t.securePrivate}</h3>
+              <p className="text-muted-foreground text-center">{t.healthDataProtected}</p>
             </div>
             
             <div className="group bg-card p-8 rounded-2xl border border-secondary/20 hover:border-secondary/40 shadow-card hover:shadow-glow transition-all duration-300 hover:-translate-y-2">
@@ -117,8 +119,8 @@ const Landing = () => {
                 <div className="absolute inset-0 bg-secondary/20 rounded-full blur-lg group-hover:blur-xl transition-all" />
                 <Heart className="relative w-12 h-12 text-secondary mx-auto" />
               </div>
-              <h3 className="text-xl font-bold mb-3 text-center text-foreground">Personalized Care</h3>
-              <p className="text-muted-foreground text-center">Tailored recommendations based on your unique profile</p>
+              <h3 className="text-xl font-bold mb-3 text-center text-foreground">{t.personalizedCare}</h3>
+              <p className="text-muted-foreground text-center">{t.tailoredRecommendations}</p>
             </div>
           </div>
         </div>
@@ -129,9 +131,9 @@ const Landing = () => {
         <div className="container mx-auto px-6">
           <div className="max-w-4xl mx-auto">
             <div className="text-center mb-16">
-              <h2 className="text-4xl font-bold mb-4 text-foreground">Why Choose Telivus?</h2>
+              <h2 className="text-4xl font-bold mb-4 text-foreground">{t.whyChooseTelivus}</h2>
               <p className="text-lg text-muted-foreground">
-                Join thousands of users who trust Telivus for their health insights
+                {t.joinThousandsUsers}
               </p>
             </div>
             
@@ -139,32 +141,32 @@ const Landing = () => {
               <div className="flex gap-4 p-6 rounded-xl bg-card border border-border/40 hover:border-primary/40 transition-colors">
                 <CheckCircle className="w-6 h-6 text-primary flex-shrink-0 mt-1" />
                 <div>
-                  <h4 className="font-semibold mb-2 text-foreground">Advanced AI Technology</h4>
-                  <p className="text-muted-foreground">Powered by cutting-edge machine learning algorithms</p>
+                  <h4 className="font-semibold mb-2 text-foreground">{t.advancedAI}</h4>
+                  <p className="text-muted-foreground">{t.cuttingEdgeMLAlgorithms}</p>
                 </div>
               </div>
               
               <div className="flex gap-4 p-6 rounded-xl bg-card border border-border/40 hover:border-primary/40 transition-colors">
                 <CheckCircle className="w-6 h-6 text-primary flex-shrink-0 mt-1" />
                 <div>
-                  <h4 className="font-semibold mb-2 text-foreground">Instant Results</h4>
-                  <p className="text-muted-foreground">Get health insights in seconds, not hours</p>
+                  <h4 className="font-semibold mb-2 text-foreground">{t.instantResults}</h4>
+                  <p className="text-muted-foreground">{t.healthInsightsSeconds}</p>
                 </div>
               </div>
               
               <div className="flex gap-4 p-6 rounded-xl bg-card border border-border/40 hover:border-primary/40 transition-colors">
                 <CheckCircle className="w-6 h-6 text-primary flex-shrink-0 mt-1" />
                 <div>
-                  <h4 className="font-semibold mb-2 text-foreground">Always Available</h4>
-                  <p className="text-muted-foreground">24/7 access to health guidance whenever you need it</p>
+                  <h4 className="font-semibold mb-2 text-foreground">{t.alwaysAvailable}</h4>
+                  <p className="text-muted-foreground">{t.access247Guidance}</p>
                 </div>
               </div>
               
               <div className="flex gap-4 p-6 rounded-xl bg-card border border-border/40 hover:border-primary/40 transition-colors">
                 <CheckCircle className="w-6 h-6 text-primary flex-shrink-0 mt-1" />
                 <div>
-                  <h4 className="font-semibold mb-2 text-foreground">Easy to Use</h4>
-                  <p className="text-muted-foreground">Simple interface designed for everyone</p>
+                  <h4 className="font-semibold mb-2 text-foreground">{t.easyToUse}</h4>
+                  <p className="text-muted-foreground">{t.simpleInterfaceEveryone}</p>
                 </div>
               </div>
             </div>
@@ -175,17 +177,17 @@ const Landing = () => {
       {/* CTA Section */}
       <section className="py-20 bg-gradient-to-br from-primary/10 to-secondary/10">
         <div className="container mx-auto px-6 text-center">
-          <h2 className="text-4xl font-bold mb-6 text-foreground">Ready to Take Control of Your Health?</h2>
+          <h2 className="text-4xl font-bold mb-6 text-foreground">{t.readyTakeControl}</h2>
           <p className="text-lg text-muted-foreground mb-8 max-w-2xl mx-auto">
-            Join Telivus today and experience the future of personalized healthcare
+            {t.joinTelivusToday}
           </p>
           <Link to="/auth">
-            <Button 
+            <Button
               size="lg"
               className="text-lg px-12 py-6 bg-gradient-to-r from-primary to-secondary hover:shadow-glow transform hover:scale-105 transition-all duration-300 font-semibold"
             >
               <Zap className="w-5 h-5 mr-2" />
-              Start Your Journey Now
+              {t.startJourneyNow}
             </Button>
           </Link>
         </div>
