@@ -26,6 +26,7 @@ const ChatInterface = ({ onBack }: ChatInterfaceProps) => {
   const [showPayment, setShowPayment] = useState(false);
   const [subscriptionInfo, setSubscriptionInfo] = useState<any>(null);
   const [pendingMessage, setPendingMessage] = useState<string | null>(null);
+  const [isInitializing, setIsInitializing] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
@@ -64,10 +65,12 @@ const ChatInterface = ({ onBack }: ChatInterfaceProps) => {
 
   const initializeChat = async () => {
     try {
+      setIsInitializing(true);
       console.log('Initializing chat...');
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         console.log('No user found, cannot initialize chat');
+        setIsInitializing(false);
         return;
       }
       console.log('User found:', user.id);
@@ -105,6 +108,7 @@ const ChatInterface = ({ onBack }: ChatInterfaceProps) => {
             created_at: msg.created_at
           }));
           setMessages(formattedMessages);
+          setIsInitializing(false);
           return; // Don't add greeting if there are existing messages
         }
       } else {
@@ -137,8 +141,10 @@ const ChatInterface = ({ onBack }: ChatInterfaceProps) => {
         created_at: new Date().toISOString()
       }]);
       console.log('Greeting message set');
+      setIsInitializing(false);
     } catch (error: any) {
       console.error('Error initializing chat:', error);
+      setIsInitializing(false);
       toast({
         title: 'Error',
         description: 'Failed to initialize chat session',
@@ -311,7 +317,16 @@ const ChatInterface = ({ onBack }: ChatInterfaceProps) => {
         {/* Chat Messages */}
         <Card className="h-[calc(100vh-200px)] flex flex-col overflow-hidden shadow-glow border-primary/20">
           <div className="flex-1 overflow-y-auto p-6 space-y-4">
-            {messages.map((message) => (
+            {isInitializing ? (
+              <div className="flex items-center justify-center h-full">
+                <div className="text-center">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto mb-4" />
+                  <p className="text-muted-foreground">Loading your chat session...</p>
+                </div>
+              </div>
+            ) : (
+              <>
+                {messages.map((message) => (
               <div
                 key={message.id}
                 className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'} animate-fade-in`}
@@ -327,14 +342,24 @@ const ChatInterface = ({ onBack }: ChatInterfaceProps) => {
                 </div>
               </div>
             ))}
-            {loading && (
-              <div className="flex justify-start animate-fade-in">
-                <div className="bg-secondary/50 rounded-2xl px-4 py-3 border border-primary/10">
-                  <Loader2 className="h-5 w-5 animate-spin text-primary" />
-                </div>
-              </div>
+                {loading && (
+                  <div className="flex justify-start animate-fade-in">
+                    <div className="bg-secondary/50 rounded-2xl px-4 py-3 border border-primary/10 max-w-[80%]">
+                      <div className="flex items-center space-x-2">
+                        <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                        <div className="flex space-x-1">
+                          <div className="w-2 h-2 bg-primary/60 rounded-full animate-pulse"></div>
+                          <div className="w-2 h-2 bg-primary/60 rounded-full animate-pulse" style={{animationDelay: '0.2s'}}></div>
+                          <div className="w-2 h-2 bg-primary/60 rounded-full animate-pulse" style={{animationDelay: '0.4s'}}></div>
+                        </div>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">Telivus AI is thinking...</p>
+                    </div>
+                  </div>
+                )}
+                <div ref={messagesEndRef} />
+              </>
             )}
-            <div ref={messagesEndRef} />
           </div>
 
           {/* Input Area */}

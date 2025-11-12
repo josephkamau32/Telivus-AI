@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { Download, Home, AlertTriangle, Clock, User, FileText } from 'lucide-react';
+import { Download, Home, AlertTriangle, Clock, User, FileText, Loader2 } from 'lucide-react';
 import jsPDF from 'jspdf';
 
 interface MedicalReportProps {
@@ -17,6 +17,16 @@ interface MedicalReportProps {
   timestamp: string;
   onBackToHome: () => void;
 }
+
+const DemoReportBanner = () => (
+  <Alert className="border-blue-500/50 bg-blue-50/50 dark:bg-blue-950/20 mb-6">
+    <AlertTriangle className="h-4 w-4 text-blue-600 dark:text-blue-500" />
+    <AlertDescription className="text-sm text-blue-900 dark:text-blue-200">
+      <strong>Demo Report:</strong> This is an instant report based on common symptoms.
+      For a personalized AI-generated assessment, please try again when the service is available.
+    </AlertDescription>
+  </Alert>
+);
 
 export const MedicalReport = ({ report, userInfo, timestamp, onBackToHome }: MedicalReportProps) => {
   const [isDownloading, setIsDownloading] = useState(false);
@@ -174,6 +184,9 @@ export const MedicalReport = ({ report, userInfo, timestamp, onBackToHome }: Med
   return (
     <div className="min-h-screen bg-background p-6">
       <div className="max-w-4xl mx-auto space-y-6">
+        {/* Demo Report Banner */}
+        {parsedReport?.demo && <DemoReportBanner />}
+
         {/* Header */}
         <Card className="bg-primary text-primary-foreground">
           <CardHeader>
