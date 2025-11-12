@@ -5,42 +5,25 @@ import { SymptomFlow, type PatientData } from '@/components/SymptomFlow';
 import { MedicalReport } from '@/components/MedicalReport';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import type { User } from '@supabase/supabase-js';
+import { useAuth } from '@/hooks/useAuth';
 
 type AppState = 'home' | 'assessment' | 'report' | 'loading';
 
 const Index = () => {
   const navigate = useNavigate();
-  const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const { user, isLoading } = useAuth();
   const [appState, setAppState] = useState<AppState>('home');
   const [currentReport, setCurrentReport] = useState<any>(null);
   const [reportTimestamp, setReportTimestamp] = useState<string>('');
   const [assessmentData, setAssessmentData] = useState<PatientData | null>(null);
   const { toast } = useToast();
 
+  // Redirect if not authenticated
   useEffect(() => {
-    // Set up auth state listener FIRST
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setUser(session?.user ?? null);
-        if (!session) {
-          navigate('/');
-        }
-      }
-    );
-
-    // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-      if (!session) {
-        navigate('/');
-      }
-      setIsLoading(false);
-    });
-
-    return () => subscription.unsubscribe();
-  }, [navigate]);
+    if (!isLoading && !user) {
+      navigate('/');
+    }
+  }, [user, isLoading, navigate]);
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
@@ -92,7 +75,57 @@ const Index = () => {
       });
 
       if (error) {
+        console.error('Supabase function error:', error);
+        console.error('Error details:', JSON.stringify(error, null, 2));
+        console.log('Testing function with new API key...');
+
+        // Check if it's a FunctionsHttpError (which indicates HTTP error status)
+        if (error.name === 'FunctionsHttpError') {
+          // For FunctionsHttpError, check if we can access the status
+          const httpError = error as any;
+          if (httpError.status === 429 || httpError.statusCode === 429) {
+            throw new Error('API_QUOTA_EXCEEDED');
+          }
+
+          // If we can't get the status but it's a FunctionsHttpError with this message,
+          // it's likely a quota/rate limit issue
+          if (error.message?.includes('Edge Function returned a non-2xx status code')) {
+            // Since we can't determine the exact status, we'll provide a general error message
+            // but prioritize quota-related issues
+            throw new Error('SERVICE_UNAVAILABLE');
+          }
+        }
+
+        // Check if it's a 429 (rate limit/quota exceeded) error
+        const errorString = JSON.stringify(error).toLowerCase();
+        if (errorString.includes('429') ||
+            errorString.includes('too many requests') ||
+            errorString.includes('quota exceeded') ||
+            errorString.includes('rate limit')) {
+          throw new Error('API_QUOTA_EXCEEDED');
+        }
+
+        // Check error message for quota-related content
+        if (error.message?.toLowerCase().includes('quota') ||
+            error.message?.toLowerCase().includes('rate limit') ||
+            error.message?.includes('429')) {
+          throw new Error('API_QUOTA_EXCEEDED');
+        }
+
         throw new Error(error.message || 'Failed to generate report');
+      }
+
+      if (!reportData) {
+        throw new Error('No report data received from server');
+      }
+
+      // Check if the response indicates an error
+      if (reportData.error) {
+        const errorCode = reportData.error_code;
+        if (errorCode === 'QUOTA_EXCEEDED') {
+          throw new Error('API_QUOTA_EXCEEDED');
+        }
+        throw new Error(reportData.error);
       }
 
       // Pass the full report object directly to the component
@@ -109,18 +142,37 @@ const Index = () => {
 
     } catch (error) {
       console.error('Error generating report:', error);
-      
+
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-      const isQuotaExceeded = errorMessage.includes('quota') || errorMessage.includes('QUOTA_EXCEEDED');
-      const isRateLimited = errorMessage.includes('429') || errorMessage.includes('RATE_LIMITED');
-      
+      const isQuotaExceeded = errorMessage === 'API_QUOTA_EXCEEDED' || errorMessage.includes('quota') || errorMessage.includes('QUOTA_EXCEEDED') || errorMessage.includes('API quota exceeded');
+      const isServiceUnavailable = errorMessage === 'SERVICE_UNAVAILABLE';
+      const isRateLimited = errorMessage.includes('429') || errorMessage.includes('RATE_LIMITED') || errorMessage.includes('Too many requests');
+      const isNetworkError = errorMessage.includes('fetch') || errorMessage.includes('network') || errorMessage.includes('connection');
+      const isValidationError = errorMessage.includes('Validation failed') || errorMessage.includes('required');
+
+      let title = "Generation Failed";
+      let description = "Failed to generate your health report. Please try again.";
+
+      if (isQuotaExceeded) {
+        title = "API Quota Exceeded";
+        description = "The AI service quota has been exceeded. Please upgrade to a paid plan or try again in an hour.";
+      } else if (isServiceUnavailable) {
+        title = "Service Temporarily Unavailable";
+        description = "The AI service is temporarily unavailable. This is usually due to high demand or quota limits. Please try again in a few minutes.";
+      } else if (isRateLimited) {
+        title = "Rate Limited";
+        description = "Too many requests. Please wait a moment and try again.";
+      } else if (isNetworkError) {
+        title = "Connection Error";
+        description = "Network issue detected. Please check your connection and try again.";
+      } else if (isValidationError) {
+        title = "Validation Error";
+        description = errorMessage;
+      }
+
       toast({
-        title: isQuotaExceeded ? "API Quota Exceeded" : isRateLimited ? "Rate Limited" : "Generation Failed",
-        description: isQuotaExceeded 
-          ? "The AI service quota has been exceeded. Please upgrade to a paid plan or try again in an hour."
-          : isRateLimited 
-          ? "Too many requests. Please wait a moment and try again." 
-          : "Failed to generate your health report. Please try again.",
+        title,
+        description,
         variant: "destructive",
       });
       setAppState('assessment');

@@ -93,8 +93,12 @@ Deno.serve(async (req) => {
   let healthReportId: string | null = null;
 
   try {
+    console.log('Function started - processing request');
+
     const requestBody = await req.json();
     const { feelings, symptoms, age, name, gender, medicalHistory, surgicalHistory, currentMedications, allergies, userId } = requestBody;
+
+    console.log('Request body received:', { feelings: feelings?.substring(0, 50), symptomsCount: symptoms?.length, age, userId });
     
     const validationErrors = validateInput({ feelings, symptoms, age, name, gender, medicalHistory, surgicalHistory, currentMedications, allergies });
     if (validationErrors.length > 0) {
@@ -178,11 +182,16 @@ Deno.serve(async (req) => {
       user_id: userId || null
     });
 
-    const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
+    const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
 
-    if (!GEMINI_API_KEY) {
-      throw new Error('Gemini API key not configured');
+    if (!OPENAI_API_KEY) {
+      throw new Error('OpenAI API key not configured');
     }
+
+    // Debug: Log API key status (remove in production)
+    console.log('OpenAI API key configured:', OPENAI_API_KEY ? 'Yes' : 'No');
+    console.log('API key length:', OPENAI_API_KEY?.length || 0);
+    console.log('API key starts with:', OPENAI_API_KEY?.substring(0, 10) + '...' || 'No key');
 
     const patientProfile = `
 PATIENT INFORMATION:
@@ -239,49 +248,51 @@ JSON OUTPUT (be concise):
 
 Provide 2-3 OTC medications for reported symptoms. Age ${age} dosing. Cross-ref: ${currentMedications || 'none'} & ${allergies || 'none'}. Return pure JSON only.`;
 
-    const geminiResponse = await retryWithBackoff(async () => {
+    const openaiResponse = await retryWithBackoff(async () => {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 12000);
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GEMINI_API_KEY}`, {
+      const timeoutId = setTimeout(() => controller.abort(), 15000);
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
+          'Authorization': `Bearer ${OPENAI_API_KEY}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          contents: [{
-            parts: [{
-              text: prompt
-            }]
+          model: 'gpt-4o-mini',
+          messages: [{
+            role: 'user',
+            content: prompt
           }],
-          generationConfig: {
-            temperature: 0.2,
-            maxOutputTokens: 1536,
-            topP: 0.9,
-            topK: 20,
-            responseMimeType: "application/json"
-          },
-          safetySettings: [
-            { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_NONE' },
-            { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_NONE' },
-            { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_NONE' },
-            { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_NONE' }
-          ]
+          max_tokens: 1500,
+          temperature: 0.2,
+          response_format: { type: "json_object" }
         }),
         signal: controller.signal,
-        keepalive: true,
       }).finally(() => clearTimeout(timeoutId));
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('Gemini API error response:', errorText);
-        throw new Error(`Gemini API error: ${response.status} - ${errorText}`);
+        console.error('OpenAI API error response:', errorText);
+
+        // Handle specific error codes
+        if (response.status === 429) {
+          throw new Error('OpenAI API quota exceeded. Please try again later.');
+        } else if (response.status === 400) {
+          throw new Error('Invalid request to AI service. Please check your input.');
+        } else if (response.status === 401) {
+          throw new Error('Invalid API key. Please check your OpenAI API key.');
+        } else if (response.status >= 500) {
+          throw new Error('AI service temporarily unavailable. Please try again.');
+        }
+
+        throw new Error(`OpenAI API error: ${response.status} - ${errorText}`);
       }
 
       return response;
     });
 
-    const data = await geminiResponse.json();
-    const reportText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+    const data = await openaiResponse.json();
+    const reportText = data.choices?.[0]?.message?.content;
 
     if (!reportText) {
       throw new Error('No response from Gemini AI');

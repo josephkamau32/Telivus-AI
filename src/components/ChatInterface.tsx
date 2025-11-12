@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback, memo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -25,6 +25,7 @@ const ChatInterface = ({ onBack }: ChatInterfaceProps) => {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [showPayment, setShowPayment] = useState(false);
   const [subscriptionInfo, setSubscriptionInfo] = useState<any>(null);
+  const [pendingMessage, setPendingMessage] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
@@ -37,9 +38,9 @@ const ChatInterface = ({ onBack }: ChatInterfaceProps) => {
     scrollToBottom();
   }, [messages]);
 
-  const scrollToBottom = () => {
+  const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
+  }, []);
 
   const checkSubscription = async () => {
     try {
@@ -63,29 +64,79 @@ const ChatInterface = ({ onBack }: ChatInterfaceProps) => {
 
   const initializeChat = async () => {
     try {
+      console.log('Initializing chat...');
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) {
+        console.log('No user found, cannot initialize chat');
+        return;
+      }
+      console.log('User found:', user.id);
 
-      // Create new chat session
-      const { data: session, error } = await supabase
+      // Check for existing active session
+      const { data: existingSession } = await supabase
         .from('chat_sessions')
-        .insert({ 
-          user_id: user.id,
-          title: 'Health Chat'
-        })
-        .select()
-        .single();
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
 
-      if (error) throw error;
-      setSessionId(session.id);
+      let currentSessionId: string;
 
-      // Load initial greeting
+      if (existingSession) {
+        // Use existing session
+        currentSessionId = existingSession.id;
+        setSessionId(currentSessionId);
+        console.log('Using existing session:', currentSessionId);
+
+        // Load existing messages
+        const { data: existingMessages } = await supabase
+          .from('chat_messages')
+          .select('*')
+          .eq('session_id', currentSessionId)
+          .order('created_at', { ascending: true });
+
+        if (existingMessages && existingMessages.length > 0) {
+          console.log('Found existing messages:', existingMessages.length);
+          const formattedMessages: Message[] = existingMessages.map(msg => ({
+            id: msg.id,
+            role: msg.role as 'user' | 'assistant',
+            content: msg.content,
+            created_at: msg.created_at
+          }));
+          setMessages(formattedMessages);
+          return; // Don't add greeting if there are existing messages
+        }
+      } else {
+        // Create new chat session
+        console.log('Creating new chat session...');
+        const { data: session, error } = await supabase
+          .from('chat_sessions')
+          .insert({
+            user_id: user.id,
+            title: 'Health Chat'
+          })
+          .select()
+          .single();
+
+        if (error) {
+          console.error('Error creating session:', error);
+          throw error;
+        }
+        currentSessionId = session.id;
+        setSessionId(currentSessionId);
+        console.log('Created new session:', currentSessionId);
+      }
+
+      // Load initial greeting only for new sessions
+      console.log('Setting greeting message...');
       setMessages([{
         id: 'greeting',
         role: 'assistant',
         content: 'Hello! I\'m Telivus AI, your personal health assistant. I can help you with personalized nutrition plans, symptom follow-ups, and daily health check-ins. How can I assist you today?',
         created_at: new Date().toISOString()
       }]);
+      console.log('Greeting message set');
     } catch (error: any) {
       console.error('Error initializing chat:', error);
       toast({
@@ -125,6 +176,8 @@ const ChatInterface = ({ onBack }: ChatInterfaceProps) => {
       // Check if payment is required (402 status)
       if (response.error || response.data?.needsPayment) {
         setShowPayment(true);
+        // Store the pending message instead of removing it
+        setPendingMessage(userMessage);
         // Remove the temporary user message
         setMessages(prev => prev.filter(m => m.id !== tempUserMessage.id));
         return;
@@ -159,13 +212,70 @@ const ChatInterface = ({ onBack }: ChatInterfaceProps) => {
     }
   };
 
-  const handlePaymentSuccess = () => {
+  const handlePaymentSuccess = async () => {
     setShowPayment(false);
-    checkSubscription();
-    toast({
-      title: 'Payment Successful',
-      description: 'You can now continue chatting!',
-    });
+    await checkSubscription();
+
+    // If there's a pending message, retry sending it
+    if (pendingMessage && sessionId) {
+      const messageToSend = pendingMessage;
+      setPendingMessage(null); // Clear pending message
+
+      // Add the user message back to UI
+      const userMessage: Message = {
+        id: `user-${Date.now()}`,
+        role: 'user',
+        content: messageToSend,
+        created_at: new Date().toISOString()
+      };
+      setMessages(prev => [...prev, userMessage]);
+
+      setLoading(true);
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+
+        const response = await supabase.functions.invoke('chat-with-ai', {
+          body: { sessionId, message: messageToSend },
+          headers: {
+            Authorization: `Bearer ${session?.access_token}`,
+          },
+        });
+
+        if (response.error) {
+          throw response.error;
+        }
+
+        // Add AI response to UI
+        const aiMessage: Message = {
+          id: `ai-${Date.now()}`,
+          role: 'assistant',
+          content: response.data.message,
+          created_at: new Date().toISOString()
+        };
+        setMessages(prev => [...prev, aiMessage]);
+
+        toast({
+          title: 'Message Sent',
+          description: 'Continuing your conversation!',
+        });
+      } catch (error: any) {
+        console.error('Error retrying message:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to send message after payment',
+          variant: 'destructive',
+        });
+        // Remove the user message on error
+        setMessages(prev => prev.filter(m => m.id !== userMessage.id));
+      } finally {
+        setLoading(false);
+      }
+    } else {
+      toast({
+        title: 'Payment Successful',
+        description: 'You can now continue chatting!',
+      });
+    }
   };
 
   return (
@@ -213,7 +323,7 @@ const ChatInterface = ({ onBack }: ChatInterfaceProps) => {
                       : 'bg-secondary/50 text-foreground border border-primary/10'
                   }`}
                 >
-                  <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                  <p className="text-sm whitespace-pre-wrap leading-relaxed">{message.content}</p>
                 </div>
               </div>
             ))}
@@ -269,4 +379,4 @@ const ChatInterface = ({ onBack }: ChatInterfaceProps) => {
   );
 };
 
-export default ChatInterface;
+export default memo(ChatInterface);
