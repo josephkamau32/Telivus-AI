@@ -1,7 +1,8 @@
 import { Button } from '@/components/ui/button';
-import { Heart, Shield, Zap, LogOut, Brain, Sparkles, MessageSquare } from 'lucide-react';
+import { Heart, Shield, Zap, LogOut, Brain, Sparkles, MessageSquare, BarChart3 } from 'lucide-react';
 import { ThemeToggle } from './ThemeToggle';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from '@/contexts/LanguageContext';
 
 interface HeroSectionProps {
   onStartAssessment: () => void;
@@ -10,6 +11,7 @@ interface HeroSectionProps {
 
 export const HeroSection = ({ onStartAssessment, onSignOut }: HeroSectionProps) => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   
   return (
     <div className="relative min-h-screen flex items-center justify-center overflow-hidden">
@@ -29,7 +31,7 @@ export const HeroSection = ({ onStartAssessment, onSignOut }: HeroSectionProps) 
           className="backdrop-blur-sm"
         >
           <LogOut className="w-4 h-4 mr-2" />
-          Sign Out
+          {t.signOut}
         </Button>
       </div>
       
@@ -53,35 +55,44 @@ export const HeroSection = ({ onStartAssessment, onSignOut }: HeroSectionProps) 
           <div className="flex items-center justify-center gap-2 mb-8">
             <Sparkles className="w-6 h-6 text-primary animate-pulse" />
             <p className="text-xl md:text-2xl text-foreground font-medium">
-              Your AI-powered health companion for smarter self-care
+              {t.heroDescription}
             </p>
             <Sparkles className="w-6 h-6 text-secondary animate-pulse" style={{ animationDelay: '0.5s' }} />
           </div>
           
           <p className="text-lg text-muted-foreground mb-12 max-w-2xl mx-auto leading-relaxed">
-            Get personalized health insights and recommendations based on your symptoms. 
-            Fast, reliable, and designed to help you make informed health decisions.
+            {t.heroSubDescription}
           </p>
           
           {/* CTA Buttons with enhanced styling */}
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-            <Button 
+            <Button
               onClick={onStartAssessment}
               size="lg"
-              className="text-lg px-10 py-6 bg-gradient-to-r from-primary to-secondary hover:shadow-glow transform hover:scale-105 transition-all duration-300 font-semibold"
+              className="text-lg px-8 py-6 bg-gradient-to-r from-primary to-secondary hover:shadow-glow transform hover:scale-105 transition-all duration-300 font-semibold"
             >
               <Zap className="w-5 h-5 mr-2" />
-              Start Health Assessment
+              {t.startAssessment}
             </Button>
-            
-            <Button 
+
+            <Button
               onClick={() => navigate('/chat')}
               size="lg"
               variant="outline"
-              className="text-lg px-10 py-6 border-primary/30 hover:shadow-glow transform hover:scale-105 transition-all duration-300 font-semibold backdrop-blur-sm"
+              className="text-lg px-8 py-6 border-primary/30 hover:shadow-glow transform hover:scale-105 transition-all duration-300 font-semibold backdrop-blur-sm"
             >
               <MessageSquare className="w-5 h-5 mr-2" />
-              AI Health Chat
+              {t.aiHealthChat}
+            </Button>
+
+            <Button
+              onClick={() => navigate('/health-dashboard')}
+              size="lg"
+              variant="outline"
+              className="text-lg px-8 py-6 border-secondary/30 hover:shadow-glow transform hover:scale-105 transition-all duration-300 font-semibold backdrop-blur-sm"
+            >
+              <BarChart3 className="w-5 h-5 mr-2" />
+              Health Dashboard
             </Button>
           </div>
           
@@ -92,8 +103,8 @@ export const HeroSection = ({ onStartAssessment, onSignOut }: HeroSectionProps) 
                 <div className="absolute inset-0 bg-primary/20 rounded-full blur-lg group-hover:blur-xl transition-all" />
                 <Shield className="relative w-10 h-10 text-primary mx-auto" />
               </div>
-              <h3 className="text-xl font-bold mb-3 text-foreground">Secure & Private</h3>
-              <p className="text-muted-foreground">Your health data is processed securely with end-to-end encryption.</p>
+              <h3 className="text-xl font-bold mb-3 text-foreground">{t.securePrivate}</h3>
+              <p className="text-muted-foreground">{t.secureDescription}</p>
             </div>
             
             <div className="group bg-card/60 backdrop-blur-md p-8 rounded-2xl border border-secondary/20 hover:border-secondary/40 shadow-card hover:shadow-glow transition-all duration-300 hover:-translate-y-2">
@@ -101,8 +112,8 @@ export const HeroSection = ({ onStartAssessment, onSignOut }: HeroSectionProps) 
                 <div className="absolute inset-0 bg-secondary/20 rounded-full blur-lg group-hover:blur-xl transition-all" />
                 <Zap className="relative w-10 h-10 text-secondary mx-auto" />
               </div>
-              <h3 className="text-xl font-bold mb-3 text-foreground">Instant Results</h3>
-              <p className="text-muted-foreground">Get AI-powered health insights in seconds with advanced algorithms.</p>
+              <h3 className="text-xl font-bold mb-3 text-foreground">{t.instantResults}</h3>
+              <p className="text-muted-foreground">{t.instantDescription}</p>
             </div>
             
             <div className="group bg-card/60 backdrop-blur-md p-8 rounded-2xl border border-primary/20 hover:border-primary/40 shadow-card hover:shadow-glow transition-all duration-300 hover:-translate-y-2">
@@ -110,8 +121,8 @@ export const HeroSection = ({ onStartAssessment, onSignOut }: HeroSectionProps) 
                 <div className="absolute inset-0 bg-primary/20 rounded-full blur-lg group-hover:blur-xl transition-all" />
                 <Heart className="relative w-10 h-10 text-primary mx-auto" />
               </div>
-              <h3 className="text-xl font-bold mb-3 text-foreground">Personalized Care</h3>
-              <p className="text-muted-foreground">Tailored recommendations based on your unique health profile.</p>
+              <h3 className="text-xl font-bold mb-3 text-foreground">{t.personalizedCare}</h3>
+              <p className="text-muted-foreground">{t.personalizedDescription}</p>
             </div>
           </div>
         </div>

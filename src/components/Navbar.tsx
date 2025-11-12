@@ -1,14 +1,17 @@
 import { Button } from '@/components/ui/button';
 import { Link, useLocation } from 'react-router-dom';
 import { ThemeToggle } from './ThemeToggle';
+import { LanguageSelector } from './LanguageSelector';
 import telivusLogo from '@/assets/telivus-logo.png';
 import { useState } from 'react';
 import { Menu, X } from 'lucide-react';
+import { useTranslation } from '@/contexts/LanguageContext';
 
 export const Navbar = () => {
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  
+  const { t } = useTranslation();
+
   const isActive = (path: string) => location.pathname === path;
   
   return (
@@ -24,44 +27,46 @@ export const Navbar = () => {
         
         {/* Desktop Navigation Links */}
         <div className="hidden md:flex items-center gap-6 lg:gap-8">
-          <Link 
-            to="/" 
+          <Link
+            to="/"
             className={`text-sm font-medium transition-colors hover:text-primary ${
               isActive('/') ? 'text-primary' : 'text-foreground/80'
             }`}
           >
-            Home
+            {t.home}
           </Link>
-          <Link 
-            to="/about" 
+          <Link
+            to="/about"
             className={`text-sm font-medium transition-colors hover:text-primary ${
               isActive('/about') ? 'text-primary' : 'text-foreground/80'
             }`}
           >
-            About
+            {t.about}
           </Link>
-          <Link 
-            to="/contact" 
+          <Link
+            to="/contact"
             className={`text-sm font-medium transition-colors hover:text-primary ${
               isActive('/contact') ? 'text-primary' : 'text-foreground/80'
             }`}
           >
-            Contact
+            {t.contact}
           </Link>
         </div>
         
         {/* Desktop Right side actions */}
         <div className="hidden md:flex items-center gap-3">
+          <LanguageSelector />
           <ThemeToggle />
           <Link to="/auth">
             <Button variant="default" className="bg-gradient-to-r from-primary to-secondary">
-              Get Started
+              {t.getStarted}
             </Button>
           </Link>
         </div>
 
         {/* Mobile menu button */}
         <div className="md:hidden flex items-center gap-2">
+          <LanguageSelector />
           <ThemeToggle />
           <Button
             variant="ghost"
@@ -78,37 +83,37 @@ export const Navbar = () => {
       {isMobileMenuOpen && (
         <div className="md:hidden border-t border-border/40 bg-background/95 backdrop-blur">
           <div className="container px-4 py-4 space-y-4">
-            <Link 
-              to="/" 
+            <Link
+              to="/"
               className={`block text-sm font-medium transition-colors hover:text-primary ${
                 isActive('/') ? 'text-primary' : 'text-foreground/80'
               }`}
               onClick={() => setIsMobileMenuOpen(false)}
             >
-              Home
+              {t.home}
             </Link>
-            <Link 
-              to="/about" 
+            <Link
+              to="/about"
               className={`block text-sm font-medium transition-colors hover:text-primary ${
                 isActive('/about') ? 'text-primary' : 'text-foreground/80'
               }`}
               onClick={() => setIsMobileMenuOpen(false)}
             >
-              About
+              {t.about}
             </Link>
-            <Link 
-              to="/contact" 
+            <Link
+              to="/contact"
               className={`block text-sm font-medium transition-colors hover:text-primary ${
                 isActive('/contact') ? 'text-primary' : 'text-foreground/80'
               }`}
               onClick={() => setIsMobileMenuOpen(false)}
             >
-              Contact
+              {t.contact}
             </Link>
             <div className="pt-2">
               <Link to="/auth" onClick={() => setIsMobileMenuOpen(false)}>
                 <Button variant="default" className="w-full bg-gradient-to-r from-primary to-secondary">
-                  Get Started
+                  {t.getStarted}
                 </Button>
               </Link>
             </div>

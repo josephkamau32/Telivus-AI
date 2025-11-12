@@ -10,10 +10,12 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
+import { useTranslation } from "@/contexts/LanguageContext";
 
 export default function Auth() {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { t } = useTranslation();
   const [isLoading, setIsLoading] = useState(false);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const [email, setEmail] = useState("");
@@ -100,8 +102,8 @@ export default function Auth() {
     
     if (!email || !password) {
       toast({
-        title: "Validation Error",
-        description: "Please fill in all fields",
+        title: t.validationError,
+        description: t.pleaseFillAllFields,
         variant: "destructive",
       });
       return;
@@ -109,8 +111,8 @@ export default function Auth() {
 
     if (password.length < 6) {
       toast({
-        title: "Validation Error",
-        description: "Password must be at least 6 characters",
+        title: t.validationError,
+        description: t.passwordMin6Chars,
         variant: "destructive",
       });
       return;
@@ -141,8 +143,8 @@ export default function Auth() {
       });
     } else {
       toast({
-        title: "Success!",
-        description: "Check your email to confirm your account",
+        title: t.success,
+        description: t.checkEmailConfirm,
       });
     }
   };
@@ -153,14 +155,14 @@ export default function Auth() {
       await supabase.auth.signOut();
       setCurrentUser(null);
       toast({
-        title: "Signed Out",
-        description: "You have been signed out successfully",
+        title: t.signedOut,
+        description: t.signedOutSuccessfully,
       });
     } catch (error) {
       console.error('Sign out error:', error);
       toast({
-        title: "Sign Out Error",
-        description: "Failed to sign out",
+        title: t.signOutError,
+        description: t.failedToSignOut,
         variant: "destructive",
       });
     } finally {
@@ -173,8 +175,8 @@ export default function Auth() {
     
     if (!email || !password) {
       toast({
-        title: "Validation Error",
-        description: "Email and password are required",
+        title: t.validationError,
+        description: t.emailAndPasswordRequired,
         variant: "destructive",
       });
       return;
@@ -189,7 +191,7 @@ export default function Auth() {
 
       if (error) {
         toast({
-          title: "Authentication Error",
+          title: t.authenticationError,
           description: error.message,
           variant: "destructive",
         });
@@ -198,8 +200,8 @@ export default function Auth() {
     } catch (error) {
       console.error('Sign-in error:', error);
       toast({
-        title: "Sign In Failed",
-        description: "An unexpected error occurred",
+        title: t.signInFailed,
+        description: t.unexpectedError,
         variant: "destructive",
       });
     } finally {
@@ -223,10 +225,10 @@ export default function Auth() {
         <Card className="w-full max-w-md">
           <CardHeader className="space-y-1">
             <CardTitle className="text-3xl font-bold text-center bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-              Welcome to Telivus
+              {t.welcomeToTelivus}
             </CardTitle>
             <CardDescription className="text-center">
-              {currentUser ? `Already signed in as ${currentUser.email}` : "Sign in or create an account to get started"}
+              {currentUser ? `${t.alreadySignedIn} ${currentUser.email}` : t.signInOrCreateAccount}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -234,18 +236,18 @@ export default function Auth() {
               <div className="space-y-4 text-center">
                 <div className="p-4 bg-green-50 dark:bg-green-950/20 rounded-lg border border-green-200 dark:border-green-800">
                   <p className="text-green-800 dark:text-green-200 font-medium">
-                    ✅ You are already signed in
+                    ✅ {t.alreadySignedIn}
                   </p>
                   <p className="text-green-600 dark:text-green-400 text-sm mt-1">
                     {currentUser.email}
                   </p>
                 </div>
                 <div className="flex gap-2">
-                  <Button 
+                  <Button
                     onClick={() => navigate('/dashboard')}
                     className="flex-1"
                   >
-                    Go to Dashboard
+                    {t.goToDashboard}
                   </Button>
                   <Button 
                     onClick={handleSignOut}
@@ -256,10 +258,10 @@ export default function Auth() {
                     {isLoading ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Signing out...
+                        {t.signingOut}
                       </>
                     ) : (
-                      "Sign Out"
+                      t.signOut
                     )}
                   </Button>
                 </div>
@@ -267,18 +269,18 @@ export default function Auth() {
             ) : (
             <Tabs defaultValue="signin" className="w-full">
               <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="signin">Sign In</TabsTrigger>
-                <TabsTrigger value="signup">Sign Up</TabsTrigger>
+                <TabsTrigger value="signin">{t.signIn}</TabsTrigger>
+                <TabsTrigger value="signup">{t.signUp}</TabsTrigger>
               </TabsList>
               
               <TabsContent value="signin">
                 <form onSubmit={handleSignIn} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="signin-email">Email</Label>
+                    <Label htmlFor="signin-email">{t.email}</Label>
                     <Input
                       id="signin-email"
                       type="email"
-                      placeholder="you@example.com"
+                      placeholder={t.youExampleCom}
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       disabled={isLoading}
@@ -286,11 +288,11 @@ export default function Auth() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="signin-password">Password</Label>
+                    <Label htmlFor="signin-password">{t.password}</Label>
                     <Input
                       id="signin-password"
                       type="password"
-                      placeholder="••••••••"
+                      placeholder={t.sixCharacters}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       disabled={isLoading}
@@ -301,10 +303,10 @@ export default function Auth() {
                     {isLoading ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Signing in...
+                        {t.signingIn}
                       </>
                     ) : (
-                      "Sign In"
+                      t.signIn
                     )}
                   </Button>
                 </form>
@@ -313,22 +315,22 @@ export default function Auth() {
               <TabsContent value="signup">
                 <form onSubmit={handleSignUp} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="signup-username">Username (optional)</Label>
+                    <Label htmlFor="signup-username">{t.usernameOptional}</Label>
                     <Input
                       id="signup-username"
                       type="text"
-                      placeholder="johndoe"
+                      placeholder={t.johndoe}
                       value={username}
                       onChange={(e) => setUsername(e.target.value)}
                       disabled={isLoading}
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="signup-email">Email</Label>
+                    <Label htmlFor="signup-email">{t.email}</Label>
                     <Input
                       id="signup-email"
                       type="email"
-                      placeholder="you@example.com"
+                      placeholder={t.youExampleCom}
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       disabled={isLoading}
@@ -336,11 +338,11 @@ export default function Auth() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="signup-password">Password</Label>
+                    <Label htmlFor="signup-password">{t.password}</Label>
                     <Input
                       id="signup-password"
                       type="password"
-                      placeholder="••••••••"
+                      placeholder={t.sixCharacters}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       disabled={isLoading}
@@ -352,10 +354,10 @@ export default function Auth() {
                     {isLoading ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Creating account...
+                        {t.creatingAccount}
                       </>
                     ) : (
-                      "Create Account"
+                      t.signUp
                     )}
                   </Button>
                 </form>

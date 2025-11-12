@@ -181,16 +181,32 @@ All colors MUST be HSL.
     background-size: 200% auto;
     animation: gradient-shift 3s ease infinite;
   }
-  
+
   .gradient-ai {
     background: var(--gradient-ai);
   }
-  
+
   .shadow-glow {
     box-shadow: var(--shadow-glow);
   }
-  
+
   .shadow-card {
     box-shadow: var(--shadow-card);
+  }
+
+  /* Voice input listening animation */
+  @keyframes listening-pulse {
+    0%, 100% {
+      transform: scale(1);
+      box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4);
+    }
+    50% {
+      transform: scale(1.05);
+      box-shadow: 0 0 0 8px rgba(239, 68, 68, 0);
+    }
+  }
+
+  .animate-listening {
+    animation: listening-pulse 2s infinite;
   }
 }
