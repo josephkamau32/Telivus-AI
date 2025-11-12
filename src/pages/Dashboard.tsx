@@ -62,6 +62,7 @@ const Dashboard = () => {
   const [symptomStats, setSymptomStats] = useState<SymptomData[]>([]);
   const [recentReports, setRecentReports] = useState<any[]>([]);
   const [isLoadingData, setIsLoadingData] = useState(true);
+  const [dataError, setDataError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isLoading && !user) {
@@ -77,6 +78,10 @@ const Dashboard = () => {
   const loadDashboardData = async () => {
     try {
       setIsLoadingData(true);
+      setDataError(null);
+
+      // Simulate API delay
+      await new Promise(resolve => setTimeout(resolve, 1000));
 
       // Generate mock data for demonstration
       // In a real app, this would come from the database
@@ -127,6 +132,7 @@ const Dashboard = () => {
       setRecentReports(mockReports);
     } catch (error) {
       console.error('Error loading dashboard data:', error);
+      setDataError('Failed to load dashboard data. Please try again.');
     } finally {
       setIsLoadingData(false);
     }
@@ -152,6 +158,21 @@ const Dashboard = () => {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  if (dataError) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <div className="max-w-md w-full text-center space-y-4">
+          <div className="text-destructive text-6xl">⚠️</div>
+          <h2 className="text-xl font-semibold text-foreground">Data Loading Error</h2>
+          <p className="text-muted-foreground">{dataError}</p>
+          <Button onClick={loadDashboardData} variant="outline">
+            Try Again
+          </Button>
+        </div>
       </div>
     );
   }
