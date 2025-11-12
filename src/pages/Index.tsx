@@ -312,14 +312,8 @@ const Index = () => {
         // Try to enhance with AI in background (optional)
         try {
           console.log('Attempting optional AI enhancement...');
-          const response = await fetch('https://bakyhjddhqxxsvseygst.supabase.co/functions/v1/generate-medical-report', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJha3loamRkaHF4eHN2c2V5Z3N0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg3MDEzMjcsImV4cCI6MjA3NDI3NzMyN30.rhu5UaNYLs-5g_A3DjtA2qRxYsbY83dTNGj-p5SS2QU',
-              'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJha3loamRkaHF4eHN2c2V5Z3N0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg3MDEzMjcsImV4cCI6MjA3NDI3NzMyN30.rhu5UaNYLs-5g_A3DjtA2qRxYsbY83dTNGj-p5SS2QU',
-            },
-            body: JSON.stringify({
+          const { data: result, error } = await supabase.functions.invoke('generate-medical-report', {
+            body: {
               feelings: data.feelings,
               symptoms: data.symptoms,
               age: Number(data.age),
@@ -330,11 +324,10 @@ const Index = () => {
               currentMedications: data.currentMedications,
               allergies: data.allergies,
               userId: user.id
-            })
+            }
           });
 
-          if (response.ok) {
-            const result = await response.json();
+          if (!error && result) {
             console.log('AI enhancement successful, updating report');
             setCurrentReport(result);
             setReportTimestamp(new Date().toISOString());
@@ -353,14 +346,8 @@ const Index = () => {
 
       // Fallback: try AI function if no demo report available
       console.log('No demo report available, trying AI function...');
-      const response = await fetch('https://bakyhjddhqxxsvseygst.supabase.co/functions/v1/generate-medical-report', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJha3loamRkaHF4eHN2c2V5Z3N0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg3MDEzMjcsImV4cCI6MjA3NDI3NzMyN30.rhu5UaNYLs-5g_A3DjtA2qRxYsbY83dTNGj-p5SS2QU',
-          'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJha3loamRkaHF4eHN2c2V5Z3N0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg3MDEzMjcsImV4cCI6MjA3NDI3NzMyN30.rhu5UaNYLs-5g_A3DjtA2qRxYsbY83dTNGj-p5SS2QU',
-        },
-        body: JSON.stringify({
+      const { data: reportData, error } = await supabase.functions.invoke('generate-medical-report', {
+        body: {
           feelings: data.feelings,
           symptoms: data.symptoms,
           age: Number(data.age),
@@ -371,18 +358,8 @@ const Index = () => {
           currentMedications: data.currentMedications,
           allergies: data.allergies,
           userId: user.id
-        })
-      });
-
-      let reportData, error;
-      try {
-        reportData = await response.json();
-        if (!response.ok) {
-          error = reportData;
         }
-      } catch (e) {
-        error = { message: `HTTP ${response.status}: ${response.statusText}` };
-      }
+      });
 
       if (error) {
         console.error('Supabase function error:', error);
