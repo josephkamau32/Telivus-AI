@@ -43,7 +43,16 @@ const generateCacheKey = async (symptoms: string[], feelings: string, age: numbe
     .trim()
     .toLowerCase()
     .replace(/\s+/g, ' ');
-  const cacheString = `${normalizedSymptoms}|${normalizedFeelings}|${Math.floor(age / 5) * 5}`;
+  // More granular age grouping: 1-year intervals for ages 0-18, 2-year for 19-40, 5-year for 41+
+  let ageGroup;
+  if (age <= 18) {
+    ageGroup = age;
+  } else if (age <= 40) {
+    ageGroup = Math.floor(age / 2) * 2;
+  } else {
+    ageGroup = Math.floor(age / 5) * 5;
+  }
+  const cacheString = `${normalizedSymptoms}|${normalizedFeelings}|${ageGroup}`;
 
   const msgUint8 = new TextEncoder().encode(cacheString);
   const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
@@ -206,47 +215,32 @@ ${currentMedications ? `- Current Medications: ${currentMedications}` : ''}
 ${allergies ? `- Known Allergies: ${allergies}` : ''}
 `;
 
-    const prompt = `You are Dr. Sarah Mitchell, MD, PharmD - a board-certified physician with 20+ years experience and clinical pharmacist certification.
+    const prompt = `Dr. Sarah Mitchell, MD, PharmD with 20+ years experience.
 
-${patientProfile}
+PATIENT: Age ${age}, ${gender || 'gender not specified'}, symptoms: ${symptoms.join(', ')}, feels: ${feelings}
+${medicalHistory ? `Medical history: ${medicalHistory}` : ''}
+${surgicalHistory ? `Surgical history: ${surgicalHistory}` : ''}
+${currentMedications ? `Medications: ${currentMedications}` : ''}
+${allergies ? `Allergies: ${allergies}` : ''}
 
-CRITICAL RULES:
-- Use ONLY the symptoms explicitly stated above
-- Base all assessments strictly on provided patient data
-- Recommend only FDA-approved OTC medications for stated symptoms
-- No hallucinations, no invented symptoms, no speculation
-- Return ONLY valid JSON (no markdown, no code blocks)
-
-JSON OUTPUT (be concise):
+CRITICAL: Use ONLY stated symptoms. No hallucinations. FDA-approved OTC only. Return JSON only.
 
 {
-  "demographic_header": {
-    "name": "${name || 'Not provided'}",
-    "age": ${age},
-    "gender": "${gender || 'Not provided'}",
-    "date": "${new Date().toISOString().split('T')[0]}"
-  },
-  "chief_complaint": "Brief primary symptoms from patient report",
-  "history_present_illness": "Concise narrative: symptoms + how patient feels + age/gender context (3-4 sentences max)",
-  "past_medical_history": "${medicalHistory || 'None reported'}",
-  "past_surgical_history": "${surgicalHistory || 'None reported'}",
-  "medications": "${currentMedications || 'None reported'}",
-  "allergies": "${allergies || 'None reported'}",
-  "assessment": "Clinical assessment: Most likely diagnosis + 2 differential diagnoses + reasoning from symptoms only (4-5 sentences)",
-  "diagnostic_plan": "**Consultations**: Specialists to see | **Tests**: Diagnostic tests needed | **RED FLAGS**: 4 warning signs for ER | **Follow-up**: When to seek care",
+  "chief_complaint": "Primary symptoms",
+  "history_present_illness": "3-4 sentences: symptoms + feelings + context",
+  "assessment": "Diagnosis + 2 differentials + reasoning (4-5 sentences)",
+  "diagnostic_plan": "Consultations | Tests | RED FLAGS | Follow-up",
   "otc_recommendations": [
     {
-      "medicine": "FDA-approved OTC medication (generic + brand)",
-      "dosage": "Age-appropriate for ${age}yo",
-      "purpose": "Treats [specific symptom]",
+      "medicine": "Generic (Brand)",
+      "dosage": "Age-${age} appropriate",
+      "purpose": "Treats [symptom]",
       "instructions": "How/when to take",
-      "precautions": "Warnings, contraindications. ${currentMedications ? 'Checked vs: ' + currentMedications : ''}${allergies ? ' Safe with: ' + allergies : ''}",
-      "max_duration": "Days before doctor visit"
+      "precautions": "Warnings. ${currentMedications ? 'Check vs: ' + currentMedications : ''}${allergies ? ' Safe with: ' + allergies : ''}",
+      "max_duration": "Days max"
     }
   ]
-}
-
-Provide 2-3 OTC medications for reported symptoms. Age ${age} dosing. Cross-ref: ${currentMedications || 'none'} & ${allergies || 'none'}. Return pure JSON only.`;
+}`;
 
     const openaiResponse = await retryWithBackoff(async () => {
       const controller = new AbortController();
@@ -263,8 +257,8 @@ Provide 2-3 OTC medications for reported symptoms. Age ${age} dosing. Cross-ref:
             role: 'user',
             content: prompt
           }],
-          max_tokens: 1500,
-          temperature: 0.2,
+          max_tokens: 1200,
+          temperature: 0.1,
           response_format: { type: "json_object" }
         }),
         signal: controller.signal,
