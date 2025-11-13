@@ -18,6 +18,9 @@ export function useAuth() {
           console.error('Session check error:', error);
           if (error.message?.includes('Invalid Refresh Token') || error.message?.includes('Refresh Token Not Found')) {
             console.log('Invalid refresh token detected, clearing session');
+            // Clear local storage
+            localStorage.removeItem('supabase.auth.token');
+            localStorage.removeItem('sb-bakyhjddhqxxsvseygst-auth-token');
             await supabase.auth.signOut({ scope: 'local' });
           }
         }
@@ -29,6 +32,7 @@ export function useAuth() {
       } catch (error) {
         console.error('Error getting initial session:', error);
         if (mounted) {
+          setUser(null);
           setIsLoading(false);
         }
       }
