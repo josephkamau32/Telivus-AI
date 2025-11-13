@@ -389,7 +389,7 @@ CRITICAL: Use ONLY stated symptoms. No hallucinations. FDA-approved OTC only. Re
       .update({
         status: 'completed',
         report: parsedReport,
-        otc_medicines: parsedReport.otc_medicines || []
+        otc_medicines: parsedReport.otc_recommendations || []
       })
       .eq('id', healthReportId);
 

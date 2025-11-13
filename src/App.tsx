@@ -16,8 +16,10 @@ const Auth = lazy(() => import("./pages/Auth"));
 const Chat = lazy(() => import("./pages/Chat"));
 const About = lazy(() => import("./pages/About"));
 const Contact = lazy(() => import("./pages/Contact"));
-const Dashboard = lazy(() => import("./pages/Dashboard"));
 const NotFound = lazy(() => import("./pages/NotFound"));
+
+// Import Dashboard directly to avoid lazy loading issues
+import Dashboard from "./pages/Dashboard";
 
 // Loading component
 const PageLoader = () => (
@@ -42,12 +44,7 @@ const App = () => (
         <TooltipProvider>
           <Toaster />
           <Sonner />
-          <BrowserRouter
-            future={{
-              v7_startTransition: true,
-              v7_relativeSplatPath: true,
-            }}
-          >
+          <BrowserRouter>
             <Suspense fallback={<PageLoader />}>
               <Routes>
                 <Route path="/" element={<Landing />} />
