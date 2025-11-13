@@ -1,183 +1,165 @@
-# Supabase CLI
+# Telivus AI - AI-Powered Health Assessment Platform
 
-[![Coverage Status](https://coveralls.io/repos/github/supabase/cli/badge.svg?branch=main)](https://coveralls.io/github/supabase/cli?branch=main) [![Bitbucket Pipelines](https://img.shields.io/bitbucket/pipelines/supabase-cli/setup-cli/master?style=flat-square&label=Bitbucket%20Canary)](https://bitbucket.org/supabase-cli/setup-cli/pipelines) [![Gitlab Pipeline Status](https://img.shields.io/gitlab/pipeline-status/sweatybridge%2Fsetup-cli?label=Gitlab%20Canary)
-](https://gitlab.com/sweatybridge/setup-cli/-/pipelines)
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-Visit-green)](https://telivus.co.ke/) [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-[Supabase](https://supabase.io) is an open source Firebase alternative. We're building the features of Firebase using enterprise-grade open source tools.
+Telivus AI is an intelligent health assessment platform that leverages artificial intelligence to analyze user symptoms, provide personalized health insights, and generate comprehensive medical reports. Built as a Progressive Web App (PWA), it offers a seamless experience across devices with features like voice input, multi-language support, and offline capabilities.
 
-This repository contains all the functionality for Supabase CLI.
+## 🚀 Features
 
-- [x] Running Supabase locally
-- [x] Managing database migrations
-- [x] Creating and deploying Supabase Functions
-- [x] Generating types directly from your database schema
-- [x] Making authenticated HTTP requests to [Management API](https://supabase.com/docs/reference/api/introduction)
+- **Symptom Assessment Flow**: Interactive step-by-step symptom analysis with intelligent questioning
+- **AI-Powered Chat**: Real-time health consultations with AI for personalized advice
+- **Medical Report Generation**: Automated generation of detailed health reports in PDF format
+- **Multi-Language Support**: Available in multiple languages for global accessibility
+- **Voice Input**: Hands-free symptom reporting using voice recognition
+- **Progressive Web App**: Installable on mobile devices with offline functionality
+- **Secure Authentication**: User authentication and data privacy protection
+- **Responsive Design**: Optimized for desktop, tablet, and mobile devices
+- **Dark/Light Theme**: Customizable interface themes
 
-## Getting started
+## 🛠️ Tech Stack
 
-### Install the CLI
+- **Frontend**: React 18, TypeScript, Vite
+- **UI Framework**: Tailwind CSS, Shadcn/ui, Radix UI
+- **Backend**: Supabase (Database, Authentication, Edge Functions)
+- **State Management**: React Query (TanStack)
+- **Forms**: React Hook Form with Zod validation
+- **Charts**: Recharts
+- **PDF Generation**: jsPDF
+- **Internationalization**: Custom i18n implementation
+- **PWA**: Service Workers, Web App Manifest
 
-Available via [NPM](https://www.npmjs.com) as dev dependency. To install:
+## 📦 Installation
 
-```bash
-npm i supabase --save-dev
+### Prerequisites
+
+- Node.js (v18 or higher)
+- npm or yarn
+- Supabase account
+
+### Setup
+
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/your-username/telivus-ai.git
+   cd telivus-ai
+   ```
+
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
+
+3. **Environment Setup**
+   ```bash
+   cp env.example .env.local
+   ```
+   Fill in your Supabase credentials and other environment variables.
+
+4. **Supabase Setup**
+   - Create a new Supabase project
+   - Run the migrations in the `supabase/migrations` directory
+   - Deploy the edge functions in `supabase/functions`
+
+5. **Start the development server**
+   ```bash
+   npm run dev
+   ```
+
+6. **Build for production**
+   ```bash
+   npm run build
+   npm run preview
+   ```
+
+## 📱 Usage
+
+1. **Access the Application**: Open your browser and navigate to `http://localhost:5173`
+
+2. **User Registration/Login**: Create an account or log in with existing credentials
+
+3. **Symptom Assessment**: Follow the guided symptom assessment flow to input your health information
+
+4. **AI Consultation**: Chat with the AI for additional health insights and recommendations
+
+5. **Medical Report**: Generate and download your personalized medical report
+
+## 📸 Screenshots
+
+### Login Page
+![Login Page](screenshots/login-page.png)
+
+### Dashboard
+![Dashboard](screenshots/dashboard.png)
+
+### Symptom Assessment Flow
+![Symptom Assessment Step 1](screenshots/step1.png)
+
+### AI Health Chat
+![AI Health Chat](screenshots/health-chat1.png)
+
+### Medical Report
+![Medical Report](screenshots/medical-report.png)
+
+## 🏗️ Project Structure
+
+```
+telivus-ai/
+├── public/                 # Static assets and PWA files
+├── src/
+│   ├── components/         # Reusable UI components
+│   ├── pages/             # Page components
+│   ├── contexts/          # React contexts
+│   ├── hooks/             # Custom React hooks
+│   ├── integrations/      # External service integrations
+│   ├── lib/               # Utility functions and configurations
+│   └── assets/            # Images and icons
+├── supabase/
+│   ├── functions/         # Edge functions
+│   └── migrations/        # Database migrations
+├── screenshots/           # Application screenshots
+└── tests/                 # Test files
 ```
 
-To install the beta release channel:
+## 🤝 Contributing
 
-```bash
-npm i supabase@beta --save-dev
-```
+We welcome contributions! Please follow these steps:
 
-When installing with yarn 4, you need to disable experimental fetch with the following nodejs config.
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
-```
-NODE_OPTIONS=--no-experimental-fetch yarn add supabase
-```
+### Development Guidelines
 
-> **Note**
-For Bun versions below v1.0.17, you must add `supabase` as a [trusted dependency](https://bun.sh/guides/install/trusted) before running `bun add -D supabase`.
+- Follow TypeScript best practices
+- Use ESLint for code linting
+- Write tests for new features
+- Update documentation as needed
+- Ensure responsive design across devices
 
-<details>
-  <summary><b>macOS</b></summary>
+## 📄 License
 
-  Available via [Homebrew](https://brew.sh). To install:
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-  ```sh
-  brew install supabase/tap/supabase
-  ```
+## 🔒 Security
 
-  To install the beta release channel:
-  
-  ```sh
-  brew install supabase/tap/supabase-beta
-  brew link --overwrite supabase-beta
-  ```
-  
-  To upgrade:
+For security concerns, please refer to our [Security Policy](SECURITY.md).
 
-  ```sh
-  brew upgrade supabase
-  ```
-</details>
+## 📞 Support
 
-<details>
-  <summary><b>Windows</b></summary>
+If you have any questions or need support:
 
-  Available via [Scoop](https://scoop.sh). To install:
+- Open an issue on GitHub
+- Check the documentation
+- Contact the maintainers
 
-  ```powershell
-  scoop bucket add supabase https://github.com/supabase/scoop-bucket.git
-  scoop install supabase
-  ```
+## 🙏 Acknowledgments
 
-  To upgrade:
+- Built with [Supabase](https://supabase.com) for backend services
+- UI components from [Shadcn/ui](https://ui.shadcn.com)
+- Icons from [Lucide React](https://lucide.dev)
 
-  ```powershell
-  scoop update supabase
-  ```
-</details>
+---
 
-<details>
-  <summary><b>Linux</b></summary>
-
-  Available via [Homebrew](https://brew.sh) and Linux packages.
-
-  #### via Homebrew
-
-  To install:
-
-  ```sh
-  brew install supabase/tap/supabase
-  ```
-
-  To upgrade:
-
-  ```sh
-  brew upgrade supabase
-  ```
-
-  #### via Linux packages
-
-  Linux packages are provided in [Releases](https://github.com/supabase/cli/releases). To install, download the `.apk`/`.deb`/`.rpm`/`.pkg.tar.zst` file depending on your package manager and run the respective commands.
-
-  ```sh
-  sudo apk add --allow-untrusted <...>.apk
-  ```
-
-  ```sh
-  sudo dpkg -i <...>.deb
-  ```
-
-  ```sh
-  sudo rpm -i <...>.rpm
-  ```
-
-  ```sh
-  sudo pacman -U <...>.pkg.tar.zst
-  ```
-</details>
-
-<details>
-  <summary><b>Other Platforms</b></summary>
-
-  You can also install the CLI via [go modules](https://go.dev/ref/mod#go-install) without the help of package managers.
-
-  ```sh
-  go install github.com/supabase/cli@latest
-  ```
-
-  Add a symlink to the binary in `$PATH` for easier access:
-
-  ```sh
-  ln -s "$(go env GOPATH)/bin/cli" /usr/bin/supabase
-  ```
-
-  This works on other non-standard Linux distros.
-</details>
-
-<details>
-  <summary><b>Community Maintained Packages</b></summary>
-
-  Available via [pkgx](https://pkgx.sh/). Package script [here](https://github.com/pkgxdev/pantry/blob/main/projects/supabase.com/cli/package.yml).
-  To install in your working directory:
-
-  ```bash
-  pkgx install supabase
-  ```
-
-  Available via [Nixpkgs](https://nixos.org/). Package script [here](https://github.com/NixOS/nixpkgs/blob/master/pkgs/development/tools/supabase-cli/default.nix).
-</details>
-
-### Run the CLI
-
-```bash
-supabase bootstrap
-```
-
-Or using npx:
-
-```bash
-npx supabase bootstrap
-```
-
-The bootstrap command will guide you through the process of setting up a Supabase project using one of the [starter](https://github.com/supabase-community/supabase-samples/blob/main/samples.json) templates.
-
-## Docs
-
-Command & config reference can be found [here](https://supabase.com/docs/reference/cli/about).
-
-## Breaking changes
-
-We follow semantic versioning for changes that directly impact CLI commands, flags, and configurations.
-
-However, due to dependencies on other service images, we cannot guarantee that schema migrations, seed.sql, and generated types will always work for the same CLI major version. If you need such guarantees, we encourage you to pin a specific version of CLI in package.json.
-
-## Developing
-
-To run from source:
-
-```sh
-# Go >= 1.22
-go run . help
-```
+**Disclaimer**: This application is for informational purposes only and should not replace professional medical advice. Always consult with qualified healthcare providers for medical concerns.
