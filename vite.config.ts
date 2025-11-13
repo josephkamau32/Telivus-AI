@@ -9,7 +9,7 @@ export default defineConfig(({ mode }) => ({
     host: "::",
     port: 8080,
     hmr: {
-      port: 8080,
+      port: 24678,
     },
     headers: {
       'X-Content-Type-Options': 'nosniff',
@@ -18,7 +18,7 @@ export default defineConfig(({ mode }) => ({
       'Referrer-Policy': 'strict-origin-when-cross-origin'
     }
   },
-  plugins: [react(), mode === "development" && componentTagger()].filter(Boolean),
+  plugins: [react()],
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),

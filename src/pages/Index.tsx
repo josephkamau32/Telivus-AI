@@ -346,100 +346,117 @@ const Index = () => {
 
       // Fallback: try AI function if no demo report available
       console.log('No demo report available, trying AI function...');
-      const { data: reportData, error } = await supabase.functions.invoke('generate-medical-report', {
-        body: {
-          feelings: data.feelings,
-          symptoms: data.symptoms,
-          age: Number(data.age),
-          name: data.name,
-          gender: data.gender,
-          medicalHistory: data.medicalHistory,
-          surgicalHistory: data.surgicalHistory,
-          currentMedications: data.currentMedications,
-          allergies: data.allergies,
-          userId: user.id
-        }
-      });
+      try {
+        const { data: reportData, error } = await supabase.functions.invoke('generate-medical-report', {
+          body: {
+            feelings: data.feelings,
+            symptoms: data.symptoms,
+            age: Number(data.age),
+            name: data.name,
+            gender: data.gender,
+            medicalHistory: data.medicalHistory,
+            surgicalHistory: data.surgicalHistory,
+            currentMedications: data.currentMedications,
+            allergies: data.allergies,
+            userId: user.id
+          }
+        });
 
-      if (error) {
-        console.error('Supabase function error:', error);
-        console.error('Error details:', JSON.stringify(error, null, 2));
-        console.log('Testing function with new API key...');
+        if (error) {
+          console.error('Supabase function error:', error);
+          console.error('Error details:', JSON.stringify(error, null, 2));
+          console.log('Testing function with new API key...');
 
-        // Check if it's a FunctionsHttpError (which indicates HTTP error status)
-        if (error.name === 'FunctionsHttpError') {
-          // For FunctionsHttpError, check if we can access the status
-          const httpError = error as any;
-          if (httpError.status === 429 || httpError.statusCode === 429) {
+          // Check if it's a FunctionsHttpError (which indicates HTTP error status)
+          if (error.name === 'FunctionsHttpError') {
+            // For FunctionsHttpError, check if we can access the status
+            const httpError = error as any;
+            if (httpError.status === 429 || httpError.statusCode === 429) {
+              throw new Error('API_QUOTA_EXCEEDED');
+            }
+
+            // If we can't get the status but it's a FunctionsHttpError with this message,
+            // it's likely a quota/rate limit issue
+            if (error.message?.includes('Edge Function returned a non-2xx status code')) {
+              // Since we can't determine the exact status, we'll provide a general error message
+              // but prioritize quota-related issues
+              throw new Error('SERVICE_UNAVAILABLE');
+            }
+          }
+
+          // Check if it's a 429 (rate limit/quota exceeded) error
+          const errorString = JSON.stringify(error).toLowerCase();
+          if (errorString.includes('429') ||
+              errorString.includes('too many requests') ||
+              errorString.includes('quota exceeded') ||
+              errorString.includes('rate limit')) {
             throw new Error('API_QUOTA_EXCEEDED');
           }
 
-          // If we can't get the status but it's a FunctionsHttpError with this message,
-          // it's likely a quota/rate limit issue
-          if (error.message?.includes('Edge Function returned a non-2xx status code')) {
-            // Since we can't determine the exact status, we'll provide a general error message
-            // but prioritize quota-related issues
-            throw new Error('SERVICE_UNAVAILABLE');
+          // Check error message for quota-related content
+          if (error.message?.toLowerCase().includes('quota') ||
+              error.message?.toLowerCase().includes('rate limit') ||
+              error.message?.includes('429')) {
+            throw new Error('API_QUOTA_EXCEEDED');
           }
+
+          throw new Error(error.message || 'Failed to generate report');
         }
 
-        // Check if it's a 429 (rate limit/quota exceeded) error
-        const errorString = JSON.stringify(error).toLowerCase();
-        if (errorString.includes('429') ||
-            errorString.includes('too many requests') ||
-            errorString.includes('quota exceeded') ||
-            errorString.includes('rate limit')) {
-          throw new Error('API_QUOTA_EXCEEDED');
+        if (!reportData) {
+          // If no data received, try to provide a cached/demo report for common symptoms
+          const demoReport = generateDemoReport(data);
+          if (demoReport) {
+            console.log('Using demo report for instant delivery');
+            setCurrentReport(demoReport);
+            setReportTimestamp(new Date().toISOString());
+            setAppState('report');
+
+            toast({
+              title: "Instant Report Ready",
+              description: "Generated based on common symptoms. For personalized AI analysis, please try again when the service is available.",
+            });
+            return;
+          }
+          throw new Error('No report data received from server');
         }
 
-        // Check error message for quota-related content
-        if (error.message?.toLowerCase().includes('quota') ||
-            error.message?.toLowerCase().includes('rate limit') ||
-            error.message?.includes('429')) {
-          throw new Error('API_QUOTA_EXCEEDED');
+        // Check if the response indicates an error
+        if (reportData.error) {
+          const errorCode = reportData.error_code;
+          if (errorCode === 'QUOTA_EXCEEDED') {
+            throw new Error('API_QUOTA_EXCEEDED');
+          }
+          throw new Error(reportData.error);
         }
 
-        throw new Error(error.message || 'Failed to generate report');
-      }
+        // Pass the full report object directly to the component
+        const timestamp = reportData.timestamp || new Date().toISOString();
 
-      if (!reportData) {
-        // If no data received, try to provide a cached/demo report for common symptoms
+        setCurrentReport(reportData);
+        setReportTimestamp(timestamp);
+        setAppState('report');
+
+        toast({
+          title: "Report Generated",
+          description: "Your health assessment is ready!",
+        });
+      } catch (aiError) {
+        console.log('AI function failed, falling back to demo report');
         const demoReport = generateDemoReport(data);
         if (demoReport) {
-          console.log('Using demo report for instant delivery');
           setCurrentReport(demoReport);
           setReportTimestamp(new Date().toISOString());
           setAppState('report');
 
           toast({
             title: "Instant Report Ready",
-            description: "Generated based on common symptoms. For personalized AI analysis, please try again when the service is available.",
+            description: "Generated based on common symptoms. AI service is currently unavailable.",
           });
           return;
         }
-        throw new Error('No report data received from server');
+        throw new Error('Unable to generate report - AI service failed and no demo available');
       }
-
-      // Check if the response indicates an error
-      if (reportData.error) {
-        const errorCode = reportData.error_code;
-        if (errorCode === 'QUOTA_EXCEEDED') {
-          throw new Error('API_QUOTA_EXCEEDED');
-        }
-        throw new Error(reportData.error);
-      }
-
-      // Pass the full report object directly to the component
-      const timestamp = reportData.timestamp || new Date().toISOString();
-
-      setCurrentReport(reportData);
-      setReportTimestamp(timestamp);
-      setAppState('report');
-
-      toast({
-        title: "Report Generated",
-        description: "Your health assessment is ready!",
-      });
 
     } catch (error) {
       console.error('Error generating report:', error);
