@@ -2,7 +2,6 @@
 
 [![Live Demo](https://img.shields.io/badge/Live%20Demo-Visit-green)](https://telivus.co.ke/) [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE) [![Python](https://img.shields.io/badge/Python-3.9+-blue.svg)](https://python.org) [![FastAPI](https://img.shields.io/badge/FastAPI-0.104+-green.svg)](https://fastapi.tiangolo.com) [![React](https://img.shields.io/badge/React-18+-blue.svg)](https://reactjs.org) [![OpenAI](https://img.shields.io/badge/OpenAI-GPT--4o--mini-orange.svg)](https://openai.com)
 
-**🏆 AI Engineering Portfolio Project - 100% Score Material**
 
 Telivus AI is a **cutting-edge AI-powered health assessment platform** that combines advanced machine learning with modern web technologies to provide **personalized medical insights**. This project demonstrates expertise in full-stack development, AI/ML integration, and production-ready system architecture.
 
@@ -95,10 +94,6 @@ RAG Implementation
 │   (Data)        │    │   (Cache)       │    │   (Vectors)     │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
 ```
-
-## 🏆 **Portfolio Excellence**
-
-This project demonstrates **senior-level AI engineering skills**:
 
 ### **Technical Achievements**
 - ✅ **Full-Stack AI Application**: React + Python + PostgreSQL + AI
