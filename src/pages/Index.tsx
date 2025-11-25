@@ -6,6 +6,7 @@ import { MedicalReport } from '@/components/MedicalReport';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { apiClient } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { BarChart3, TrendingUp } from 'lucide-react';
@@ -296,199 +297,66 @@ const Index = () => {
         throw new Error('User not authenticated');
       }
 
-      // Generate instant demo report first (primary experience)
-      const demoReport = generateDemoReport(data);
-      if (demoReport) {
-        console.log('Generated instant demo report');
-        setCurrentReport(demoReport);
-        setReportTimestamp(new Date().toISOString());
-        setAppState('report');
+      console.log('Calling Python backend for health assessment...');
 
-        toast({
-          title: "Instant Report Ready",
-          description: "Generated based on common symptoms. For personalized AI analysis, please try again when the service is available.",
-        });
+      // Call the new Python backend API
+      const reportData = await apiClient.generateHealthReport(data);
 
-        // Try to enhance with AI in background (optional)
-        try {
-          console.log('Attempting optional AI enhancement...');
-          const { data: result, error } = await supabase.functions.invoke('generate-medical-report', {
-            body: {
-              feelings: data.feelings,
-              symptoms: data.symptoms,
-              age: Number(data.age),
-              name: data.name,
-              gender: data.gender,
-              medicalHistory: data.medicalHistory,
-              surgicalHistory: data.surgicalHistory,
-              currentMedications: data.currentMedications,
-              allergies: data.allergies,
-              userId: user.id
-            }
-          });
+      console.log('Successfully received report from Python backend:', reportData);
 
-          if (!error && result) {
-            console.log('AI enhancement successful, updating report');
-            setCurrentReport(result);
-            setReportTimestamp(new Date().toISOString());
-            toast({
-              title: "Report Enhanced",
-              description: "AI analysis has been added to your instant report!",
-            });
-          }
-        } catch (aiError) {
-          console.log('AI enhancement failed (expected), keeping demo report');
-          // Keep the demo report - no error shown to user
-        }
+      // Transform the response to match the expected format for the MedicalReport component
+      const transformedReport = {
+        demographic_header: {
+          name: reportData.patient_info.name || 'Not provided',
+          age: reportData.patient_info.age,
+          gender: reportData.patient_info.gender || 'Not provided',
+          date: new Date(reportData.generated_at).toISOString().split('T')[0]
+        },
+        chief_complaint: reportData.medical_assessment.chief_complaint,
+        history_present_illness: reportData.medical_assessment.history_present_illness,
+        past_medical_history: data.medicalHistory || 'None reported',
+        past_surgical_history: data.surgicalHistory || 'None reported',
+        medications: data.currentMedications || 'None reported',
+        allergies: data.allergies || 'None reported',
+        assessment: reportData.medical_assessment.assessment,
+        diagnostic_plan: reportData.medical_assessment.diagnostic_plan.follow_up ||
+                        `**Consultations**: ${reportData.medical_assessment.diagnostic_plan.consultations?.join(', ') || 'None recommended'}\n**Tests**: ${reportData.medical_assessment.diagnostic_plan.tests?.join(', ') || 'None recommended'}\n**RED FLAGS**: ${reportData.medical_assessment.diagnostic_plan.red_flags?.join(', ') || 'None identified'}\n**Follow-up**: ${reportData.medical_assessment.diagnostic_plan.follow_up || 'As needed'}`,
+        otc_recommendations: reportData.medical_assessment.otc_recommendations,
+        lifestyle_recommendations: reportData.medical_assessment.lifestyle_recommendations,
+        timestamp: reportData.generated_at,
+        cached: false,
+        ai_model_used: reportData.ai_model_used,
+        confidence_score: reportData.confidence_score
+      };
 
-        return;
-      }
+      setCurrentReport(transformedReport);
+      setReportTimestamp(reportData.generated_at);
+      setAppState('report');
 
-      // Fallback: try AI function if no demo report available
-      console.log('No demo report available, trying AI function...');
-      try {
-        const { data: reportData, error } = await supabase.functions.invoke('generate-medical-report', {
-          body: {
-            feelings: data.feelings,
-            symptoms: data.symptoms,
-            age: Number(data.age),
-            name: data.name,
-            gender: data.gender,
-            medicalHistory: data.medicalHistory,
-            surgicalHistory: data.surgicalHistory,
-            currentMedications: data.currentMedications,
-            allergies: data.allergies,
-            userId: user.id
-          }
-        });
-
-        if (error) {
-          console.error('Supabase function error:', error);
-          console.error('Error details:', JSON.stringify(error, null, 2));
-          console.log('Testing function with new API key...');
-
-          // Check if it's a FunctionsHttpError (which indicates HTTP error status)
-          if (error.name === 'FunctionsHttpError') {
-            // For FunctionsHttpError, check if we can access the status
-            const httpError = error as any;
-            if (httpError.status === 429 || httpError.statusCode === 429) {
-              throw new Error('API_QUOTA_EXCEEDED');
-            }
-
-            // If we can't get the status but it's a FunctionsHttpError with this message,
-            // it's likely a quota/rate limit issue
-            if (error.message?.includes('Edge Function returned a non-2xx status code')) {
-              // Since we can't determine the exact status, we'll provide a general error message
-              // but prioritize quota-related issues
-              throw new Error('SERVICE_UNAVAILABLE');
-            }
-          }
-
-          // Check if it's a 429 (rate limit/quota exceeded) error
-          const errorString = JSON.stringify(error).toLowerCase();
-          if (errorString.includes('429') ||
-              errorString.includes('too many requests') ||
-              errorString.includes('quota exceeded') ||
-              errorString.includes('rate limit')) {
-            throw new Error('API_QUOTA_EXCEEDED');
-          }
-
-          // Check error message for quota-related content
-          if (error.message?.toLowerCase().includes('quota') ||
-              error.message?.toLowerCase().includes('rate limit') ||
-              error.message?.includes('429')) {
-            throw new Error('API_QUOTA_EXCEEDED');
-          }
-
-          throw new Error(error.message || 'Failed to generate report');
-        }
-
-        if (!reportData) {
-          // If no data received, try to provide a cached/demo report for common symptoms
-          const demoReport = generateDemoReport(data);
-          if (demoReport) {
-            console.log('Using demo report for instant delivery');
-            setCurrentReport(demoReport);
-            setReportTimestamp(new Date().toISOString());
-            setAppState('report');
-
-            toast({
-              title: "Instant Report Ready",
-              description: "Generated based on common symptoms. For personalized AI analysis, please try again when the service is available.",
-            });
-            return;
-          }
-          throw new Error('No report data received from server');
-        }
-
-        // Check if the response indicates an error
-        if (reportData.error) {
-          const errorCode = reportData.error_code;
-          if (errorCode === 'QUOTA_EXCEEDED') {
-            throw new Error('API_QUOTA_EXCEEDED');
-          }
-          throw new Error(reportData.error);
-        }
-
-        // Pass the full report object directly to the component
-        const timestamp = reportData.timestamp || new Date().toISOString();
-
-        setCurrentReport(reportData);
-        setReportTimestamp(timestamp);
-        setAppState('report');
-
-        toast({
-          title: "Report Generated",
-          description: "Your health assessment is ready!",
-        });
-      } catch (aiError) {
-        console.log('AI function failed, falling back to demo report');
-        const demoReport = generateDemoReport(data);
-        if (demoReport) {
-          setCurrentReport(demoReport);
-          setReportTimestamp(new Date().toISOString());
-          setAppState('report');
-
-          toast({
-            title: "Instant Report Ready",
-            description: "Generated based on common symptoms. AI service is currently unavailable.",
-          });
-          return;
-        }
-        throw new Error('Unable to generate report - AI service failed and no demo available');
-      }
+      toast({
+        title: "AI Health Report Ready",
+        description: `Generated using ${reportData.ai_model_used} with ${reportData.confidence_score ? Math.round(reportData.confidence_score * 100) + '%' : 'high'} confidence.`,
+      });
 
     } catch (error) {
-      console.error('Error generating report:', error);
+      console.error('Error generating report from Python backend:', error);
 
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-      const isQuotaExceeded = errorMessage === 'API_QUOTA_EXCEEDED' || errorMessage.includes('quota') || errorMessage.includes('QUOTA_EXCEEDED') || errorMessage.includes('API quota exceeded');
-      const isServiceUnavailable = errorMessage === 'SERVICE_UNAVAILABLE';
-      const isRateLimited = errorMessage.includes('429') || errorMessage.includes('RATE_LIMITED') || errorMessage.includes('Too many requests');
-      const isNetworkError = errorMessage.includes('fetch') || errorMessage.includes('network') || errorMessage.includes('connection');
+      const isNetworkError = errorMessage.includes('fetch') || errorMessage.includes('network') || errorMessage.includes('connection') || errorMessage.includes('Failed to fetch');
       const isValidationError = errorMessage.includes('Validation failed') || errorMessage.includes('required');
 
       let title = "Generation Failed";
       let description = "Failed to generate your health report. Please try again.";
 
-      if (isQuotaExceeded) {
-        title = "API Quota Exceeded";
-        description = "The AI service quota has been exceeded. Please upgrade to a paid plan or try again in an hour.";
-      } else if (isServiceUnavailable) {
-        title = "Service Temporarily Unavailable";
-        description = "The AI service is temporarily unavailable. You'll receive an instant demo report instead. For personalized AI analysis, please try again later.";
-      } else if (isRateLimited) {
-        title = "Rate Limited";
-        description = "Too many requests right now. You'll receive an instant demo report instead. For personalized AI analysis, please try again in a few minutes.";
-      } else if (isNetworkError) {
+      if (isNetworkError) {
         title = "Connection Error";
-        description = "Network issue detected. You'll receive an instant demo report instead. For personalized AI analysis, please check your connection and try again.";
+        description = "Unable to connect to the AI service. Please check your internet connection and try again.";
       } else if (isValidationError) {
         title = "Validation Error";
         description = errorMessage;
       } else {
-        // For any other error, try to provide a demo report
-        console.log('Attempting to provide demo report due to error:', errorMessage);
+        // For any other error, try to provide a demo report as fallback
+        console.log('Attempting to provide demo report due to backend error:', errorMessage);
         const demoReport = generateDemoReport(data);
         if (demoReport) {
           setCurrentReport(demoReport);
@@ -496,8 +364,8 @@ const Index = () => {
           setAppState('report');
 
           toast({
-            title: "Instant Report Ready",
-            description: "Due to service issues, here's an instant report based on common symptoms. For personalized AI advice, please try again when the service is available.",
+            title: "Demo Report Ready",
+            description: "Due to service issues, here's a demo report based on common symptoms. The AI service will be available soon.",
           });
           return;
         }

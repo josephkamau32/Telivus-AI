@@ -1,0 +1,182 @@
+[
+  {
+    "content": "Fever is a common symptom characterized by an elevation in body temperature above 98.6°F (37°C). Common causes include infections, inflammatory conditions, and certain medications. Management includes rest, hydration, and antipyretic medications like acetaminophen or ibuprofen. Seek medical attention if fever exceeds 103°F, lasts more than 3 days, or is accompanied by severe symptoms.",
+    "metadata": {
+      "category": "symptoms",
+      "topic": "fever",
+      "source": "general_medical_guidelines",
+      "last_updated": "2024-01-15"
+    }
+  },
+  {
+    "content": "Headache is one of the most common neurological symptoms. Primary headaches include tension-type, migraine, and cluster headaches. Secondary headaches may result from infections, vascular disorders, or trauma. Red flags include sudden onset (thunderclap), neurological deficits, and headaches in patients over 50 with new onset. OTC treatments include NSAIDs and acetaminophen.",
+    "metadata": {
+      "category": "symptoms",
+      "topic": "headache",
+      "source": "neurology_guidelines",
+      "last_updated": "2024-01-15"
+    }
+  },
+  {
+    "content": "Cough is a protective reflex that clears the airways. Acute cough (<3 weeks) is often due to viral upper respiratory infections. Chronic cough (>8 weeks) may indicate asthma, GERD, post-nasal drip, or ACE inhibitor use. Evaluation includes chest X-ray for chronic cough and consideration of spirometry for suspected obstructive disease.",
+    "metadata": {
+      "category": "symptoms",
+      "topic": "cough",
+      "source": "pulmonary_guidelines",
+      "last_updated": "2024-01-15"
+    }
+  },
+  {
+    "content": "Nausea and vomiting are common gastrointestinal symptoms. Causes include gastroenteritis, medications, pregnancy, vestibular disorders, and metabolic conditions. Management depends on etiology but often includes antiemetics like ondansetron. Severe or persistent symptoms require evaluation for dehydration, electrolyte imbalance, or underlying serious conditions.",
+    "metadata": {
+      "category": "symptoms",
+      "topic": "nausea_vomiting",
+      "source": "gastroenterology_guidelines",
+      "last_updated": "2024-01-15"
+    }
+  },
+  {
+    "content": "Fatigue is a subjective feeling of tiredness or lack of energy. Common causes include sleep disorders, depression, anemia, thyroid dysfunction, and chronic medical conditions. Evaluation should include sleep history, mood assessment, and targeted laboratory testing. Management focuses on treating underlying causes and lifestyle modifications.",
+    "metadata": {
+      "category": "symptoms",
+      "topic": "fatigue",
+      "source": "general_medical_guidelines",
+      "last_updated": "2024-01-15"
+    }
+  },
+  {
+    "content": "Chest pain requires urgent evaluation to rule out cardiac causes. Cardiac chest pain is typically retrosternal, pressure-like, and may radiate to the left arm or jaw. Associated symptoms include shortness of breath, diaphoresis, and nausea. Immediate ECG and cardiac enzymes are indicated for suspected acute coronary syndrome.",
+    "metadata": {
+      "category": "emergency_symptoms",
+      "topic": "chest_pain",
+      "source": "cardiology_guidelines",
+      "last_updated": "2024-01-15"
+    }
+  },
+  {
+    "content": "Shortness of breath (dyspnea) can result from cardiac, pulmonary, or systemic conditions. Acute onset suggests pneumothorax, pulmonary embolism, or acute heart failure. Chronic dyspnea may indicate COPD, asthma, or deconditioning. Evaluation includes oxygen saturation, chest X-ray, and pulmonary function testing as indicated.",
+    "metadata": {
+      "category": "symptoms",
+      "topic": "shortness_of_breath",
+      "source": "pulmonary_guidelines",
+      "last_updated": "2024-01-15"
+    }
+  },
+  {
+    "content": "Abdominal pain localization helps determine etiology. Right upper quadrant pain suggests cholecystitis or hepatitis. Left lower quadrant pain may indicate diverticulitis. Periumbilical pain is common in early appendicitis. Severe pain with peritoneal signs requires immediate surgical evaluation.",
+    "metadata": {
+      "category": "symptoms",
+      "topic": "abdominal_pain",
+      "source": "gastroenterology_guidelines",
+      "last_updated": "2024-01-15"
+    }
+  },
+  {
+    "content": "Dizziness can be categorized as vertigo (illusion of movement), presyncope (lightheadedness), or disequilibrium (balance disturbance). Vertigo suggests vestibular or central nervous system pathology. Evaluation includes Dix-Hallpike maneuver for BPPV and neurological examination. Medications are a common cause.",
+    "metadata": {
+      "category": "symptoms",
+      "topic": "dizziness",
+      "source": "neurology_guidelines",
+      "last_updated": "2024-01-15"
+    }
+  },
+  {
+    "content": "Sore throat (pharyngitis) is commonly viral but may be bacterial (streptococcal). Centor criteria help determine likelihood of strep throat: fever, absence of cough, swollen tonsils with exudate, and anterior cervical lymphadenopathy. Rapid strep testing guides antibiotic therapy.",
+    "metadata": {
+      "category": "symptoms",
+      "topic": "sore_throat",
+      "source": "infectious_disease_guidelines",
+      "last_updated": "2024-01-15"
+    }
+  },
+  {
+    "content": "Hypertension is defined as blood pressure ≥130/80 mmHg. Primary hypertension has no identifiable cause. Secondary causes include renal artery stenosis, pheochromocytoma, and endocrine disorders. Management includes lifestyle modifications and antihypertensive medications. Target BP <130/80 mmHg for most patients.",
+    "metadata": {
+      "category": "conditions",
+      "topic": "hypertension",
+      "source": "cardiology_guidelines",
+      "last_updated": "2024-01-15"
+    }
+  },
+  {
+    "content": "Diabetes mellitus type 2 is characterized by insulin resistance and relative insulin deficiency. Risk factors include obesity, family history, and sedentary lifestyle. Diagnosis requires HbA1c ≥6.5%, fasting glucose ≥126 mg/dL, or random glucose ≥200 mg/dL with symptoms. Management includes metformin, lifestyle changes, and cardiovascular risk reduction.",
+    "metadata": {
+      "category": "conditions",
+      "topic": "diabetes",
+      "source": "endocrinology_guidelines",
+      "last_updated": "2024-01-15"
+    }
+  },
+  {
+    "content": "Asthma is a chronic inflammatory airway disease characterized by reversible airflow obstruction. Symptoms include wheezing, cough, chest tightness, and shortness of breath. Management includes inhaled corticosteroids, long-acting beta agonists, and trigger avoidance. Peak flow monitoring helps assess control.",
+    "metadata": {
+      "category": "conditions",
+      "topic": "asthma",
+      "source": "pulmonary_guidelines",
+      "last_updated": "2024-01-15"
+    }
+  },
+  {
+    "content": "Depression is characterized by persistent sadness, anhedonia, and neurovegetative symptoms. Major depressive disorder requires 5+ symptoms for ≥2 weeks. Risk factors include family history, stressful life events, and medical conditions. Treatment includes antidepressants, psychotherapy, and lifestyle interventions.",
+    "metadata": {
+      "category": "conditions",
+      "topic": "depression",
+      "source": "psychiatry_guidelines",
+      "last_updated": "2024-01-15"
+    }
+  },
+  {
+    "content": "Osteoarthritis affects synovial joints causing pain and stiffness. Risk factors include age, obesity, and joint trauma. Diagnosis is clinical with joint line tenderness and crepitus. Management includes NSAIDs, physical therapy, weight loss, and intra-articular injections. Surgical options for severe cases.",
+    "metadata": {
+      "category": "conditions",
+      "topic": "osteoarthritis",
+      "source": "rheumatology_guidelines",
+      "last_updated": "2024-01-15"
+    }
+  },
+  {
+    "content": "Acute coronary syndrome includes unstable angina, NSTEMI, and STEMI. Presentation includes chest pain, dyspnea, and diaphoresis. Immediate evaluation includes ECG, cardiac enzymes, and antiplatelet therapy. Risk stratification guides management from medical therapy to urgent revascularization.",
+    "metadata": {
+      "category": "emergency_conditions",
+      "topic": "acute_coronary_syndrome",
+      "source": "cardiology_guidelines",
+      "last_updated": "2024-01-15"
+    }
+  },
+  {
+    "content": "Pneumonia is lung parenchyma infection causing cough, fever, and infiltrates on chest X-ray. Community-acquired pneumonia risk factors include age >65, comorbidities, and smoking. CURB-65 score guides site of care. Empiric antibiotics target likely pathogens based on clinical setting.",
+    "metadata": {
+      "category": "conditions",
+      "topic": "pneumonia",
+      "source": "pulmonary_guidelines",
+      "last_updated": "2024-01-15"
+    }
+  },
+  {
+    "content": "Urinary tract infection symptoms include dysuria, frequency, and urgency. Uncomplicated cystitis in women can often be treated empirically. Complicated UTI requires urine culture and may need longer therapy. Pyelonephritis presents with flank pain, fever, and systemic symptoms requiring broader antibiotic coverage.",
+    "metadata": {
+      "category": "conditions",
+      "topic": "uti",
+      "source": "infectious_disease_guidelines",
+      "last_updated": "2024-01-15"
+    }
+  },
+  {
+    "content": "Anxiety disorders include GAD, panic disorder, and social anxiety. Symptoms include excessive worry, restlessness, and avoidance behaviors. Diagnosis requires symptoms ≥6 months for GAD. Treatment includes SSRIs, cognitive behavioral therapy, and benzodiazepines for short-term use.",
+    "metadata": {
+      "category": "conditions",
+      "topic": "anxiety",
+      "source": "psychiatry_guidelines",
+      "last_updated": "2024-01-15"
+    }
+  },
+  {
+    "content": "GERD presents with heartburn, regurgitation, and dysphagia. Risk factors include obesity, hiatal hernia, and certain medications. Diagnosis includes trial of PPI therapy and endoscopy if alarm symptoms present. Management includes lifestyle modifications, PPIs, and H2 blockers.",
+    "metadata": {
+      "category": "conditions",
+      "topic": "gerd",
+      "source": "gastroenterology_guidelines",
+      "last_updated": "2024-01-15"
+    }
+  }
+]
