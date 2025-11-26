@@ -30,6 +30,7 @@ class Settings(BaseSettings):
         "http://localhost:5173",  # Vite dev server
         "http://localhost:8000",  # FastAPI server
         "https://telivus.co.ke",  # Production frontend
+        "https://telivus-ai.vercel.app",  # Vercel deployment
     ]
 
     @field_validator("BACKEND_CORS_ORIGINS", mode="before")
