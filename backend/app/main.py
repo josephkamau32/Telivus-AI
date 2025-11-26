@@ -145,6 +145,12 @@ async def root():
 # Include API routers
 app.include_router(health_router, prefix=f"{settings.API_V1_STR}/health", tags=["health"])
 
+# Add explicit OPTIONS handling for CORS preflight requests
+@app.options("/{path:path}")
+async def options_handler(path: str):
+    """Handle CORS preflight OPTIONS requests."""
+    return {"message": "OK"}
+
 if __name__ == "__main__":
     import uvicorn
 
