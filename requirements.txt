@@ -1,7 +1,7 @@
-# Minimal requirements for deployment (no Rust compilation)
+# Minimal requirements compatible with Python 3.13
 fastapi==0.104.1
 uvicorn[standard]==0.24.0
-pydantic==1.10.13
+pydantic==2.8.2
 openai==0.28.0
 python-dotenv==1.0.0
 colorlog==6.8.0
