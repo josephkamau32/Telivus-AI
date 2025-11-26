@@ -11,6 +11,10 @@ from datetime import datetime
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+# Load environment variables from .env file
+from dotenv import load_dotenv
+load_dotenv()
+
 # Create a simple FastAPI app for testing
 app = FastAPI(
     title="Telivus AI Backend - Simple Test",
