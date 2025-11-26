@@ -2,6 +2,7 @@
 fastapi==0.104.1
 uvicorn[standard]==0.24.0
 pydantic==2.8.2
+pydantic-settings==2.1.0
 openai==0.28.0
 python-dotenv==1.0.0
 colorlog==6.8.0
