@@ -1,33 +1,7 @@
-# Core FastAPI (compatible versions)
+# Minimal requirements for deployment (no Rust compilation)
 fastapi==0.104.1
 uvicorn[standard]==0.24.0
-
-# Data validation (try pydantic v2 with pre-compiled wheel)
-pydantic==2.7.4
-pydantic-settings==2.1.0
-
-# Database (optional for now)
-sqlalchemy==2.0.23
-
-# Auth & Security
-python-jose[cryptography]==3.3.0
-passlib[bcrypt]==1.7.4
-python-multipart==0.0.6
-
-# HTTP & Async
-aiofiles==23.2.1
-httpx==0.25.2
-
-# AI/ML (simplified for deployment)
+pydantic==1.10.13
 openai==0.28.0
-sentence-transformers==2.2.2
-
-# Vector storage (lightweight)
-chromadb==0.4.18
-faiss-cpu==1.9.0.post1
-
-# Utilities
 python-dotenv==1.0.0
-
-# Logging
 colorlog==6.8.0
