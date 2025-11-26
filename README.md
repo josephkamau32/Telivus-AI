@@ -1,7 +1,13 @@
 # Telivus AI - Advanced AI-Powered Health Assessment Platform
 
-[![Live Demo](https://img.shields.io/badge/Live%20Demo-Visit-green)](https://telivus.co.ke/) [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE) [![Python](https://img.shields.io/badge/Python-3.9+-blue.svg)](https://python.org) [![FastAPI](https://img.shields.io/badge/FastAPI-0.104+-green.svg)](https://fastapi.tiangolo.com) [![React](https://img.shields.io/badge/React-18+-blue.svg)](https://reactjs.org) [![OpenAI](https://img.shields.io/badge/OpenAI-GPT--4o--mini-orange.svg)](https://openai.com)
+[![Live Demo](https://img.shields.io/badge/Frontend-Live-green)](https://telivus.co.ke/) [![Backend API](https://img.shields.io/badge/Backend-API-blue)](https://telivus-ai.onrender.com) [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE) [![Python](https://img.shields.io/badge/Python-3.9+-blue.svg)](https://python.org) [![FastAPI](https://img.shields.io/badge/FastAPI-0.104+-green.svg)](https://fastapi.tiangolo.com) [![React](https://img.shields.io/badge/React-18+-blue.svg)](https://reactjs.org) [![OpenAI](https://img.shields.io/badge/OpenAI-GPT--4o--mini-orange.svg)](https://openai.com)
 
+## 🌐 **Live Deployments**
+
+- **🎨 Frontend (React + Vercel)**: [https://telivus.co.ke/](https://telivus.co.ke/)
+- **⚡ Backend API (FastAPI + Render)**: [https://telivus-ai.onrender.com](https://telivus-ai.onrender.com)
+- **📚 API Documentation**: [https://telivus-ai.onrender.com/docs](https://telivus-ai.onrender.com/docs)
+- **🏥 Health Check**: [https://telivus-ai.onrender.com/health](https://telivus-ai.onrender.com/health)
 
 Telivus AI is a **cutting-edge AI-powered health assessment platform** that combines advanced machine learning with modern web technologies to provide **personalized medical insights**. This project demonstrates expertise in full-stack development, AI/ML integration, and production-ready system architecture.
 
@@ -191,7 +197,13 @@ VECTOR_DB_TYPE=chroma
 
 ## 🚀 Usage
 
-### **Quick Demo (No Setup Required)**
+### **🌐 Live Application (No Setup Required)**
+
+**Visit the live application now:**
+- **Frontend**: [https://telivus.co.ke/](https://telivus.co.ke/)
+- **Try the AI Health Assessment** - Real GPT-4o-mini responses!
+
+### **💻 Local Development**
 
 1. **Start the servers**:
    ```bash
@@ -202,8 +214,8 @@ VECTOR_DB_TYPE=chroma
    cd backend && source venv/bin/activate && python test_simple.py
    ```
 
-2. **Access the application**:
-   - **Frontend**: http://localhost:8080
+2. **Access locally**:
+   - **Frontend**: http://localhost:5173
    - **Backend API**: http://localhost:8000
    - **API Docs**: http://localhost:8000/docs
 
@@ -227,12 +239,13 @@ VECTOR_DB_TYPE=chroma
    - OTC medication recommendations
    - Lifestyle and self-care advice
 
-### **API Testing**
+### **🤖 AI Testing (Live Endpoints)**
 
-Test the AI assessment endpoint:
+**Test Real GPT-4o-mini Responses:**
 
 ```bash
-curl -X POST http://localhost:8000/api/v1/health/assess \
+# Live API Testing
+curl -X POST https://telivus-ai.onrender.com/api/v1/health/assess \
   -H "Content-Type: application/json" \
   -d '{
     "feeling": "tired",
@@ -245,6 +258,13 @@ curl -X POST http://localhost:8000/api/v1/health/assess \
       "gender": "male"
     }
   }'
+```
+
+**Local Development Testing:**
+```bash
+curl -X POST http://localhost:8000/api/v1/health/assess \
+  -H "Content-Type: application/json" \
+  -d '{"feeling": "tired", "symptom_assessment": {"symptoms": ["headache", "fatigue"]}, "patient_info": {"name": "John Doe", "age": 30, "gender": "male"}}'
 ```
 
 ## 📸 Screenshots
@@ -381,6 +401,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-**Built with ❤️ for better healthcare accessibility through AI innovation**
+**Built by Joseph Kamau with ❤️ for better healthcare accessibility through AI innovation**
 
 *This project represents the cutting edge of AI engineering applied to healthcare technology.*
