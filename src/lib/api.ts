@@ -5,7 +5,7 @@
  */
 
 const API_BASE_URL = process.env.NODE_ENV === 'production'
-  ? 'https://your-production-api-url.com'  // Replace with actual production URL
+  ? (import.meta.env.VITE_API_BASE_URL || 'https://telivus-ai.onrender.com')
   : 'http://127.0.0.1:8000';  // Local development
 
 export interface PatientData {
