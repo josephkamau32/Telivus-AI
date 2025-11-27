@@ -10,6 +10,7 @@ import { apiClient } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { BarChart3, TrendingUp } from 'lucide-react';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 type AppState = 'home' | 'assessment' | 'report' | 'loading';
 
@@ -247,6 +248,42 @@ const generateDemoReport = (data: PatientData): any | null => {
   return null;
 };
 
+// Fallback report generator for when AI fails and no demo is available
+const generateFallbackReport = (data: PatientData): any | null => {
+  const symptoms = data.symptoms.map(s => s.toLowerCase());
+  const feelings = data.feelings.toLowerCase();
+
+  return {
+    demographic_header: {
+      name: data.name || 'Not provided',
+      age: data.age,
+      gender: data.gender || 'Not provided',
+      date: new Date().toISOString().split('T')[0]
+    },
+    chief_complaint: `General health concerns with ${symptoms.join(', ')}`,
+    history_present_illness: `${data.age}-year-old patient presents with ${symptoms.join(', ')} and reports feeling ${data.feelings}. A comprehensive evaluation is recommended to determine the underlying cause(s) and appropriate management.`,
+    past_medical_history: data.medicalHistory || 'None reported',
+    past_surgical_history: data.surgicalHistory || 'None reported',
+    medications: data.currentMedications || 'None reported',
+    allergies: data.allergies || 'None reported',
+    assessment: `Patient reports experiencing ${symptoms.join(', ')} with associated feeling of ${data.feelings}. This constellation of symptoms warrants professional medical evaluation to identify contributing factors and determine appropriate treatment. Multiple potential causes should be considered including acute illness, chronic conditions, medication effects, or lifestyle factors.`,
+    diagnostic_plan: `**Consultations**: Schedule appointment with primary care physician within 1-2 weeks\n**Tests**: Basic metabolic panel, complete blood count, and symptom-specific testing as indicated\n**RED FLAGS**: Severe pain, unexplained weight loss, persistent fever, neurological symptoms\n**Follow-up**: Regular monitoring of symptoms and follow-up with healthcare provider`,
+    otc_recommendations: [
+      {
+        medicine: "Acetaminophen (Tylenol)",
+        dosage: "500-1000 mg every 4-6 hours as needed, max 3000 mg/day",
+        purpose: "General pain relief and fever reduction if present",
+        instructions: "Take with plenty of water. Do not exceed maximum daily dose.",
+        precautions: "Avoid if you have liver disease or are taking other medications. Safe with no reported medications or allergies.",
+        max_duration: "3-5 days - see doctor if symptoms persist"
+      }
+    ],
+    timestamp: new Date().toISOString(),
+    cached: false,
+    demo: true
+  };
+};
+
 const Index = () => {
   const navigate = useNavigate();
   const { user, isLoading } = useAuth();
@@ -254,6 +291,7 @@ const Index = () => {
   const [currentReport, setCurrentReport] = useState<any>(null);
   const [reportTimestamp, setReportTimestamp] = useState<string>('');
   const [assessmentData, setAssessmentData] = useState<PatientData | null>(null);
+  const [backendStatus, setBackendStatus] = useState<'checking' | 'available' | 'unavailable'>('checking');
   const { toast } = useToast();
 
   // Redirect if not authenticated
@@ -262,6 +300,29 @@ const Index = () => {
       navigate('/');
     }
   }, [user, isLoading, navigate]);
+
+  // Check backend availability
+  useEffect(() => {
+    const checkBackendStatus = async () => {
+      try {
+        const status = await apiClient.isServiceAvailable();
+        setBackendStatus(status.available ? 'available' : 'unavailable');
+
+        if (!status.available && process.env.NODE_ENV === 'production') {
+          console.warn('Backend service unavailable:', status.error);
+        }
+      } catch (error) {
+        setBackendStatus('unavailable');
+        console.error('Failed to check backend status:', error);
+      }
+    };
+
+    checkBackendStatus();
+
+    // Check every 30 seconds in production
+    const interval = setInterval(checkBackendStatus, 30000);
+    return () => clearInterval(interval);
+  }, []);
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
@@ -278,107 +339,150 @@ const Index = () => {
 
     // Client-side validation
     const validationErrors: string[] = [];
-    if (!data.feelings?.trim()) validationErrors.push('Feeling is required');
+    if (!data.feelings?.trim()) validationErrors.push('Feeling description is required');
     if (!data.symptoms?.length) validationErrors.push('At least one symptom is required');
     if (!data.age || data.age < 0 || data.age > 130) validationErrors.push('Age must be between 0 and 130');
 
     if (validationErrors.length > 0) {
       toast({
-        title: "Validation Error",
-        description: validationErrors.join(', '),
+        title: "Please Complete All Fields",
+        description: validationErrors.join('. '),
         variant: "destructive",
       });
       setAppState('assessment');
       return;
     }
 
-    try {
-      if (!user) {
-        throw new Error('User not authenticated');
-      }
-
-      console.log('Calling Python backend for health assessment...');
-
-      // Call the new Python backend API
-      const reportData = await apiClient.generateHealthReport(data);
-
-      console.log('Successfully received report from Python backend:', reportData);
-
-      // Transform the response to match the expected format for the MedicalReport component
-      const transformedReport = {
-        demographic_header: {
-          name: reportData.patient_info.name || 'Not provided',
-          age: reportData.patient_info.age,
-          gender: reportData.patient_info.gender || 'Not provided',
-          date: new Date(reportData.generated_at).toISOString().split('T')[0]
-        },
-        chief_complaint: reportData.medical_assessment.chief_complaint,
-        history_present_illness: reportData.medical_assessment.history_present_illness,
-        past_medical_history: data.medicalHistory || 'None reported',
-        past_surgical_history: data.surgicalHistory || 'None reported',
-        medications: data.currentMedications || 'None reported',
-        allergies: data.allergies || 'None reported',
-        assessment: reportData.medical_assessment.assessment,
-        diagnostic_plan: reportData.medical_assessment.diagnostic_plan.follow_up ||
-                        `**Consultations**: ${reportData.medical_assessment.diagnostic_plan.consultations?.join(', ') || 'None recommended'}\n**Tests**: ${reportData.medical_assessment.diagnostic_plan.tests?.join(', ') || 'None recommended'}\n**RED FLAGS**: ${reportData.medical_assessment.diagnostic_plan.red_flags?.join(', ') || 'None identified'}\n**Follow-up**: ${reportData.medical_assessment.diagnostic_plan.follow_up || 'As needed'}`,
-        otc_recommendations: reportData.medical_assessment.otc_recommendations,
-        lifestyle_recommendations: reportData.medical_assessment.lifestyle_recommendations,
-        timestamp: reportData.generated_at,
-        cached: false,
-        ai_model_used: reportData.ai_model_used,
-        confidence_score: reportData.confidence_score
-      };
-
-      setCurrentReport(transformedReport);
-      setReportTimestamp(reportData.generated_at);
+    // Check for instant demo report first (for common symptoms)
+    const demoReport = generateDemoReport(data);
+    if (demoReport) {
+      console.log('Using instant demo report for common symptoms');
+      setCurrentReport(demoReport);
+      setReportTimestamp(new Date().toISOString());
       setAppState('report');
 
       toast({
-        title: "AI Health Report Ready",
-        description: `Generated using ${reportData.ai_model_used} with ${reportData.confidence_score ? Math.round(reportData.confidence_score * 100) + '%' : 'high'} confidence.`,
+        title: "Health Report Ready",
+        description: "Instant assessment completed based on your symptoms.",
       });
+      return;
+    }
 
-    } catch (error) {
-      console.error('Error generating report from Python backend:', error);
+    // For uncommon symptoms, try AI backend with retry logic
+    let retryCount = 0;
+    const maxRetries = 2;
 
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-      const isNetworkError = errorMessage.includes('fetch') || errorMessage.includes('network') || errorMessage.includes('connection') || errorMessage.includes('Failed to fetch');
-      const isValidationError = errorMessage.includes('Validation failed') || errorMessage.includes('required');
+    while (retryCount <= maxRetries) {
+      try {
+        if (!user) {
+          throw new Error('User not authenticated');
+        }
 
-      let title = "Generation Failed";
-      let description = "Failed to generate your health report. Please try again.";
+        console.log(`Attempting AI report generation (attempt ${retryCount + 1}/${maxRetries + 1})...`);
 
-      if (isNetworkError) {
-        title = "Connection Error";
-        description = "Unable to connect to the AI service. Please check your internet connection and try again.";
-      } else if (isValidationError) {
-        title = "Validation Error";
-        description = errorMessage;
-      } else {
-        // For any other error, try to provide a demo report as fallback
-        console.log('Attempting to provide demo report due to backend error:', errorMessage);
-        const demoReport = generateDemoReport(data);
-        if (demoReport) {
-          setCurrentReport(demoReport);
+        // Call the Python backend API with timeout
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+
+        const reportData = await apiClient.generateHealthReport(data);
+
+        clearTimeout(timeoutId);
+
+        console.log('Successfully received AI report:', reportData);
+
+        // Transform the response to match the expected format
+        const transformedReport = {
+          demographic_header: {
+            name: reportData.patient_info.name || 'Not provided',
+            age: reportData.patient_info.age,
+            gender: reportData.patient_info.gender || 'Not provided',
+            date: new Date(reportData.generated_at).toISOString().split('T')[0]
+          },
+          chief_complaint: reportData.medical_assessment.chief_complaint,
+          history_present_illness: reportData.medical_assessment.history_present_illness,
+          past_medical_history: data.medicalHistory || 'None reported',
+          past_surgical_history: data.surgicalHistory || 'None reported',
+          medications: data.currentMedications || 'None reported',
+          allergies: data.allergies || 'None reported',
+          assessment: reportData.medical_assessment.assessment,
+          diagnostic_plan: reportData.medical_assessment.diagnostic_plan.follow_up ||
+                           `**Consultations**: ${reportData.medical_assessment.diagnostic_plan.consultations?.join(', ') || 'None recommended'}\n**Tests**: ${reportData.medical_assessment.diagnostic_plan.tests?.join(', ') || 'None recommended'}\n**RED FLAGS**: ${reportData.medical_assessment.diagnostic_plan.red_flags?.join(', ') || 'None identified'}\n**Follow-up**: ${reportData.medical_assessment.diagnostic_plan.follow_up || 'As needed'}`,
+          otc_recommendations: reportData.medical_assessment.otc_recommendations,
+          lifestyle_recommendations: reportData.medical_assessment.lifestyle_recommendations,
+          timestamp: reportData.generated_at,
+          cached: false,
+          ai_model_used: reportData.ai_model_used,
+          confidence_score: reportData.confidence_score
+        };
+
+        setCurrentReport(transformedReport);
+        setReportTimestamp(reportData.generated_at);
+        setAppState('report');
+
+        toast({
+          title: "AI Health Report Ready",
+          description: `Generated using ${reportData.ai_model_used} with ${reportData.confidence_score ? Math.round(reportData.confidence_score * 100) + '%' : 'high'} confidence.`,
+        });
+        return;
+
+      } catch (error) {
+        console.error(`AI report generation attempt ${retryCount + 1} failed:`, error);
+
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+        const isNetworkError = errorMessage.includes('fetch') || errorMessage.includes('network') || errorMessage.includes('connection') || errorMessage.includes('Failed to fetch') || errorMessage.includes('abort');
+        const isTimeoutError = errorMessage.includes('abort') || errorMessage.includes('timeout');
+        const isServerError = errorMessage.includes('500') || errorMessage.includes('502') || errorMessage.includes('503') || errorMessage.includes('504');
+
+        if (retryCount < maxRetries && (isNetworkError || isTimeoutError || isServerError)) {
+          retryCount++;
+          console.log(`Retrying in ${retryCount * 2} seconds...`);
+          await new Promise(resolve => setTimeout(resolve, retryCount * 2000));
+          continue;
+        }
+
+        // All retries failed - provide comprehensive error handling
+        let title = "Report Generation Failed";
+        let description = "Unable to generate your personalized health report.";
+
+        if (isNetworkError) {
+          title = "Connection Issue";
+          description = "Please check your internet connection and try again.";
+        } else if (isTimeoutError) {
+          title = "Request Timeout";
+          description = "The AI service is taking too long to respond. Please try again.";
+        } else if (isServerError) {
+          title = "Service Temporarily Unavailable";
+          description = "Our AI service is experiencing issues. Please try again in a few minutes.";
+        } else if (errorMessage.includes('quota') || errorMessage.includes('rate limit')) {
+          title = "Service Limit Reached";
+          description = "AI service quota exceeded. Using instant assessment instead.";
+        } else {
+          title = "Unexpected Error";
+          description = "An unexpected error occurred. Using instant assessment instead.";
+        }
+
+        // Try to provide a basic fallback report for any symptoms
+        const fallbackReport = generateFallbackReport(data);
+        if (fallbackReport) {
+          setCurrentReport(fallbackReport);
           setReportTimestamp(new Date().toISOString());
           setAppState('report');
 
           toast({
-            title: "Demo Report Ready",
-            description: "Due to service issues, here's a demo report based on common symptoms. The AI service will be available soon.",
+            title: "Basic Assessment Ready",
+            description: "Due to technical issues, here's a basic assessment. For detailed analysis, please try again later.",
           });
           return;
         }
-        title = "Service Error";
-        description = "Unable to generate report right now. Please try again in a few minutes.";
-      }
 
-      toast({
-        title,
-        description,
-        variant: "destructive",
-      });
-      setAppState('assessment');
+        toast({
+          title,
+          description,
+          variant: "destructive",
+        });
+        setAppState('assessment');
+        return;
+      }
     }
   };
 
@@ -446,25 +550,78 @@ const Index = () => {
 
   if (appState === 'assessment') {
     return (
-      <SymptomFlow 
-        onComplete={handleAssessmentComplete} 
-        onBack={handleBackFromAssessment}
-      />
+      <ErrorBoundary
+        fallback={
+          <div className="min-h-screen flex items-center justify-center p-4">
+            <Card className="max-w-md w-full text-center">
+              <CardContent className="pt-6">
+                <h2 className="text-xl font-semibold mb-4">Assessment Error</h2>
+                <p className="text-muted-foreground mb-4">
+                  There was a problem with the symptom assessment. Please try again.
+                </p>
+                <Button onClick={handleBackFromAssessment}>
+                  Go Back
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        }
+      >
+        <SymptomFlow
+          onComplete={handleAssessmentComplete}
+          onBack={handleBackFromAssessment}
+        />
+      </ErrorBoundary>
     );
   }
 
   if (appState === 'report' && assessmentData) {
     return (
-      <MedicalReport 
-        report={currentReport}
-        userInfo={assessmentData}
-        timestamp={reportTimestamp}
-        onBackToHome={handleBackToHome}
-      />
+      <ErrorBoundary
+        fallback={
+          <div className="min-h-screen flex items-center justify-center p-4">
+            <Card className="max-w-md w-full text-center">
+              <CardContent className="pt-6">
+                <h2 className="text-xl font-semibold mb-4">Report Display Error</h2>
+                <p className="text-muted-foreground mb-4">
+                  There was a problem displaying your report. Your data is safe.
+                </p>
+                <Button onClick={handleBackToHome}>
+                  Go Back Home
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        }
+      >
+        <MedicalReport
+          report={currentReport}
+          userInfo={assessmentData}
+          timestamp={reportTimestamp}
+          onBackToHome={handleBackToHome}
+        />
+      </ErrorBoundary>
     );
   }
 
-  return <HeroSection onStartAssessment={handleStartAssessment} onSignOut={handleSignOut} />;
+  return (
+    <div className="relative">
+      {/* Backend status indicator */}
+      {backendStatus !== 'available' && (
+        <div className="fixed top-4 right-4 z-50">
+          <div className={`px-3 py-1 rounded-full text-xs font-medium ${
+            backendStatus === 'checking'
+              ? 'bg-yellow-100 text-yellow-800'
+              : 'bg-red-100 text-red-800'
+          }`}>
+            {backendStatus === 'checking' ? 'Checking services...' : 'Service unavailable'}
+          </div>
+        </div>
+      )}
+
+      <HeroSection onStartAssessment={handleStartAssessment} onSignOut={handleSignOut} />
+    </div>
+  );
 };
 
 export default Index;

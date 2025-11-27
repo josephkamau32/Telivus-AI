@@ -30,7 +30,7 @@ def check_environment():
 
     # Log optional variables status
     for var in optional_vars:
-        status = "✓ Set" if os.getenv(var) else "✗ Not set"
+        status = "Set" if os.getenv(var) else "Not set"
         print(f"{var}: {status}")
 
 def setup_logging():
@@ -44,11 +44,11 @@ def setup_logging():
 
 def main():
     """Main startup function."""
-    print("🚀 Telivus AI Backend - Production Startup")
+    print("Telivus AI Backend - Production Startup")
     print("=" * 50)
 
     # Check environment
-    print("📋 Checking environment variables...")
+    print("Checking environment variables...")
     check_environment()
     print()
 
@@ -60,8 +60,8 @@ def main():
         from app.main import app
         import uvicorn
 
-        print("✅ Application loaded successfully")
-        print("🌐 Starting server on 0.0.0.0:8000")
+        print("Application loaded successfully")
+        print("Starting server on 0.0.0.0:8000")
         print()
 
         # Run with production settings
@@ -77,13 +77,13 @@ def main():
         )
 
     except ImportError as e:
-        print(f"❌ Import error: {e}")
+        print(f"Import error: {e}")
         print("Make sure all dependencies are installed:")
         print("pip install -r requirements.txt")
         sys.exit(1)
 
     except Exception as e:
-        print(f"❌ Startup error: {e}")
+        print(f"Startup error: {e}")
         sys.exit(1)
 
 if __name__ == "__main__":

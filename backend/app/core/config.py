@@ -22,13 +22,24 @@ class Settings(BaseSettings):
     # Server Configuration
     SERVER_NAME: str = "Telivus AI Backend"
     SERVER_HOST: AnyHttpUrl = "http://localhost"
-    DEBUG: bool = True
+    DEBUG: Union[bool, str] = True
+
+    @field_validator("DEBUG", mode="before")
+    @classmethod
+    def parse_debug(cls, v: Union[str, bool]) -> bool:
+        """Parse DEBUG environment variable to boolean."""
+        if isinstance(v, bool):
+            return v
+        if isinstance(v, str):
+            return v.lower() in ('true', '1', 'yes', 'on')
+        return False
 
     # CORS Configuration
     BACKEND_CORS_ORIGINS: List[AnyHttpUrl] = [
         "http://localhost:3000",  # React dev server
         "http://localhost:5173",  # Vite dev server
         "http://localhost:8000",  # FastAPI server
+        "http://localhost:8080",  # Vite dev server (current config)
         "https://telivus.co.ke",  # Production frontend
         "https://telivus-ai-git-main-joseph-kamaus-projects-ff2f6da1.vercel.app",  # Current Vercel deployment
     ]
