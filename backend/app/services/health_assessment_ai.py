@@ -114,7 +114,7 @@ class AIHealthAssessmentService:
 
     async def _get_ai_assessment(self, request: HealthAssessmentRequest) -> Dict[str, Any]:
         """
-        Get AI-powered assessment from OpenAI.
+        Get AI-powered assessment from OpenAI with comprehensive error handling.
 
         Args:
             request: Health assessment request
@@ -123,7 +123,7 @@ class AIHealthAssessmentService:
             Dict containing assessment data
         """
         if not self.api_key:
-            logger.warning("No OpenAI API key - using fallback assessment")
+            logger.warning("No OpenAI API key configured - using intelligent fallback")
             return self._get_fallback_assessment_data(request)
 
         try:
@@ -133,39 +133,80 @@ class AIHealthAssessmentService:
             # Create assessment prompt
             prompt = self._create_assessment_prompt(patient_context)
 
-            # Call OpenAI API
-            response = await openai.ChatCompletion.acreate(
-                model="gpt-4o-mini",
-                messages=[
-                    {
-                        "role": "system",
-                        "content": "You are Dr. Telivus, an experienced AI physician. Provide comprehensive health assessments based on symptoms and medical history. Always emphasize consulting healthcare professionals. Structure your response as valid JSON."
-                    },
-                    {
-                        "role": "user",
-                        "content": prompt
-                    }
-                ],
-                max_tokens=1500,
-                temperature=0.1,  # Low temperature for consistent medical responses
-                timeout=30  # 30 second timeout for faster responses
-            )
+            # Call OpenAI API with retry logic
+            max_retries = 2
+            for attempt in range(max_retries + 1):
+                try:
+                    response = await openai.AsyncOpenAI().chat.completions.create(
+                        model="gpt-4o-mini",
+                        messages=[
+                            {
+                                "role": "system",
+                                "content": "You are Dr. Telivus, an experienced AI physician. Provide comprehensive health assessments based on symptoms and medical history. Always emphasize consulting healthcare professionals. Structure your response as valid JSON."
+                            },
+                            {
+                                "role": "user",
+                                "content": prompt
+                            }
+                        ],
+                        max_tokens=1500,
+                        temperature=0.1,  # Low temperature for consistent medical responses
+                        timeout=25  # 25 second timeout for reliability
+                    )
 
-            # Extract response
-            ai_response = response.choices[0].message.content.strip()
+                    # Extract and validate response
+                    ai_response = response.choices[0].message.content.strip()
 
-            # Parse JSON response
-            try:
-                assessment_data = json.loads(ai_response)
-                logger.info("Successfully parsed AI assessment response")
-                return assessment_data
-            except json.JSONDecodeError as e:
-                logger.error(f"Failed to parse AI response as JSON: {e}")
-                logger.error(f"Raw AI response: {ai_response[:500]}...")
-                return self._get_fallback_assessment_data(request)
+                    # Parse JSON response with validation
+                    try:
+                        assessment_data = json.loads(ai_response)
+
+                        # Validate required fields
+                        required_fields = ["chief_complaint", "history_present_illness", "assessment", "diagnostic_plan", "otc_recommendations"]
+                        missing_fields = [field for field in required_fields if field not in assessment_data]
+
+                        if missing_fields:
+                            logger.warning(f"AI response missing required fields: {missing_fields}")
+                            if attempt < max_retries:
+                                logger.info(f"Retrying AI call (attempt {attempt + 2}/{max_retries + 1})")
+                                continue
+                            else:
+                                logger.error("AI response incomplete after all retries")
+                                return self._get_fallback_assessment_data(request)
+
+                        logger.info("Successfully generated AI assessment")
+                        return assessment_data
+
+                    except json.JSONDecodeError as e:
+                        logger.error(f"AI response JSON parsing failed: {e}")
+                        logger.error(f"Raw response: {ai_response[:300]}...")
+                        if attempt < max_retries:
+                            logger.info(f"Retrying AI call (attempt {attempt + 2}/{max_retries + 1})")
+                            continue
+                        else:
+                            return self._get_fallback_assessment_data(request)
+
+                except Exception as e:
+                    logger.error(f"OpenAI API error (attempt {attempt + 1}): {e}")
+                    if attempt < max_retries:
+                        continue
+                    else:
+                        logger.error("OpenAI API failed after all retries")
+                        return self._get_fallback_assessment_data(request)
+
+                except Exception as e:
+                    logger.error(f"Unexpected error in AI call (attempt {attempt + 1}): {e}")
+                    if attempt < max_retries:
+                        continue
+                    else:
+                        return self._get_fallback_assessment_data(request)
+
+            # If we get here, all retries failed
+            logger.error("All AI attempts failed - using fallback")
+            return self._get_fallback_assessment_data(request)
 
         except Exception as e:
-            logger.error(f"OpenAI API call failed: {e}")
+            logger.error(f"Critical error in AI assessment: {e}")
             return self._get_fallback_assessment_data(request)
 
     def _prepare_patient_context(self, request: HealthAssessmentRequest) -> Dict[str, Any]:
