@@ -83,10 +83,10 @@ if not settings.DEBUG:
         allowed_hosts=settings.ALLOWED_HOSTS,
     )
 
-# Request logging middleware
+# Request logging middleware with CORS headers
 @app.middleware("http")
 async def log_requests(request: Request, call_next):
-    """Log all incoming requests with timing information."""
+    """Log all incoming requests with timing information and add CORS headers."""
     start_time = time.time()
 
     # Get logger
@@ -103,6 +103,22 @@ async def log_requests(request: Request, call_next):
 
     # Log response
     logger.info(".2f")
+
+    # Add CORS headers explicitly
+    allowed_origins = [
+        "http://localhost:3000",
+        "http://localhost:5173",
+        "http://localhost:8000",
+        "https://telivus.co.ke",
+        "https://telivus-ai-git-main-joseph-kamaus-projects-ff2f6da1.vercel.app"
+    ]
+
+    origin = request.headers.get("origin")
+    if origin in allowed_origins:
+        response.headers["Access-Control-Allow-Origin"] = origin
+        response.headers["Access-Control-Allow-Credentials"] = "true"
+        response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
+        response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization, X-Requested-With"
 
     return response
 
