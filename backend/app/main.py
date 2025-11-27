@@ -74,6 +74,7 @@ app.add_middleware(
         "http://localhost:3000",
         "http://localhost:5173",
         "http://localhost:8000",
+        "http://localhost:8080",
         "https://telivus.co.ke",
         "https://telivus-ai-git-main-joseph-kamaus-projects-ff2f6da1.vercel.app",
     ],
@@ -116,6 +117,7 @@ async def log_requests(request: Request, call_next):
         "http://localhost:3000",
         "http://localhost:5173",
         "http://localhost:8000",
+        "http://localhost:8080",
         "https://telivus.co.ke",
         "https://telivus-ai-git-main-joseph-kamaus-projects-ff2f6da1.vercel.app"
     ]
@@ -230,6 +232,7 @@ async def cors_test():
             "http://localhost:3000",
             "http://localhost:5173",
             "http://localhost:8000",
+            "http://localhost:8080",
             "https://telivus.co.ke",
             "https://telivus-ai-git-main-joseph-kamaus-projects-ff2f6da1.vercel.app"
         ],
