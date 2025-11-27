@@ -136,10 +136,11 @@ async def health_check():
 async def root():
     """Root endpoint with API information."""
     return {
-        "message": "Welcome to Telivus AI Backend",
+        "message": "Welcome to Telivus AI Backend - Live and Ready!",
         "version": "1.0.0",
         "docs": "/docs",
-        "health": "/health"
+        "health": "/health",
+        "status": "AI-powered health assessments available"
     }
 
 # Include API routers
