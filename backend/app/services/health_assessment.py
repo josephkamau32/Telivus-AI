@@ -23,6 +23,15 @@ from app.core.logging import get_logger
 # Get logger
 logger = get_logger(__name__)
 
+# Try to import AI service first (highest priority)
+try:
+    from app.services.health_assessment_ai import AIHealthAssessmentService
+    _ai_service = AIHealthAssessmentService()
+    _use_ai_service = True
+except ImportError:
+    _ai_service = None
+    _use_ai_service = False
+
 # Import simple service as fallback
 try:
     from app.services.health_assessment_simple import SimpleHealthAssessmentService
@@ -32,7 +41,7 @@ except ImportError:
     _simple_service = None
     _use_simple_service = False
 
-# Try to import advanced agent
+# Try to import advanced agent (lowest priority)
 try:
     from app.agents.health_assessment_agent import HealthAssessmentAgent
     _advanced_agent = HealthAssessmentAgent()
@@ -59,8 +68,12 @@ class HealthAssessmentService:
         """
         self.db = db
 
-        # Use advanced agent if available, otherwise simple service
-        if _use_advanced_agent:
+        # Prioritize AI service, then advanced agent, then simple service
+        if _use_ai_service:
+            self.service = _ai_service
+            self.service_type = "ai"
+            logger.info("Using AI health assessment service (OpenAI GPT-4o-mini)")
+        elif _use_advanced_agent:
             self.service = _advanced_agent
             self.service_type = "advanced"
             logger.info("Using advanced health assessment agent")
@@ -91,7 +104,11 @@ class HealthAssessmentService:
             report = await self.service.generate_assessment(request)
 
             # Update metadata based on service type
-            if self.service_type == "simple":
+            if self.service_type == "ai":
+                report.ai_model_used = "gpt-4o-mini"
+                report.confidence_score = 0.85
+                report.disclaimer = "This AI assessment is for informational purposes only. Always consult healthcare professionals for medical advice."
+            elif self.service_type == "simple":
                 report.ai_model_used = "mock_assessment_service"
                 report.confidence_score = 0.8
                 report.disclaimer = "This is a mock assessment for demonstration purposes. Always consult healthcare professionals for actual medical advice."
