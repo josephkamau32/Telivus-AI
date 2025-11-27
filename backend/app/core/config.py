@@ -31,7 +31,6 @@ class Settings(BaseSettings):
         "http://localhost:8000",  # FastAPI server
         "https://telivus.co.ke",  # Production frontend
         "https://telivus-ai-git-main-joseph-kamaus-projects-ff2f6da1.vercel.app",  # Current Vercel deployment
-        "*",  # Allow all origins for now (remove in production)
     ]
 
     @field_validator("BACKEND_CORS_ORIGINS", mode="before")
