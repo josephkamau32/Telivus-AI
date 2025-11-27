@@ -2,7 +2,10 @@
  * API client for Telivus AI Python backend
  *
  * Handles all communication with the FastAPI backend server.
+ * Enhanced with advanced error handling and retry logic.
  */
+
+import { classifyError, withErrorRecovery, AppError } from './errorHandling';
 
 const API_BASE_URL = process.env.NODE_ENV === 'production'
   ? (import.meta.env.VITE_API_BASE_URL || 'https://telivus-ai.onrender.com')
@@ -67,7 +70,6 @@ class ApiClient {
     options: RequestInit = {}
   ): Promise<T> {
     const url = `${this.baseUrl}${endpoint}`;
-    const startTime = Date.now();
 
     const config: RequestInit = {
       headers: {
@@ -78,93 +80,130 @@ class ApiClient {
       ...options,
     };
 
-    try {
-      console.log(`API Request: ${config.method || 'GET'} ${url}`);
+    const makeRequest = async (): Promise<T> => {
+      const startTime = Date.now();
 
-      const response = await fetch(url, config);
-      const responseTime = Date.now() - startTime;
+      try {
+        console.log(`API Request: ${config.method || 'GET'} ${url}`);
 
-      console.log(`API Response: ${response.status} ${response.statusText} (${responseTime}ms)`);
+        const response = await fetch(url, config);
+        const responseTime = Date.now() - startTime;
 
-      if (!response.ok) {
-        let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
-        let errorDetails = {};
+        console.log(`API Response: ${response.status} ${response.statusText} (${responseTime}ms)`);
 
-        try {
-          const errorData = await response.json();
-          errorDetails = errorData;
-          errorMessage = errorData.detail || errorData.message || errorMessage;
-        } catch (parseError) {
-          // Response is not JSON, try to get text
+        if (!response.ok) {
+          let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+          let errorDetails = {};
+
           try {
-            const errorText = await response.text();
-            if (errorText) {
-              errorMessage = errorText;
+            const errorData = await response.json();
+            errorDetails = errorData;
+            errorMessage = errorData.detail || errorData.message || errorMessage;
+          } catch (parseError) {
+            // Response is not JSON, try to get text
+            try {
+              const errorText = await response.text();
+              if (errorText) {
+                errorMessage = errorText;
+              }
+            } catch (textError) {
+              // Ignore text parsing errors
             }
-          } catch (textError) {
-            // Ignore text parsing errors
           }
+
+          // Create enhanced error with status code
+          const apiError = new Error(errorMessage);
+          (apiError as any).status = response.status;
+          (apiError as any).statusText = response.statusText;
+          (apiError as any).url = url;
+          (apiError as any).responseTime = responseTime;
+
+          // Log detailed error information
+          console.error('API Error:', {
+            url,
+            method: config.method || 'GET',
+            status: response.status,
+            statusText: response.statusText,
+            responseTime,
+            errorDetails,
+            timestamp: new Date().toISOString()
+          });
+
+          throw apiError;
         }
 
-        // Log detailed error information
-        console.error('API Error:', {
+        const data = await response.json();
+
+        // Log successful requests in development
+        if (process.env.NODE_ENV === 'development') {
+          console.log('API Success:', { url, responseTime, dataSize: JSON.stringify(data).length });
+        }
+
+        return data;
+      } catch (error) {
+        const responseTime = Date.now() - startTime;
+
+        if (error instanceof Error) {
+          // Enhance error with context
+          const enhancedError = new Error(error.message);
+          enhancedError.name = error.name || 'APIError';
+          (enhancedError as any).url = url;
+          (enhancedError as any).responseTime = responseTime;
+          (enhancedError as any).timestamp = new Date().toISOString();
+
+          // Copy over status if it exists
+          if ((error as any).status) {
+            (enhancedError as any).status = (error as any).status;
+            (enhancedError as any).statusText = (error as any).statusText;
+          }
+
+          console.error('API Request Failed:', {
+            url,
+            method: config.method || 'GET',
+            error: error.message,
+            responseTime,
+            timestamp: new Date().toISOString()
+          });
+
+          throw enhancedError;
+        }
+
+        // For non-Error objects
+        const networkError = new Error('Network request failed');
+        networkError.name = 'NetworkError';
+        (networkError as any).url = url;
+        (networkError as any).responseTime = responseTime;
+
+        console.error('Network Error:', {
           url,
           method: config.method || 'GET',
-          status: response.status,
-          statusText: response.statusText,
           responseTime,
-          errorDetails,
           timestamp: new Date().toISOString()
         });
 
-        throw new Error(errorMessage);
+        throw networkError;
       }
+    };
 
-      const data = await response.json();
+    // Use error recovery for critical requests
+    return withErrorRecovery(makeRequest, {
+      maxRetries: 2,
+      retryDelay: 1000,
+      exponentialBackoff: true,
+      onRetry: (attempt, error) => {
+        console.log(`Retrying API request (attempt ${attempt}):`, url);
+      },
+      onFailure: (error) => {
+        // Classify and report the error
+        const classifiedError = classifyError(error);
+        console.error('API request failed after retries:', classifiedError);
 
-      // Log successful requests in development
-      if (process.env.NODE_ENV === 'development') {
-        console.log('API Success:', { url, responseTime, dataSize: JSON.stringify(data).length });
+        // In production, send to error reporting
+        if (process.env.NODE_ENV === 'production') {
+          // Could integrate with error reporting service here
+        }
       }
-
-      return data;
-    } catch (error) {
-      const responseTime = Date.now() - startTime;
-
-      if (error instanceof Error) {
-        // Enhance error with context
-        const enhancedError = new Error(error.message);
-        enhancedError.name = 'APIError';
-        (enhancedError as any).url = url;
-        (enhancedError as any).responseTime = responseTime;
-        (enhancedError as any).timestamp = new Date().toISOString();
-
-        console.error('API Request Failed:', {
-          url,
-          method: config.method || 'GET',
-          error: error.message,
-          responseTime,
-          timestamp: new Date().toISOString()
-        });
-
-        throw enhancedError;
-      }
-
-      // For non-Error objects
-      const networkError = new Error('Network request failed');
-      networkError.name = 'NetworkError';
-      (networkError as any).url = url;
-      (networkError as any).responseTime = responseTime;
-
-      console.error('Network Error:', {
-        url,
-        method: config.method || 'GET',
-        responseTime,
-        timestamp: new Date().toISOString()
-      });
-
-      throw networkError;
-    }
+    });
   }
 
   /**
