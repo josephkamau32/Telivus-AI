@@ -4,8 +4,8 @@ uvicorn[standard]==0.24.0
 pydantic==2.5.0
 pydantic-settings==2.1.0
 
-# AI Dependencies (simplified for deployment)
-openai==0.28.0
+# AI Dependencies (production-ready)
+openai>=1.0.0
 
 # Utilities
 colorlog==6.8.0
