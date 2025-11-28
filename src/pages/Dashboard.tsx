@@ -21,6 +21,7 @@ import { Footer } from '@/components/Footer';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useTranslation } from '@/contexts/LanguageContext';
+import { AlertCenter } from '@/components/AlertCenter';
 import {
   LineChart,
   Line,
@@ -636,11 +637,26 @@ const Dashboard = () => {
               <Download className="w-4 h-4" />
               Export Data
             </Button>
+            <Button onClick={() => navigate('/trajectory')} variant="default" className="gap-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700">
+              <TrendingUp className="w-4 h-4" />
+              Health Trajectory
+            </Button>
             <Button onClick={() => navigate('/dashboard')} variant="outline" className="gap-2">
               <ArrowLeft className="w-4 h-4" />
               {t.backToAssessment}
             </Button>
           </div>
+        </div>
+
+        {/* Health Alert Center */}
+        <div className="mb-8 animate-in slide-in-from-top-4 duration-700">
+          <AlertCenter
+            userId={user?.id || "demo_user"}
+            onAlertAction={(alertId, action) => {
+              console.log(`Alert ${alertId} ${action} by user ${user?.id || "demo_user"}`);
+              // In a real app, this would send the action to the backend
+            }}
+          />
         </div>
 
         {/* Quick Stats */}

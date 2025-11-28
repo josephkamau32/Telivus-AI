@@ -174,3 +174,201 @@ class ImageAnalysisResponse(BaseModel):
     confidence_scores: Dict[str, float] = Field(default_factory=dict, description="Confidence scores for detections")
     recommendations: List[str] = Field(default_factory=list, description="Analysis recommendations")
     requires_attention: bool = Field(default=False, description="Whether immediate medical attention is needed")
+
+
+# Trajectory Prediction Models
+
+class HealthDataPoint(BaseModel):
+    """Time-series health data point."""
+    symptom_severity: Optional[Dict[str, float]] = Field(None, description="Symptom name -> severity score (0-10)")
+    vital_signs: Optional[Dict[str, float]] = Field(None, description="Vital signs (heart_rate, blood_pressure, temperature, etc.)")
+    lab_values: Optional[Dict[str, float]] = Field(None, description="Laboratory values and biomarkers")
+    lifestyle_factors: Optional[Dict[str, Any]] = Field(None, description="Lifestyle metrics (sleep, exercise, stress, etc.)")
+    recorded_at: datetime = Field(..., description="When this data was recorded")
+    data_source: str = Field(..., description="Source of the data (user_input, wearable, assessment, etc.)")
+    confidence_score: float = Field(default=1.0, ge=0.0, le=1.0, description="Data quality confidence")
+
+
+class TrajectoryPrediction(BaseModel):
+    """Predicted health trajectory."""
+    condition_name: str = Field(..., description="Condition being predicted")
+    prediction_horizon_days: int = Field(..., description="Days into future being predicted")
+    baseline_date: datetime = Field(..., description="Starting point for prediction")
+    predicted_values: List[Dict[str, Any]] = Field(..., description="Time-series predictions with confidence intervals")
+    risk_assessments: Dict[str, float] = Field(default_factory=dict, description="Risk scores for various conditions")
+    confidence_score: float = Field(..., ge=0.0, le=1.0, description="Overall prediction confidence")
+    feature_importance: Dict[str, float] = Field(default_factory=dict, description="Factors influencing prediction")
+
+
+class InterventionPlan(BaseModel):
+    """Health intervention recommendation."""
+    intervention_type: str = Field(..., description="Type of intervention (medication, lifestyle, therapy, etc.)")
+    intervention_name: str = Field(..., description="Specific intervention name")
+    description: str = Field(..., description="Detailed description")
+    prescribed_by: str = Field(default="AI", description="Who prescribed this intervention")
+    dosage_instructions: Optional[Dict[str, Any]] = Field(None, description="Dosage details for medications")
+    schedule: Optional[Dict[str, Any]] = Field(None, description="Implementation schedule")
+    expected_outcome: Optional[str] = Field(None, description="Expected health outcome")
+    side_effects: Optional[List[str]] = Field(None, description="Potential side effects")
+    monitoring_required: Optional[List[str]] = Field(None, description="What to monitor")
+
+
+class SimulationScenario(BaseModel):
+    """Intervention simulation scenario."""
+    scenario_name: str = Field(..., description="Name of the simulation scenario")
+    intervention_changes: Dict[str, Any] = Field(..., description="Changes to interventions")
+    assumption_parameters: Dict[str, Any] = Field(default_factory=dict, description="Model assumptions")
+    simulated_trajectory: List[Dict[str, Any]] = Field(..., description="Predicted trajectory under this scenario")
+    risk_changes: Dict[str, float] = Field(default_factory=dict, description="Changes in risk scores")
+    probability_improvement: float = Field(..., ge=0.0, le=1.0, description="Likelihood of positive outcome")
+    expected_value: float = Field(..., description="Expected health improvement score")
+    recommendation_strength: float = Field(..., ge=0.0, le=1.0, description="How strongly recommended")
+
+
+class HealthTrajectoryResponse(BaseModel):
+    """Complete health trajectory analysis response."""
+    user_id: str = Field(..., description="User identifier")
+    trajectory_id: str = Field(..., description="Trajectory identifier")
+    baseline_assessment: HealthDataPoint = Field(..., description="Current health baseline")
+    predictions: List[TrajectoryPrediction] = Field(..., description="Health trajectory predictions")
+    recommended_interventions: List[InterventionPlan] = Field(..., description="Recommended interventions")
+    simulation_scenarios: List[SimulationScenario] = Field(default_factory=list, description="Alternative intervention scenarios")
+    generated_at: datetime = Field(default_factory=datetime.utcnow, description="Analysis generation timestamp")
+    model_version: str = Field(..., description="ML model version used")
+    disclaimer: str = Field(
+        default="Trajectory predictions are estimates based on available data and should not replace professional medical advice.",
+        description="Medical disclaimer"
+    )
+
+
+class TrajectoryRequest(BaseModel):
+    """Request model for trajectory analysis."""
+    user_id: str = Field(..., description="User identifier")
+    prediction_horizon_days: int = Field(default=30, ge=1, le=365, description="Days to predict into future")
+    include_simulations: bool = Field(default=True, description="Whether to include intervention simulations")
+    focus_conditions: Optional[List[str]] = Field(None, description="Specific conditions to focus on")
+
+
+class InterventionTrackingRequest(BaseModel):
+    """Request model for tracking intervention outcomes."""
+    intervention_id: str = Field(..., description="Intervention identifier")
+    adherence_score: float = Field(..., ge=0.0, le=1.0, description="Self-reported adherence (0-1)")
+    outcome_metrics: Dict[str, Any] = Field(..., description="Health metrics after intervention")
+    side_effects: Optional[List[str]] = Field(None, description="Reported side effects")
+    effectiveness_rating: Optional[int] = Field(None, ge=1, le=5, description="Self-rated effectiveness (1-5)")
+    notes: Optional[str] = Field(None, max_length=1000, description="Additional notes")
+
+
+# Predictive Alerts Models
+
+class AlertType(str, Enum):
+    """Types of predictive alerts."""
+    SYMPTOM_WORSENING = "symptom_worsening"
+    VITAL_SIGN_ABNORMAL = "vital_sign_abnormal"
+    RISK_LEVEL_INCREASE = "risk_level_increase"
+    INTERVENTION_REMINDER = "intervention_reminder"
+    EMERGENCY_WARNING = "emergency_warning"
+    PREVENTIVE_ACTION = "preventive_action"
+    MEDICATION_ADHERENCE = "medication_adherence"
+    APPOINTMENT_REMINDER = "appointment_reminder"
+
+
+class AlertSeverity(str, Enum):
+    """Alert severity levels."""
+    LOW = "low"
+    MEDIUM = "medium"
+    HIGH = "high"
+    CRITICAL = "critical"
+
+
+class AlertStatus(str, Enum):
+    """Alert status states."""
+    ACTIVE = "active"
+    ACKNOWLEDGED = "acknowledged"
+    RESOLVED = "resolved"
+    DISMISSED = "dismissed"
+
+
+class PredictiveAlert(BaseModel):
+    """Predictive health alert model."""
+    alert_id: str = Field(..., description="Unique alert identifier")
+    user_id: str = Field(..., description="User identifier")
+    alert_type: AlertType = Field(..., description="Type of alert")
+    severity: AlertSeverity = Field(..., description="Alert severity level")
+    title: str = Field(..., description="Alert title")
+    message: str = Field(..., description="Detailed alert message")
+    condition_name: str = Field(..., description="Related health condition")
+    predicted_value: Optional[float] = Field(None, description="Predicted metric value")
+    threshold_value: Optional[float] = Field(None, description="Threshold that triggered alert")
+    confidence_score: float = Field(..., ge=0.0, le=1.0, description="Prediction confidence")
+    recommended_actions: List[str] = Field(default_factory=list, description="Recommended actions")
+    data_points: Dict[str, Any] = Field(default_factory=dict, description="Supporting data")
+    created_at: datetime = Field(default_factory=datetime.utcnow, description="Alert creation time")
+    expires_at: Optional[datetime] = Field(None, description="Alert expiration time")
+    status: AlertStatus = Field(default=AlertStatus.ACTIVE, description="Current alert status")
+    acknowledged_at: Optional[datetime] = Field(None, description="When alert was acknowledged")
+    resolved_at: Optional[datetime] = Field(None, description="When alert was resolved")
+
+
+class AlertRule(BaseModel):
+    """Alert rule configuration."""
+    rule_id: str = Field(..., description="Rule identifier")
+    user_id: str = Field(..., description="User identifier")
+    alert_type: AlertType = Field(..., description="Type of alert this rule generates")
+    condition_name: Optional[str] = Field(None, description="Specific condition to monitor")
+    metric_name: str = Field(..., description="Metric to monitor (symptom, vital, risk)")
+    operator: str = Field(..., description="Comparison operator (>, <, >=, <=, ==)")
+    threshold_value: float = Field(..., description="Threshold value for triggering")
+    time_window_days: int = Field(default=7, description="Time window for evaluation")
+    severity: AlertSeverity = Field(default=AlertSeverity.MEDIUM, description="Default severity")
+    is_active: bool = Field(default=True, description="Whether rule is active")
+    notification_channels: List[str] = Field(default_factory=lambda: ["in_app"], description="Notification methods")
+    cooldown_hours: int = Field(default=24, description="Minimum hours between alerts")
+    created_at: datetime = Field(default_factory=datetime.utcnow, description="Rule creation time")
+
+
+class AlertNotification(BaseModel):
+    """Alert notification record."""
+    notification_id: str = Field(..., description="Notification identifier")
+    alert_id: str = Field(..., description="Associated alert identifier")
+    user_id: str = Field(..., description="User identifier")
+    channel: str = Field(..., description="Notification channel (email, sms, push, in_app)")
+    status: str = Field(default="pending", description="Delivery status")
+    sent_at: Optional[datetime] = Field(None, description="When notification was sent")
+    delivered_at: Optional[datetime] = Field(None, description="When notification was delivered")
+    error_message: Optional[str] = Field(None, description="Delivery error message")
+
+
+class AlertAnalytics(BaseModel):
+    """Analytics for alert system performance."""
+    user_id: str = Field(..., description="User identifier")
+    total_alerts: int = Field(default=0, description="Total alerts generated")
+    acknowledged_alerts: int = Field(default=0, description="Alerts acknowledged by user")
+    resolved_alerts: int = Field(default=0, description="Alerts that led to resolution")
+    false_positives: int = Field(default=0, description="Incorrectly triggered alerts")
+    average_response_time_hours: float = Field(default=0.0, description="Average time to acknowledge")
+    alert_effectiveness_score: float = Field(default=0.0, ge=0.0, le=1.0, description="Overall alert system effectiveness")
+
+
+class AlertRequest(BaseModel):
+    """Request model for alert operations."""
+    user_id: str = Field(..., description="User identifier")
+    alert_types: Optional[List[AlertType]] = Field(None, description="Filter by alert types")
+    severity_levels: Optional[List[AlertSeverity]] = Field(None, description="Filter by severity")
+    status_filter: Optional[List[AlertStatus]] = Field(None, description="Filter by status")
+    limit: int = Field(default=50, ge=1, le=200, description="Maximum alerts to return")
+    include_expired: bool = Field(default=False, description="Include expired alerts")
+
+
+class AlertRuleRequest(BaseModel):
+    """Request model for alert rule operations."""
+    user_id: str = Field(..., description="User identifier")
+    rule: AlertRule = Field(..., description="Alert rule configuration")
+
+
+class AlertAcknowledgeRequest(BaseModel):
+    """Request model for acknowledging alerts."""
+    alert_id: str = Field(..., description="Alert identifier")
+    user_id: str = Field(..., description="User identifier")
+    action_taken: Optional[str] = Field(None, description="Action taken in response")
+    effectiveness_rating: Optional[int] = Field(None, ge=1, le=5, description="How helpful was the alert")

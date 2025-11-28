@@ -39,6 +39,20 @@ Telivus AI is a **cutting-edge AI-powered health assessment platform** that comb
 - **Emergency Detection**: Red flag identification for immediate medical attention
 - **Evidence-Based Recommendations**: OTC medications and lifestyle advice
 
+### **🧠 Advanced Health Trajectory Prediction**
+- **Predictive Analytics**: 30-day health trajectory forecasting using ML models
+- **Intervention Simulation**: "What-if" scenarios for different treatment approaches
+- **Risk Assessment**: Personalized risk scoring with confidence intervals
+- **Longitudinal Tracking**: Time-series analysis of health metrics over time
+- **Personalized Recommendations**: AI-driven intervention planning and optimization
+
+### **🔔 Advanced Predictive Alerts System**
+- **Early Warning Detection**: AI identifies health risks before they worsen
+- **Multi-Channel Notifications**: In-app, email, SMS, and push notifications
+- **Customizable Alert Rules**: User-defined thresholds and conditions
+- **Intervention Tracking**: Monitor response to health recommendations
+- **Analytics Dashboard**: Performance metrics and alert effectiveness
+
 ### **User Experience Excellence**
 - **Progressive Web App**: Native app-like experience on any device
 - **Voice-Activated Input**: Speech-to-text symptom reporting
@@ -73,13 +87,30 @@ Redis + ChromaDB (Vector Store)
 Pydantic + JWT Authentication
 ```
 
-### **AI/ML**
+### **AI/ML - Advanced Deep Learning Stack**
 ```python
+# Core AI Models
 LangChain Agents & Chains
 OpenAI GPT-4o-mini
 Sentence Transformers
+
+# Vector Database & RAG
 ChromaDB / Pinecone
 RAG Implementation
+
+# Advanced Trajectory Prediction
+LSTM Networks with Attention Mechanisms
+Transformer Models for Sequence Prediction
+Ensemble ML (Random Forest, Gradient Boosting, XGBoost)
+Time-Series Forecasting with Uncertainty Quantification
+Risk Assessment with Confidence Intervals
+Intervention Simulation & Causal Inference
+
+# Deep Learning Frameworks
+PyTorch with CUDA acceleration
+TensorFlow/Keras for model serving
+Automatic Mixed Precision training
+Model quantization for production deployment
 ```
 
 ## 📊 **Architecture Overview**
@@ -104,6 +135,11 @@ RAG Implementation
 ### **Technical Achievements**
 - ✅ **Full-Stack AI Application**: React + Python + PostgreSQL + AI
 - ✅ **Advanced AI Integration**: LangChain agents, RAG, GPT-4o-mini
+- ✅ **Deep Learning Pipeline**: LSTM/Transformer models for trajectory prediction
+- ✅ **GPU-Accelerated ML**: PyTorch CUDA optimization for real-time inference
+- ✅ **Trajectory Prediction**: 30-day health forecasting with uncertainty quantification
+- ✅ **Intervention Simulation**: Monte Carlo simulation for treatment outcome modeling
+- ✅ **Ensemble Learning**: Bootstrap aggregation with 5+ ML models for robustness
 - ✅ **Production Architecture**: Scalable, secure, monitored
 - ✅ **Medical Domain Expertise**: Healthcare application with safety considerations
 - ✅ **Modern Development**: TypeScript, async Python, containerization
@@ -114,6 +150,16 @@ RAG Implementation
 - 🎯 **Prompt Engineering**: Structured medical assessment prompts
 - 🔄 **Fallback Systems**: Graceful degradation when AI unavailable
 - 📊 **Performance Optimization**: Caching, async processing, rate limiting
+
+### **🚀 Advanced Deep Learning Features**
+- 🧠 **LSTM Networks**: Bidirectional LSTM with attention for time-series prediction
+- 🔄 **Transformer Models**: Multi-head attention for complex health pattern recognition
+- 📈 **Trajectory Prediction**: 30-day health forecasting with uncertainty quantification
+- 🎮 **Intervention Simulation**: Monte Carlo simulation for treatment outcome modeling
+- 📉 **Risk Assessment**: Bayesian uncertainty estimation with confidence intervals
+- 🔬 **Ensemble Learning**: Bootstrap aggregation with 5+ ML models for robustness
+- ⚡ **GPU Acceleration**: PyTorch CUDA optimization for real-time inference
+- 🎯 **AutoML Pipeline**: Automated hyperparameter tuning with Optuna
 
 ### **Engineering Best Practices**
 - 🧪 **Comprehensive Testing**: Unit, integration, and API testing
@@ -222,22 +268,29 @@ VECTOR_DB_TYPE=chroma
 ### **Full User Experience**
 
 1. **Health Assessment Flow**:
-   - Select your current feeling (good, unwell, tired, anxious, stressed)
-   - Choose symptoms from predefined options or add custom symptoms
-   - Provide basic information (age, name, gender)
-   - Share medical history (optional but recommended)
+    - Select your current feeling (good, unwell, tired, anxious, stressed)
+    - Choose symptoms from predefined options or add custom symptoms
+    - Provide basic information (age, name, gender)
+    - Share medical history (optional but recommended)
 
 2. **AI-Powered Analysis**:
-   - Backend processes symptoms through LangChain agents
-   - RAG system retrieves relevant medical knowledge
-   - GPT-4o-mini generates personalized assessment
+    - Backend processes symptoms through LangChain agents
+    - RAG system retrieves relevant medical knowledge
+    - GPT-4o-mini generates personalized assessment
 
 3. **Comprehensive Report**:
-   - Chief complaint and history of present illness
-   - Medical assessment with differentials
-   - Diagnostic plan with red flags
-   - OTC medication recommendations
-   - Lifestyle and self-care advice
+    - Chief complaint and history of present illness
+    - Medical assessment with differentials
+    - Diagnostic plan with red flags
+    - OTC medication recommendations
+    - Lifestyle and self-care advice
+
+4. **🧠 Health Trajectory Prediction** (NEW!):
+    - Access via "Health Trajectory" button on dashboard
+    - 30-day predictive health forecasting
+    - Interactive charts with confidence intervals
+    - Intervention simulation and scenario planning
+    - Personalized risk assessment and recommendations
 
 ### **🤖 AI Testing (Live Endpoints)**
 
