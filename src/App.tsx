@@ -20,6 +20,7 @@ const About = lazy(() => import("./pages/About"));
 const Contact = lazy(() => import("./pages/Contact"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
+const Trajectory = lazy(() => import("./pages/Trajectory"));
 
 // Loading component
 const PageLoader = () => (
@@ -76,6 +77,7 @@ const App = () => {
                   <Route path="/" element={<Landing />} />
                   <Route path="/dashboard" element={<Index />} />
                   <Route path="/health-dashboard" element={<Dashboard />} />
+                  <Route path="/trajectory" element={<Trajectory />} />
                   <Route path="/auth" element={<Auth />} />
                   <Route path="/chat" element={<Chat />} />
                   <Route path="/about" element={<About />} />
