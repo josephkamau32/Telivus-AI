@@ -5,10 +5,11 @@ These models define the database schema for storing health reports,
 chat sessions, user data, and other application data.
 """
 
-from sqlalchemy import Column, Integer, String, Text, DateTime, Boolean, Float, JSON, ForeignKey
+from sqlalchemy import Column, Integer, String, Text, DateTime, Boolean, Float, JSON, ForeignKey, ARRAY
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
+from sqlalchemy.dialects.postgresql import TIMESTAMP
 
 Base = declarative_base()
 
@@ -167,6 +168,266 @@ class VectorDocument(Base):
     category = Column(String)  # symptoms, conditions, treatments, etc.
 
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+class HealthDataPoint(Base):
+    """Time-series health data points for trajectory analysis."""
+    __tablename__ = "health_data_points"
+
+    id = Column(String, primary_key=True, index=True)
+    user_id = Column(String, ForeignKey("users.id"), index=True, nullable=False)
+
+    # Health metrics
+    symptom_severity = Column(JSON)  # Symptom name -> severity score (0-10)
+    vital_signs = Column(JSON)  # heart_rate, blood_pressure, temperature, etc.
+    lab_values = Column(JSON)  # blood_work, biomarkers, etc.
+    lifestyle_factors = Column(JSON)  # sleep_hours, exercise_minutes, stress_level, etc.
+
+    # Context
+    assessment_id = Column(String, ForeignKey("health_reports.id"), index=True)
+    data_source = Column(String, nullable=False)  # user_input, wearable, lab_results, assessment
+
+    # Quality and validation
+    confidence_score = Column(Float, default=1.0)  # Data quality confidence
+    is_validated = Column(Boolean, default=False)
+
+    # Timestamps
+    recorded_at = Column(DateTime(timezone=True), nullable=False, index=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    # Relationships
+    user = relationship("User", backref="health_data_points")
+    assessment = relationship("HealthReport", backref="data_points")
+
+
+class HealthTrajectory(Base):
+    """Predicted health trajectories and risk assessments."""
+    __tablename__ = "health_trajectories"
+
+    id = Column(String, primary_key=True, index=True)
+    user_id = Column(String, ForeignKey("users.id"), index=True, nullable=False)
+
+    # Trajectory metadata
+    trajectory_type = Column(String, nullable=False)  # symptom_progression, condition_risk, vital_trends
+    condition_name = Column(String)  # Specific condition being tracked
+    prediction_horizon_days = Column(Integer, nullable=False)  # How far into future
+
+    # Prediction data
+    baseline_data = Column(JSON)  # Starting point health metrics
+    predicted_trajectory = Column(JSON)  # Time-series predictions with confidence intervals
+    risk_assessments = Column(JSON)  # Risk scores for various conditions
+
+    # Model information
+    model_version = Column(String, nullable=False)
+    model_confidence = Column(Float, default=0.0)
+    feature_importance = Column(JSON)  # Which factors influenced the prediction
+
+    # Status and validation
+    status = Column(String, default="active")  # active, archived, invalidated
+    is_baseline_updated = Column(Boolean, default=False)
+
+    # Timestamps
+    baseline_date = Column(DateTime(timezone=True), nullable=False)
+    last_updated = Column(DateTime(timezone=True), server_default=func.now())
+    expires_at = Column(DateTime(timezone=True))  # When to recalculate
+
+    # Relationships
+    user = relationship("User", backref="health_trajectories")
+    interventions = relationship("Intervention", back_populates="trajectory")
+
+
+class Intervention(Base):
+    """Health interventions and their outcomes."""
+    __tablename__ = "interventions"
+
+    id = Column(String, primary_key=True, index=True)
+    user_id = Column(String, ForeignKey("users.id"), index=True, nullable=False)
+    trajectory_id = Column(String, ForeignKey("health_trajectories.id"), index=True)
+
+    # Intervention details
+    intervention_type = Column(String, nullable=False)  # medication, lifestyle, therapy, monitoring
+    intervention_name = Column(String, nullable=False)  # Specific intervention
+    description = Column(Text)
+
+    # Implementation
+    prescribed_by = Column(String)  # AI, healthcare_provider, user
+    dosage_instructions = Column(JSON)  # For medications/supplements
+    schedule = Column(JSON)  # When/how often to perform
+
+    # Status tracking
+    status = Column(String, default="planned")  # planned, active, completed, discontinued
+    adherence_score = Column(Float, default=0.0)  # 0-1 adherence rate
+    effectiveness_score = Column(Float)  # User/provider rated effectiveness
+
+    # Outcomes
+    outcome_metrics = Column(JSON)  # Health metrics before/after
+    side_effects = Column(JSON)  # Any reported side effects
+    notes = Column(Text)
+
+    # Timestamps
+    started_at = Column(DateTime(timezone=True))
+    completed_at = Column(DateTime(timezone=True))
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+    # Relationships
+    user = relationship("User", backref="interventions")
+    trajectory = relationship("HealthTrajectory", back_populates="interventions")
+
+
+class TrajectorySimulation(Base):
+    """Simulation results for different intervention scenarios."""
+    __tablename__ = "trajectory_simulations"
+
+    id = Column(String, primary_key=True, index=True)
+    user_id = Column(String, ForeignKey("users.id"), index=True, nullable=False)
+    trajectory_id = Column(String, ForeignKey("health_trajectories.id"), index=True)
+
+    # Simulation parameters
+    scenario_name = Column(String, nullable=False)
+    intervention_changes = Column(JSON)  # What interventions are modified
+    assumption_parameters = Column(JSON)  # Model assumptions for this scenario
+
+    # Results
+    simulated_trajectory = Column(JSON)  # Predicted trajectory under this scenario
+    risk_changes = Column(JSON)  # How risks change compared to baseline
+    confidence_intervals = Column(JSON)  # Uncertainty bounds
+
+    # Analysis
+    probability_improvement = Column(Float)  # Likelihood of positive outcome
+    expected_value = Column(Float)  # Expected health improvement score
+    recommendation_strength = Column(Float)  # How strongly recommended (0-1)
+
+    # Metadata
+    simulation_model = Column(String, nullable=False)
+    processing_time_ms = Column(Integer)
+
+    # Timestamps
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    # Relationships
+    user = relationship("User", backref="trajectory_simulations")
+    trajectory = relationship("HealthTrajectory", backref="simulations")
+
+
+class PredictiveAlert(Base):
+    """Predictive health alerts for users."""
+    __tablename__ = "predictive_alerts"
+
+    id = Column(String, primary_key=True, index=True)
+    user_id = Column(String, ForeignKey("users.id"), index=True, nullable=False)
+    trajectory_id = Column(String, ForeignKey("health_trajectories.id"), index=True)
+
+    # Alert details
+    alert_type = Column(String, nullable=False)  # symptom_worsening, vital_sign_abnormal, etc.
+    severity = Column(String, default="medium")  # low, medium, high, critical
+    title = Column(String, nullable=False)
+    message = Column(Text, nullable=False)
+    condition_name = Column(String)
+
+    # Prediction data
+    predicted_value = Column(Float)
+    threshold_value = Column(Float)
+    confidence_score = Column(Float, default=0.0)
+
+    # Actions and data
+    recommended_actions = Column(JSON)  # List of recommended actions
+    data_points = Column(JSON)  # Supporting data for the alert
+
+    # Status tracking
+    status = Column(String, default="active")  # active, acknowledged, resolved, dismissed
+    acknowledged_at = Column(DateTime(timezone=True))
+    resolved_at = Column(DateTime(timezone=True))
+
+    # Timestamps
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    expires_at = Column(DateTime(timezone=True))
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+    # Relationships
+    user = relationship("User", backref="predictive_alerts")
+    trajectory = relationship("HealthTrajectory", backref="alerts")
+
+
+class AlertRule(Base):
+    """Alert rule configurations for users."""
+    __tablename__ = "alert_rules"
+
+    id = Column(String, primary_key=True, index=True)
+    user_id = Column(String, ForeignKey("users.id"), index=True, nullable=False)
+
+    # Rule configuration
+    alert_type = Column(String, nullable=False)
+    condition_name = Column(String)
+    metric_name = Column(String, nullable=False)
+    operator = Column(String, nullable=False)  # >, <, >=, <=, ==
+    threshold_value = Column(Float, nullable=False)
+    time_window_days = Column(Integer, default=7)
+    severity = Column(String, default="medium")
+    is_active = Column(Boolean, default=True)
+
+    # Notification settings
+    notification_channels = Column(JSON)  # ["email", "sms", "push", "in_app"]
+    cooldown_hours = Column(Integer, default=24)
+
+    # Timestamps
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+    # Relationships
+    user = relationship("User", backref="alert_rules")
+
+
+class AlertNotification(Base):
+    """Alert notification delivery records."""
+    __tablename__ = "alert_notifications"
+
+    id = Column(String, primary_key=True, index=True)
+    alert_id = Column(String, ForeignKey("predictive_alerts.id"), index=True, nullable=False)
+    user_id = Column(String, ForeignKey("users.id"), index=True, nullable=False)
+
+    # Notification details
+    channel = Column(String, nullable=False)  # email, sms, push, in_app
+    status = Column(String, default="pending")  # pending, sent, delivered, failed
+    sent_at = Column(DateTime(timezone=True))
+    delivered_at = Column(DateTime(timezone=True))
+    error_message = Column(Text)
+
+    # Timestamps
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    # Relationships
+    alert = relationship("PredictiveAlert", backref="notifications")
+    user = relationship("User", backref="alert_notifications")
+
+
+class AlertAnalytics(Base):
+    """Analytics and performance metrics for alert system."""
+    __tablename__ = "alert_analytics"
+
+    id = Column(String, primary_key=True, index=True)
+    user_id = Column(String, ForeignKey("users.id"), index=True, nullable=False)
+
+    # Alert statistics
+    total_alerts = Column(Integer, default=0)
+    acknowledged_alerts = Column(Integer, default=0)
+    resolved_alerts = Column(Integer, default=0)
+    false_positives = Column(Integer, default=0)
+    average_response_time_hours = Column(Float, default=0.0)
+    alert_effectiveness_score = Column(Float, default=0.0)
+
+    # Performance metrics
+    true_positive_rate = Column(Float, default=0.0)
+    false_positive_rate = Column(Float, default=0.0)
+    precision_score = Column(Float, default=0.0)
+    recall_score = Column(Float, default=0.0)
+
+    # Timestamps
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+    # Relationships
+    user = relationship("User", backref="alert_analytics")
 
 
 class APILog(Base):

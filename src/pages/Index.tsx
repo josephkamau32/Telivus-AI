@@ -637,15 +637,15 @@ const Index = () => {
 
   return (
     <div className="relative">
-      {/* Backend status indicator */}
-      {backendStatus !== 'available' && (
+      {/* Backend status indicator - only show in production or when explicitly needed */}
+      {backendStatus !== 'available' && process.env.NODE_ENV === 'production' && (
         <div className="fixed top-4 right-4 z-50">
           <div className={`px-3 py-1 rounded-full text-xs font-medium ${
             backendStatus === 'checking'
-              ? 'bg-yellow-100 text-yellow-800'
-              : 'bg-red-100 text-red-800'
-          }`}>
-            {backendStatus === 'checking' ? 'Checking services...' : 'Service unavailable'}
+              ? 'bg-yellow-100 text-yellow-800 border border-yellow-200'
+              : 'bg-red-100 text-red-800 border border-red-200'
+          } shadow-sm`}>
+            {backendStatus === 'checking' ? '🔄 Checking services...' : '⚠️ Service unavailable'}
           </div>
         </div>
       )}
