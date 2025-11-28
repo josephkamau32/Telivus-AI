@@ -22,6 +22,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useTranslation } from '@/contexts/LanguageContext';
 import { AlertCenter } from '@/components/AlertCenter';
+import { TrajectoryDashboard } from '@/components/TrajectoryDashboard';
 import {
   LineChart,
   Line,
@@ -816,6 +817,15 @@ const Dashboard = () => {
             </div>
           </CardContent>
         </Card>
+
+        {/* Health Trajectory Analysis */}
+        <div className="animate-in slide-in-from-bottom-4 duration-700">
+          <TrajectoryDashboard
+            userId={user?.id || "demo_user"}
+            onRefresh={() => loadDashboardData()}
+            className="animate-in fade-in-50 duration-500"
+          />
+        </div>
 
         {/* Emergency & Safety */}
         <Card className="border-red-200 bg-red-50/50 dark:bg-red-950/20">

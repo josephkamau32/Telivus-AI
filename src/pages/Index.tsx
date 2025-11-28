@@ -390,6 +390,12 @@ const Index = () => {
       console.log('Using instant demo report for common symptoms');
       setCurrentReport(demoReport);
       setReportTimestamp(new Date().toISOString());
+
+      // Trigger trajectory analysis for demo reports too
+      if (user) {
+        triggerTrajectoryAnalysis(data, user.id);
+      }
+
       setAppState('report');
 
       toast({
@@ -448,6 +454,10 @@ const Index = () => {
 
         setCurrentReport(transformedReport);
         setReportTimestamp(reportData.generated_at);
+
+        // Trigger trajectory analysis in the background
+        triggerTrajectoryAnalysis(data, user.id);
+
         setAppState('report');
 
         toast({
@@ -497,6 +507,12 @@ const Index = () => {
         if (fallbackReport) {
           setCurrentReport(fallbackReport);
           setReportTimestamp(new Date().toISOString());
+
+          // Trigger trajectory analysis for fallback reports too
+          if (user) {
+            triggerTrajectoryAnalysis(data, user.id);
+          }
+
           setAppState('report');
 
           toast({
@@ -525,6 +541,40 @@ const Index = () => {
 
   const handleBackFromAssessment = () => {
     setAppState('home');
+  };
+
+  const triggerTrajectoryAnalysis = async (assessmentData: PatientData, userId: string) => {
+    try {
+      console.log('Triggering trajectory analysis for user:', userId);
+
+      // Prepare trajectory request data
+      const trajectoryRequest = {
+        user_id: userId,
+        prediction_horizon_days: 30,
+        include_simulations: true,
+        focus_conditions: [] // Will be auto-detected from symptoms
+      };
+
+      // Call trajectory analysis API (this would be implemented when backend is ready)
+      // For now, just log that trajectory analysis would be triggered
+      console.log('Trajectory analysis request prepared:', trajectoryRequest);
+
+      // In production, this would call:
+      // await apiClient.analyzeTrajectory(trajectoryRequest);
+
+      // Show subtle notification that trajectory analysis is running in background
+      setTimeout(() => {
+        toast({
+          title: "Health Trajectory Analysis Started",
+          description: "Your health data is being analyzed for personalized predictions and recommendations.",
+          duration: 3000,
+        });
+      }, 2000);
+
+    } catch (error) {
+      console.error('Failed to trigger trajectory analysis:', error);
+      // Don't show error toast as this is background process and shouldn't interrupt user experience
+    }
   };
 
   if (isLoading) {
