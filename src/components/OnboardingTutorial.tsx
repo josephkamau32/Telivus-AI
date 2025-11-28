@@ -66,7 +66,7 @@ export const OnboardingTutorial = ({
             Telivus AI combines advanced artificial intelligence with medical knowledge
             to provide personalized health insights and guidance.
           </p>
-          <div className="grid grid-cols-3 gap-4 mt-6">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6">
             <div className="text-center">
               <Shield className="w-8 h-8 text-primary mx-auto mb-2" />
               <p className="text-sm font-medium">Secure & Private</p>
@@ -250,36 +250,36 @@ export const OnboardingTutorial = ({
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-4">
               <Button
                 variant="outline"
-                className="h-auto p-4 flex flex-col gap-2"
+                className="h-auto p-4 flex flex-col gap-2 min-h-[80px]"
                 onClick={() => {
                   onComplete();
                   // Could trigger navigation to assessment
                 }}
               >
-                <FileText className="w-6 h-6" />
-                <span className="text-sm">Start Assessment</span>
+                <FileText className="w-6 h-6 flex-shrink-0" />
+                <span className="text-sm text-center">Start Assessment</span>
               </Button>
               <Button
                 variant="outline"
-                className="h-auto p-4 flex flex-col gap-2"
+                className="h-auto p-4 flex flex-col gap-2 min-h-[80px]"
                 onClick={() => {
                   onComplete();
                   // Could trigger navigation to chat
                 }}
               >
-                <MessageSquare className="w-6 h-6" />
-                <span className="text-sm">Try AI Chat</span>
+                <MessageSquare className="w-6 h-6 flex-shrink-0" />
+                <span className="text-sm text-center">Try AI Chat</span>
               </Button>
               <Button
                 variant="outline"
-                className="h-auto p-4 flex flex-col gap-2"
+                className="h-auto p-4 flex flex-col gap-2 min-h-[80px]"
                 onClick={() => {
                   onComplete();
                   // Could trigger navigation to dashboard
                 }}
               >
-                <BarChart3 className="w-6 h-6" />
-                <span className="text-sm">View Dashboard</span>
+                <BarChart3 className="w-6 h-6 flex-shrink-0" />
+                <span className="text-sm text-center">View Dashboard</span>
               </Button>
             </div>
           </div>
@@ -326,28 +326,28 @@ export const OnboardingTutorial = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={() => {}}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="w-[95vw] max-w-2xl max-h-[90vh] overflow-y-auto mx-4 sm:mx-auto">
         <DialogHeader className="relative">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div className="flex items-center gap-3">
-              <Badge variant="secondary" className="px-3 py-1">
+              <Badge variant="secondary" className="px-2 py-1 text-xs">
                 {step + 1} of {tutorialSteps.length}
               </Badge>
-              <DialogTitle className="text-xl">{currentTutorialStep.title}</DialogTitle>
+              <DialogTitle className="text-lg sm:text-xl">{currentTutorialStep.title}</DialogTitle>
             </div>
             <Button
               variant="ghost"
               size="sm"
               onClick={handleSkip}
-              className="h-8 w-8 p-0"
+              className="h-8 w-8 p-0 self-end sm:self-auto"
             >
               <X className="h-4 w-4" />
             </Button>
           </div>
-          <p className="text-muted-foreground mt-2">{currentTutorialStep.description}</p>
+          <p className="text-muted-foreground mt-2 text-sm sm:text-base">{currentTutorialStep.description}</p>
         </DialogHeader>
 
-        <div className="space-y-6">
+        <div className="space-y-4 sm:space-y-6">
           {/* Progress Bar */}
           <div className="space-y-2">
             <Progress value={progress} className="h-2" />
@@ -359,28 +359,28 @@ export const OnboardingTutorial = ({
 
           {/* Step Content */}
           <Card className="border-0 shadow-none bg-muted/30">
-            <CardContent className="p-6">
+            <CardContent className="p-4 sm:p-6">
               {currentTutorialStep.content}
             </CardContent>
           </Card>
 
           {/* Navigation */}
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
             <Button
               variant="outline"
               onClick={handlePrevious}
               disabled={step === 0}
-              className="gap-2"
+              className="gap-2 w-full sm:w-auto"
             >
               <ChevronLeft className="w-4 h-4" />
               Previous
             </Button>
 
-            <div className="flex gap-2">
-              <Button variant="ghost" onClick={handleSkip}>
+            <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+              <Button variant="ghost" onClick={handleSkip} className="w-full sm:w-auto">
                 Skip Tutorial
               </Button>
-              <Button onClick={handleNext} className="gap-2">
+              <Button onClick={handleNext} className="gap-2 w-full sm:w-auto">
                 {step === tutorialSteps.length - 1 ? (
                   <>
                     <CheckCircle className="w-4 h-4" />

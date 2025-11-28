@@ -1,10 +1,11 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { Download, Home, AlertTriangle, Clock, User, FileText, Loader2 } from 'lucide-react';
+import { Download, Home, AlertTriangle, Clock, User, FileText, Loader2, TrendingUp } from 'lucide-react';
 import jsPDF from 'jspdf';
 
 interface MedicalReportProps {
@@ -30,6 +31,7 @@ const DemoReportBanner = () => (
 
 export const MedicalReport = ({ report, userInfo, timestamp, onBackToHome }: MedicalReportProps) => {
   const [isDownloading, setIsDownloading] = useState(false);
+  const navigate = useNavigate();
 
   // Handle report object directly
   const parsedReport = typeof report === 'object' && report !== null ? report : null;
@@ -479,16 +481,24 @@ export const MedicalReport = ({ report, userInfo, timestamp, onBackToHome }: Med
         </Alert>
 
         {/* Actions */}
-        <div className="flex gap-4 justify-center">
-          <Button 
-            onClick={handleDownloadPDF} 
+        <div className="flex flex-wrap gap-4 justify-center">
+          <Button
+            onClick={() => navigate('/trajectory')}
+            className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
+          >
+            <TrendingUp className="w-4 h-4 mr-2" />
+            View Health Trajectory
+          </Button>
+
+          <Button
+            onClick={handleDownloadPDF}
             disabled={isDownloading}
             className="bg-secondary hover:bg-secondary/90 text-secondary-foreground"
           >
             <Download className="w-4 h-4 mr-2" />
             {isDownloading ? 'Generating PDF...' : 'Download PDF Report'}
           </Button>
-          
+
           <Button variant="outline" onClick={onBackToHome}>
             <Home className="w-4 h-4 mr-2" />
             Back to Home
