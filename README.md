@@ -39,6 +39,13 @@ Telivus AI is a **cutting-edge AI-powered health assessment platform** that comb
 - **Emergency Detection**: Red flag identification for immediate medical attention
 - **Evidence-Based Recommendations**: OTC medications and lifestyle advice
 
+### **Advanced Health Trajectory Prediction** 🤖✨
+- **Predictive Health Analytics**: AI-powered forecasting of health trends using LSTM and Transformer models
+- **Intervention Simulation**: "What-if" scenario planning for treatment outcomes
+- **Risk Assessment Engine**: Personalized risk scoring with confidence intervals
+- **Longitudinal Health Tracking**: Time-series analysis of health data patterns
+- **Adaptive Recommendations**: Reinforcement learning for personalized intervention optimization
+
 ### **🧠 Advanced Health Trajectory Prediction**
 - **Predictive Analytics**: 30-day health trajectory forecasting using ML models
 - **Intervention Simulation**: "What-if" scenarios for different treatment approaches
@@ -46,10 +53,13 @@ Telivus AI is a **cutting-edge AI-powered health assessment platform** that comb
 - **Longitudinal Tracking**: Time-series analysis of health metrics over time
 - **Personalized Recommendations**: AI-driven intervention planning and optimization
 
-### **🔔 Advanced Predictive Alerts System**
+### **🔔 Advanced Predictive Alerts System** ⭐ **NEW!**
+- **Interactive Alert Center**: Tabbed interface for managing health notifications
 - **Early Warning Detection**: AI identifies health risks before they worsen
 - **Multi-Channel Notifications**: In-app, email, SMS, and push notifications
-- **Customizable Alert Rules**: User-defined thresholds and conditions
+- **Smart Alert Management**: Acknowledge, dismiss, and track alert responses
+- **Customizable Preferences**: Configure notification settings per channel
+- **Real-time Alert Processing**: Live updates with confidence scoring
 - **Intervention Tracking**: Monitor response to health recommendations
 - **Analytics Dashboard**: Performance metrics and alert effectiveness
 
@@ -135,6 +145,7 @@ Model quantization for production deployment
 ### **Technical Achievements**
 - ✅ **Full-Stack AI Application**: React + Python + PostgreSQL + AI
 - ✅ **Advanced AI Integration**: LangChain agents, RAG, GPT-4o-mini
+- ✅ **Interactive Alert Center**: Real-time health notifications with multi-channel support ⭐ **NEW!**
 - ✅ **Deep Learning Pipeline**: LSTM/Transformer models for trajectory prediction
 - ✅ **GPU-Accelerated ML**: PyTorch CUDA optimization for real-time inference
 - ✅ **Trajectory Prediction**: 30-day health forecasting with uncertainty quantification
@@ -150,6 +161,10 @@ Model quantization for production deployment
 - 🎯 **Prompt Engineering**: Structured medical assessment prompts
 - 🔄 **Fallback Systems**: Graceful degradation when AI unavailable
 - 📊 **Performance Optimization**: Caching, async processing, rate limiting
+- 🔮 **Advanced ML Pipeline**: LSTM/Transformer models for time-series prediction
+- 🎲 **Intervention Simulation**: Causal inference and scenario planning
+- 📈 **Longitudinal Analytics**: Time-series health data processing and forecasting
+- 🧠 **Ensemble Learning**: Bootstrap aggregation with uncertainty quantification
 
 ### **🚀 Advanced Deep Learning Features**
 - 🧠 **LSTM Networks**: Bidirectional LSTM with attention for time-series prediction
@@ -285,12 +300,21 @@ VECTOR_DB_TYPE=chroma
     - OTC medication recommendations
     - Lifestyle and self-care advice
 
-4. **🧠 Health Trajectory Prediction** (NEW!):
-    - Access via "Health Trajectory" button on dashboard
-    - 30-day predictive health forecasting
-    - Interactive charts with confidence intervals
-    - Intervention simulation and scenario planning
-    - Personalized risk assessment and recommendations
+4. **🔔 Alert Center Management** (NEW!):
+    - Access via Alert Center on dashboard header
+    - Interactive tabs: Active, Acknowledged, Resolved, Settings
+    - Real-time health alerts with severity levels
+    - Multi-channel notification preferences (Email/SMS/Push)
+    - Smart alert management with acknowledge/dismiss actions
+    - Customizable alert rules and thresholds
+
+5. **🧠 Health Trajectory Prediction** ⭐ **NOW AVAILABLE!**:
+    - Access via "View Health Trajectory" button on medical reports
+    - 30-day predictive health forecasting using LSTM/Transformer models
+    - Interactive charts with confidence intervals and uncertainty quantification
+    - Intervention simulation with "what-if" scenario planning
+    - Personalized risk assessment and adaptive recommendations
+    - Longitudinal health tracking with time-series analytics
 
 ### **🤖 AI Testing (Live Endpoints)**
 

@@ -537,7 +537,6 @@ export const TrajectoryDashboard: React.FC<TrajectoryDashboardProps> = ({
           <InterventionSimulator
             scenarios={trajectoryData.simulation_scenarios}
             baselineTrajectory={primaryPrediction.predicted_values}
-            conditionName={primaryPrediction.condition_name}
             onScenarioSelect={(scenario) => {
               console.log(`Scenario selected: ${scenario.scenario_name} simulation completed.`);
             }}

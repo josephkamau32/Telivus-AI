@@ -9,6 +9,9 @@ from typing import List, Dict, Any, Optional
 from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
 import logging
+import asyncio
+from functools import lru_cache
+import json
 
 from app.core.logging import get_logger
 from app.models.db_models import (
@@ -42,7 +45,56 @@ class TrajectoryService:
     def __init__(self):
         """Initialize the trajectory service."""
         self.prediction_service = trajectory_service
+        self._trajectory_cache = {}  # In-memory cache for trajectory results
+        self._cache_expiry = {}  # Cache expiry times
+        self.cache_ttl_hours = 24  # Cache trajectory results for 24 hours
         logger.info("Trajectory Service initialized")
+
+    def _get_cache_key(self, user_id: str, request: Any) -> str:
+        """Generate a cache key for trajectory analysis."""
+        # Create a deterministic cache key based on request parameters
+        key_data = {
+            'user_id': user_id,
+            'prediction_horizon_days': request.prediction_horizon_days,
+            'include_simulations': request.include_simulations,
+            'focus_conditions': request.focus_conditions or []
+        }
+        return f"trajectory_{hash(json.dumps(key_data, sort_keys=True))}"
+
+    def _is_cache_valid(self, cache_key: str) -> bool:
+        """Check if cached result is still valid."""
+        if cache_key not in self._cache_expiry:
+            return False
+
+        return datetime.utcnow() < self._cache_expiry[cache_key]
+
+    def _get_cached_result(self, cache_key: str) -> Optional[Any]:
+        """Retrieve cached trajectory result."""
+        if self._is_cache_valid(cache_key):
+            logger.info(f"Cache hit for trajectory analysis: {cache_key}")
+            return self._trajectory_cache.get(cache_key)
+        return None
+
+    def _cache_result(self, cache_key: str, result: Any):
+        """Cache trajectory analysis result."""
+        self._trajectory_cache[cache_key] = result
+        self._cache_expiry[cache_key] = datetime.utcnow() + timedelta(hours=self.cache_ttl_hours)
+        logger.info(f"Cached trajectory analysis result: {cache_key}")
+
+    def _cleanup_expired_cache(self):
+        """Clean up expired cache entries."""
+        current_time = datetime.utcnow()
+        expired_keys = [
+            key for key, expiry in self._cache_expiry.items()
+            if current_time > expiry
+        ]
+
+        for key in expired_keys:
+            self._trajectory_cache.pop(key, None)
+            self._cache_expiry.pop(key, None)
+
+        if expired_keys:
+            logger.info(f"Cleaned up {len(expired_keys)} expired cache entries")
 
     async def analyze_trajectory(
         self,
@@ -60,6 +112,16 @@ class TrajectoryService:
             HealthTrajectoryResponse: Complete trajectory analysis
         """
         try:
+            # Clean up expired cache entries periodically
+            self._cleanup_expired_cache()
+
+            # Check cache first
+            cache_key = self._get_cache_key(request.user_id, request)
+            cached_result = self._get_cached_result(cache_key)
+            if cached_result:
+                logger.info(f"Returning cached trajectory analysis for user {request.user_id}")
+                return cached_result
+
             # Retrieve historical health data
             historical_data = await self._get_historical_health_data(
                 request.user_id,
@@ -106,7 +168,7 @@ class TrajectoryService:
                 db
             )
 
-            return HealthTrajectoryResponse(
+            trajectory_response = HealthTrajectoryResponse(
                 user_id=request.user_id,
                 trajectory_id=trajectory_id,
                 baseline_assessment=baseline_data,
@@ -116,6 +178,11 @@ class TrajectoryService:
                 generated_at=datetime.utcnow(),
                 model_version=self.prediction_service.model_version
             )
+
+            # Cache the result for future requests
+            self._cache_result(cache_key, trajectory_response)
+
+            return trajectory_response
 
         except Exception as e:
             logger.error(f"Error in trajectory analysis: {e}")
