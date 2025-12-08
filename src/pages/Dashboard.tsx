@@ -604,25 +604,26 @@ const Dashboard = () => {
 
       <div className="flex-1 container mx-auto px-6 py-8">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-3xl font-bold text-foreground mb-2">{t.healthDashboard}</h1>
-            <p className="text-muted-foreground">{t.trackTrends}</p>
-            <div className="flex items-center gap-4 mt-2">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between mb-6 lg:mb-8 gap-4">
+          <div className="flex-1">
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-foreground mb-2">{t.healthDashboard}</h1>
+            <p className="text-muted-foreground text-sm sm:text-base">{t.trackTrends}</p>
+            <div className="flex flex-wrap items-center gap-3 sm:gap-4 mt-3">
               <div className="flex items-center gap-2">
                 <Smartphone className="w-4 h-4 text-green-600" />
-                <span className="text-sm text-green-600">Wearable Connected</span>
+                <span className="text-xs sm:text-sm text-green-600 font-medium">Wearable Connected</span>
               </div>
               <div className="flex items-center gap-2">
                 <Zap className="w-4 h-4 text-blue-600" />
-                <span className="text-sm text-blue-600">Real-time Sync</span>
+                <span className="text-xs sm:text-sm text-blue-600 font-medium">Real-time Sync</span>
               </div>
             </div>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2 sm:gap-3 justify-end">
             <Button
               variant="outline"
-              className="gap-2"
+              size="sm"
+              className="gap-2 text-xs sm:text-sm h-9 sm:h-10 order-1"
               onClick={async () => {
                 if (notificationPermission !== 'granted') {
                   await requestNotificationPermission();
@@ -631,19 +632,24 @@ const Dashboard = () => {
                 }
               }}
             >
-              <Bell className="w-4 h-4" />
-              {notificationPermission === 'granted' ? 'Send Reminders' : 'Enable Notifications'}
+              <Bell className="w-3 h-3 sm:w-4 sm:h-4" />
+              <span className="hidden sm:inline">
+                {notificationPermission === 'granted' ? 'Send Reminders' : 'Enable Notifications'}
+              </span>
+              <span className="sm:hidden">Notifications</span>
             </Button>
-            <Button onClick={exportDashboardData} variant="outline" className="gap-2">
-              <Download className="w-4 h-4" />
-              Export Data
+            <Button onClick={exportDashboardData} variant="outline" size="sm" className="gap-2 text-xs sm:text-sm h-9 sm:h-10 order-2">
+              <Download className="w-3 h-3 sm:w-4 sm:h-4" />
+              <span className="hidden sm:inline">Export Data</span>
+              <span className="sm:hidden">Export</span>
             </Button>
-            <Button onClick={() => navigate('/trajectory')} variant="default" className="gap-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700">
-              <TrendingUp className="w-4 h-4" />
-              Health Trajectory
+            <Button onClick={() => navigate('/trajectory')} variant="default" size="sm" className="gap-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-xs sm:text-sm h-9 sm:h-10 order-3">
+              <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4" />
+              <span className="hidden lg:inline">Health Trajectory</span>
+              <span className="lg:hidden">Trajectory</span>
             </Button>
-            <Button onClick={() => navigate('/dashboard')} variant="outline" className="gap-2">
-              <ArrowLeft className="w-4 h-4" />
+            <Button onClick={() => navigate('/dashboard')} variant="outline" size="sm" className="gap-2 text-xs sm:text-sm h-9 sm:h-10 order-4">
+              <ArrowLeft className="w-3 h-3 sm:w-4 sm:h-4" />
               {t.backToAssessment}
             </Button>
           </div>
@@ -661,44 +667,44 @@ const Dashboard = () => {
         </div>
 
         {/* Quick Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8 animate-in fade-in-50 duration-500">
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-primary/10 rounded-lg">
-                  <Activity className="w-6 h-6 text-primary" />
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 mb-6 lg:mb-8 animate-in fade-in-50 duration-500">
+          <Card className="hover:shadow-md transition-shadow">
+            <CardContent className="p-4 sm:p-6">
+              <div className="flex items-center gap-3 sm:gap-4">
+                <div className="p-2 sm:p-3 bg-primary/10 rounded-lg flex-shrink-0">
+                  <Activity className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
                 </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">{t.totalReports}</p>
-                  <p className="text-2xl font-bold">24</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-secondary/10 rounded-lg">
-                  <MessageSquare className="w-6 h-6 text-secondary" />
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">{t.aiChats}</p>
-                  <p className="text-2xl font-bold">47</p>
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs sm:text-sm text-muted-foreground truncate">{t.totalReports}</p>
+                  <p className="text-xl sm:text-2xl font-bold">24</p>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-green-500/10 rounded-lg">
-                  <TrendingUp className="w-6 h-6 text-green-600" />
+          <Card className="hover:shadow-md transition-shadow">
+            <CardContent className="p-4 sm:p-6">
+              <div className="flex items-center gap-3 sm:gap-4">
+                <div className="p-2 sm:p-3 bg-secondary/10 rounded-lg flex-shrink-0">
+                  <MessageSquare className="w-5 h-5 sm:w-6 sm:h-6 text-secondary" />
                 </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">{t.healthScore}</p>
-                  <p className={`text-2xl font-bold ${getHealthScoreColor(calculateHealthScore())}`}>
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs sm:text-sm text-muted-foreground truncate">{t.aiChats}</p>
+                  <p className="text-xl sm:text-2xl font-bold">47</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="hover:shadow-md transition-shadow">
+            <CardContent className="p-4 sm:p-6">
+              <div className="flex items-center gap-3 sm:gap-4">
+                <div className="p-2 sm:p-3 bg-green-500/10 rounded-lg flex-shrink-0">
+                  <TrendingUp className="w-5 h-5 sm:w-6 sm:h-6 text-green-600" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs sm:text-sm text-muted-foreground truncate">{t.healthScore}</p>
+                  <p className={`text-xl sm:text-2xl font-bold ${getHealthScoreColor(calculateHealthScore())}`}>
                     {calculateHealthScore()}%
                   </p>
                 </div>
@@ -706,15 +712,15 @@ const Dashboard = () => {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-blue-500/10 rounded-lg">
-                  <Calendar className="w-6 h-6 text-blue-600" />
+          <Card className="hover:shadow-md transition-shadow">
+            <CardContent className="p-4 sm:p-6">
+              <div className="flex items-center gap-3 sm:gap-4">
+                <div className="p-2 sm:p-3 bg-blue-500/10 rounded-lg flex-shrink-0">
+                  <Calendar className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
                 </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">{t.thisWeek}</p>
-                  <p className="text-2xl font-bold">3</p>
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs sm:text-sm text-muted-foreground truncate">{t.thisWeek}</p>
+                  <p className="text-xl sm:text-2xl font-bold">3</p>
                 </div>
               </div>
             </CardContent>
@@ -722,62 +728,62 @@ const Dashboard = () => {
         </div>
 
         {/* Vitals Monitoring */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8 animate-in slide-in-from-bottom-4 duration-700">
-          <Card className="hover:shadow-lg transition-all duration-300 hover:scale-105">
-            <CardContent className="p-6">
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-red-500/10 rounded-lg">
-                  <Heart className="w-6 h-6 text-red-600" />
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 mb-6 lg:mb-8 animate-in slide-in-from-bottom-4 duration-700">
+          <Card className="hover:shadow-lg transition-all duration-300 hover:scale-[1.02]">
+            <CardContent className="p-4 sm:p-6">
+              <div className="flex items-center gap-3 sm:gap-4">
+                <div className="p-2 sm:p-3 bg-red-500/10 rounded-lg flex-shrink-0">
+                  <Heart className="w-5 h-5 sm:w-6 sm:h-6 text-red-600" />
                 </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Heart Rate</p>
-                  <p className="text-2xl font-bold text-red-600">74 BPM</p>
-                  <p className="text-xs text-green-600">Normal</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="hover:shadow-lg transition-all duration-300 hover:scale-105">
-            <CardContent className="p-6">
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-blue-500/10 rounded-lg">
-                  <Stethoscope className="w-6 h-6 text-blue-600" />
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Blood Pressure</p>
-                  <p className="text-2xl font-bold text-blue-600">120/80</p>
-                  <p className="text-xs text-green-600">Normal</p>
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs sm:text-sm text-muted-foreground">Heart Rate</p>
+                  <p className="text-lg sm:text-2xl font-bold text-red-600">74 BPM</p>
+                  <p className="text-xs text-green-600 font-medium">Normal</p>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="hover:shadow-lg transition-all duration-300 hover:scale-105">
-            <CardContent className="p-6">
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-purple-500/10 rounded-lg">
-                  <Moon className="w-6 h-6 text-purple-600" />
+          <Card className="hover:shadow-lg transition-all duration-300 hover:scale-[1.02]">
+            <CardContent className="p-4 sm:p-6">
+              <div className="flex items-center gap-3 sm:gap-4">
+                <div className="p-2 sm:p-3 bg-blue-500/10 rounded-lg flex-shrink-0">
+                  <Stethoscope className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
                 </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Sleep</p>
-                  <p className="text-2xl font-bold text-purple-600">7.0h</p>
-                  <p className="text-xs text-yellow-600">Below target</p>
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs sm:text-sm text-muted-foreground">Blood Pressure</p>
+                  <p className="text-lg sm:text-2xl font-bold text-blue-600">120/80</p>
+                  <p className="text-xs text-green-600 font-medium">Normal</p>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="hover:shadow-lg transition-all duration-300 hover:scale-105">
-            <CardContent className="p-6">
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-green-500/10 rounded-lg">
-                  <Footprints className="w-6 h-6 text-green-600" />
+          <Card className="hover:shadow-lg transition-all duration-300 hover:scale-[1.02]">
+            <CardContent className="p-4 sm:p-6">
+              <div className="flex items-center gap-3 sm:gap-4">
+                <div className="p-2 sm:p-3 bg-purple-500/10 rounded-lg flex-shrink-0">
+                  <Moon className="w-5 h-5 sm:w-6 sm:h-6 text-purple-600" />
                 </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Steps Today</p>
-                  <p className="text-2xl font-bold text-green-600">8,200</p>
-                  <p className="text-xs text-orange-600">82% of goal</p>
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs sm:text-sm text-muted-foreground">Sleep</p>
+                  <p className="text-lg sm:text-2xl font-bold text-purple-600">7.0h</p>
+                  <p className="text-xs text-yellow-600 font-medium">Below target</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="hover:shadow-lg transition-all duration-300 hover:scale-[1.02]">
+            <CardContent className="p-4 sm:p-6">
+              <div className="flex items-center gap-3 sm:gap-4">
+                <div className="p-2 sm:p-3 bg-green-500/10 rounded-lg flex-shrink-0">
+                  <Footprints className="w-5 h-5 sm:w-6 sm:h-6 text-green-600" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs sm:text-sm text-muted-foreground">Steps Today</p>
+                  <p className="text-lg sm:text-2xl font-bold text-green-600">8,200</p>
+                  <p className="text-xs text-orange-600 font-medium">82% of goal</p>
                 </div>
               </div>
             </CardContent>
@@ -880,37 +886,37 @@ const Dashboard = () => {
 
             {/* Emergency Contacts List */}
             <div className="space-y-3">
-              <h4 className="font-semibold text-red-700 dark:text-red-400">Emergency Contacts</h4>
+              <h4 className="font-semibold text-red-700 dark:text-red-400 text-sm sm:text-base">Emergency Contacts</h4>
               {emergencyContacts.map((contact) => (
-                <div key={contact.id} className="flex items-center gap-3 p-3 border rounded-lg bg-white dark:bg-gray-800">
-                  <div className="p-2 bg-blue-100 rounded-lg">
+                <div key={contact.id} className="flex flex-col sm:flex-row sm:items-center gap-3 p-3 border rounded-lg bg-white dark:bg-gray-800">
+                  <div className="p-2 bg-blue-100 rounded-lg flex-shrink-0 self-start sm:self-center">
                     <User className="w-4 h-4 text-blue-600" />
                   </div>
-                  <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-2">
+                  <div className="flex-1 grid grid-cols-1 sm:grid-cols-3 gap-2 w-full">
                     <Input
                       placeholder="Name"
                       value={contact.name}
                       onChange={(e) => updateEmergencyContact(contact.id, 'name', e.target.value)}
-                      className="text-sm"
+                      className="text-sm h-9"
                     />
                     <Input
                       placeholder="Phone"
                       value={contact.phone}
                       onChange={(e) => updateEmergencyContact(contact.id, 'phone', e.target.value)}
-                      className="text-sm"
+                      className="text-sm h-9"
                     />
                     <Input
                       placeholder="Relationship"
                       value={contact.relationship}
                       onChange={(e) => updateEmergencyContact(contact.id, 'relationship', e.target.value)}
-                      className="text-sm"
+                      className="text-sm h-9"
                     />
                   </div>
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => removeEmergencyContact(contact.id)}
-                    className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                    className="text-red-500 hover:text-red-700 hover:bg-red-50 self-end sm:self-center h-9 w-9 p-0"
                   >
                     <Trash2 className="w-4 h-4" />
                   </Button>
@@ -1011,13 +1017,28 @@ const Dashboard = () => {
         </Card>
 
         {/* Charts and Analytics */}
-        <Tabs defaultValue="trends" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5">
-            <TabsTrigger value="trends">{t.healthTrends}</TabsTrigger>
-            <TabsTrigger value="vitals">Vitals</TabsTrigger>
-            <TabsTrigger value="goals">Goals</TabsTrigger>
-            <TabsTrigger value="symptoms">{t.symptomAnalysis}</TabsTrigger>
-            <TabsTrigger value="history">{t.recentHistory}</TabsTrigger>
+        <Tabs defaultValue="trends" className="space-y-4 sm:space-y-6">
+          <TabsList className="grid w-full grid-cols-5 h-auto p-1">
+            <TabsTrigger value="trends" className="text-xs sm:text-sm px-2 sm:px-3 py-2 sm:py-2.5">
+              <span className="hidden sm:inline">{t.healthTrends}</span>
+              <span className="sm:hidden">Trends</span>
+            </TabsTrigger>
+            <TabsTrigger value="vitals" className="text-xs sm:text-sm px-2 sm:px-3 py-2 sm:py-2.5">
+              <span className="hidden sm:inline">Vitals</span>
+              <span className="sm:hidden">Vitals</span>
+            </TabsTrigger>
+            <TabsTrigger value="goals" className="text-xs sm:text-sm px-2 sm:px-3 py-2 sm:py-2.5">
+              <span className="hidden sm:inline">Goals</span>
+              <span className="sm:hidden">Goals</span>
+            </TabsTrigger>
+            <TabsTrigger value="symptoms" className="text-xs sm:text-sm px-2 sm:px-3 py-2 sm:py-2.5">
+              <span className="hidden sm:inline">{t.symptomAnalysis}</span>
+              <span className="sm:hidden">Symptoms</span>
+            </TabsTrigger>
+            <TabsTrigger value="history" className="text-xs sm:text-sm px-2 sm:px-3 py-2 sm:py-2.5">
+              <span className="hidden sm:inline">{t.recentHistory}</span>
+              <span className="sm:hidden">History</span>
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="trends" className="space-y-6">
@@ -1373,35 +1394,35 @@ const Dashboard = () => {
 
             {/* Goal Setting Modal */}
             <Dialog open={isGoalModalOpen} onOpenChange={setIsGoalModalOpen}>
-              <DialogContent className="sm:max-w-[500px]">
+              <DialogContent className="w-[95vw] max-w-[500px] mx-4 p-4 sm:p-6">
                 <DialogHeader>
-                  <DialogTitle className="flex items-center gap-2">
+                  <DialogTitle className="flex items-center gap-2 text-lg sm:text-xl">
                     <Target className="w-5 h-5" />
                     Set New {newGoal.type.charAt(0).toUpperCase() + newGoal.type.slice(1)} Goal
                   </DialogTitle>
-                  <DialogDescription>
+                  <DialogDescription className="text-sm sm:text-base">
                     Create a personalized health goal to track your progress and stay motivated.
                   </DialogDescription>
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
                   <div className="space-y-2">
-                    <Label htmlFor="target">Target Value</Label>
+                    <Label htmlFor="target" className="text-sm font-medium">Target Value</Label>
                     <Input
                       id="target"
                       type="number"
                       value={newGoal.target}
                       onChange={(e) => setNewGoal(prev => ({ ...prev, target: e.target.value }))}
                       placeholder={`Enter your ${newGoal.type} target`}
-                      className="w-full"
+                      className="w-full h-10"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="unit">Unit of Measurement</Label>
+                    <Label htmlFor="unit" className="text-sm font-medium">Unit of Measurement</Label>
                     <Select
                       value={newGoal.unit}
                       onValueChange={(value) => setNewGoal(prev => ({ ...prev, unit: value }))}
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className="h-10">
                         <SelectValue placeholder="Select unit" />
                       </SelectTrigger>
                       <SelectContent>
@@ -1418,25 +1439,25 @@ const Dashboard = () => {
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="deadline">Target Date</Label>
+                    <Label htmlFor="deadline" className="text-sm font-medium">Target Date</Label>
                     <Input
                       id="deadline"
                       type="date"
                       value={newGoal.deadline}
                       onChange={(e) => setNewGoal(prev => ({ ...prev, deadline: e.target.value }))}
                       min={new Date().toISOString().split('T')[0]}
-                      className="w-full"
+                      className="w-full h-10"
                     />
                   </div>
                 </div>
-                <DialogFooter className="gap-2">
-                  <Button variant="outline" onClick={() => setIsGoalModalOpen(false)}>
+                <DialogFooter className="gap-2 flex-col sm:flex-row">
+                  <Button variant="outline" onClick={() => setIsGoalModalOpen(false)} className="w-full sm:w-auto">
                     Cancel
                   </Button>
                   <Button
                     onClick={handleSaveGoal}
                     disabled={!newGoal.target || !newGoal.deadline || !newGoal.unit}
-                    className="bg-primary hover:bg-primary/90"
+                    className="bg-primary hover:bg-primary/90 w-full sm:w-auto"
                   >
                     Create Goal
                   </Button>

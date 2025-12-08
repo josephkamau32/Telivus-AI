@@ -53,31 +53,34 @@ export const OnboardingTutorial = ({
       title: 'Welcome to Telivus AI! 👋',
       description: 'Your personal AI health assistant is ready to help',
       content: (
-        <div className="space-y-4">
+        <div className="space-y-4 sm:space-y-6">
           <div className="flex justify-center">
             <div className="relative">
               <div className="absolute inset-0 bg-primary rounded-full blur-xl opacity-50 animate-pulse" />
-              <div className="relative p-6 bg-gradient-to-br from-primary to-secondary rounded-full">
-                <Sparkles className="w-12 h-12 text-white" />
+              <div className="relative p-6 sm:p-8 bg-gradient-to-br from-primary to-secondary rounded-full">
+                <Sparkles className="w-12 h-12 sm:w-16 sm:h-16 text-white" />
               </div>
             </div>
           </div>
-          <p className="text-center text-muted-foreground">
+          <p className="text-center text-muted-foreground text-sm sm:text-base leading-relaxed px-2">
             Telivus AI combines advanced artificial intelligence with medical knowledge
             to provide personalized health insights and guidance.
           </p>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6">
-            <div className="text-center">
-              <Shield className="w-8 h-8 text-primary mx-auto mb-2" />
-              <p className="text-sm font-medium">Secure & Private</p>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 mt-6">
+            <div className="text-center p-3 sm:p-4 rounded-lg bg-primary/5 hover:bg-primary/10 transition-colors">
+              <Shield className="w-8 h-8 sm:w-10 sm:h-10 text-primary mx-auto mb-3" />
+              <p className="text-sm sm:text-base font-semibold text-primary">Secure & Private</p>
+              <p className="text-xs sm:text-sm text-muted-foreground mt-1">Your data is protected</p>
             </div>
-            <div className="text-center">
-              <Zap className="w-8 h-8 text-secondary mx-auto mb-2" />
-              <p className="text-sm font-medium">Instant Results</p>
+            <div className="text-center p-3 sm:p-4 rounded-lg bg-secondary/5 hover:bg-secondary/10 transition-colors">
+              <Zap className="w-8 h-8 sm:w-10 sm:h-10 text-secondary mx-auto mb-3" />
+              <p className="text-sm sm:text-base font-semibold text-secondary">Instant Results</p>
+              <p className="text-xs sm:text-sm text-muted-foreground mt-1">Get insights in seconds</p>
             </div>
-            <div className="text-center">
-              <Heart className="w-8 h-8 text-primary mx-auto mb-2" />
-              <p className="text-sm font-medium">Personalized Care</p>
+            <div className="text-center p-3 sm:p-4 rounded-lg bg-primary/5 hover:bg-primary/10 transition-colors">
+              <Heart className="w-8 h-8 sm:w-10 sm:h-10 text-primary mx-auto mb-3" />
+              <p className="text-sm sm:text-base font-semibold text-primary">Personalized Care</p>
+              <p className="text-xs sm:text-sm text-muted-foreground mt-1">Tailored to your needs</p>
             </div>
           </div>
         </div>
@@ -326,32 +329,32 @@ export const OnboardingTutorial = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={() => {}}>
-      <DialogContent className="w-[95vw] max-w-2xl max-h-[90vh] overflow-y-auto mx-4 sm:mx-auto">
+      <DialogContent className="w-[95vw] max-w-2xl max-h-[90vh] overflow-y-auto mx-4 sm:mx-auto p-4 sm:p-6">
         <DialogHeader className="relative">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-            <div className="flex items-center gap-3">
-              <Badge variant="secondary" className="px-2 py-1 text-xs">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <Badge variant="secondary" className="px-2 py-1 text-xs font-medium">
                 {step + 1} of {tutorialSteps.length}
               </Badge>
-              <DialogTitle className="text-lg sm:text-xl">{currentTutorialStep.title}</DialogTitle>
+              <DialogTitle className="text-lg sm:text-xl lg:text-2xl leading-tight">{currentTutorialStep.title}</DialogTitle>
             </div>
             <Button
               variant="ghost"
               size="sm"
               onClick={handleSkip}
-              className="h-8 w-8 p-0 self-end sm:self-auto"
+              className="h-8 w-8 p-0 self-end sm:self-auto hover:bg-muted"
             >
               <X className="h-4 w-4" />
             </Button>
           </div>
-          <p className="text-muted-foreground mt-2 text-sm sm:text-base">{currentTutorialStep.description}</p>
+          <p className="text-muted-foreground mt-3 text-sm sm:text-base leading-relaxed">{currentTutorialStep.description}</p>
         </DialogHeader>
 
         <div className="space-y-4 sm:space-y-6">
           {/* Progress Bar */}
-          <div className="space-y-2">
-            <Progress value={progress} className="h-2" />
-            <div className="flex justify-between text-xs text-muted-foreground">
+          <div className="space-y-3">
+            <Progress value={progress} className="h-3" />
+            <div className="flex justify-between text-xs sm:text-sm text-muted-foreground font-medium">
               <span>Progress</span>
               <span>{Math.round(progress)}% Complete</span>
             </div>
@@ -359,28 +362,35 @@ export const OnboardingTutorial = ({
 
           {/* Step Content */}
           <Card className="border-0 shadow-none bg-muted/30">
-            <CardContent className="p-4 sm:p-6">
+            <CardContent className="p-4 sm:p-6 lg:p-8">
               {currentTutorialStep.content}
             </CardContent>
           </Card>
 
           {/* Navigation */}
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4">
             <Button
               variant="outline"
               onClick={handlePrevious}
               disabled={step === 0}
-              className="gap-2 w-full sm:w-auto"
+              className="gap-2 w-full sm:w-auto h-11 sm:h-10 text-sm sm:text-base"
             >
               <ChevronLeft className="w-4 h-4" />
               Previous
             </Button>
 
             <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-              <Button variant="ghost" onClick={handleSkip} className="w-full sm:w-auto">
+              <Button
+                variant="ghost"
+                onClick={handleSkip}
+                className="w-full sm:w-auto h-11 sm:h-10 text-sm sm:text-base hover:bg-muted"
+              >
                 Skip Tutorial
               </Button>
-              <Button onClick={handleNext} className="gap-2 w-full sm:w-auto">
+              <Button
+                onClick={handleNext}
+                className="gap-2 w-full sm:w-auto h-11 sm:h-10 text-sm sm:text-base bg-primary hover:bg-primary/90"
+              >
                 {step === tutorialSteps.length - 1 ? (
                   <>
                     <CheckCircle className="w-4 h-4" />
@@ -397,16 +407,16 @@ export const OnboardingTutorial = ({
           </div>
 
           {/* Step Indicators */}
-          <div className="flex justify-center gap-2">
+          <div className="flex justify-center gap-2 py-2">
             {tutorialSteps.map((_, index) => (
               <div
                 key={index}
-                className={`w-2 h-2 rounded-full transition-colors ${
+                className={`w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full transition-all duration-300 ${
                   index < step
-                    ? 'bg-primary'
+                    ? 'bg-primary scale-110'
                     : index === step
-                    ? 'bg-primary animate-pulse'
-                    : 'bg-muted'
+                    ? 'bg-primary animate-pulse scale-125'
+                    : 'bg-muted hover:bg-muted/80'
                 }`}
               />
             ))}
