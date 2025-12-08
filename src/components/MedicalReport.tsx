@@ -192,11 +192,11 @@ export const MedicalReport = ({ report, userInfo, timestamp, onBackToHome }: Med
         {/* Header */}
         <Card className="bg-primary text-primary-foreground">
           <CardHeader>
-            <CardTitle className="flex items-center gap-3 text-2xl">
-              <User className="w-8 h-8" />
+            <CardTitle className="flex items-center gap-3 text-xl sm:text-2xl">
+              <User className="w-6 h-6 sm:w-8 sm:h-8" />
               Your Health Assessment Report
             </CardTitle>
-            <div className="flex items-center gap-2 text-primary-foreground/80">
+            <div className="flex items-center gap-2 text-primary-foreground/80 text-sm sm:text-base">
               <Clock className="w-4 h-4" />
               Generated on {new Date(timestamp).toLocaleString()}
             </div>
@@ -481,10 +481,10 @@ export const MedicalReport = ({ report, userInfo, timestamp, onBackToHome }: Med
         </Alert>
 
         {/* Actions */}
-        <div className="flex flex-wrap gap-4 justify-center">
+        <div className="flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4 justify-center">
           <Button
             onClick={() => navigate('/trajectory')}
-            className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
+            className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 w-full sm:w-auto"
           >
             <TrendingUp className="w-4 h-4 mr-2" />
             View Health Trajectory
@@ -493,13 +493,13 @@ export const MedicalReport = ({ report, userInfo, timestamp, onBackToHome }: Med
           <Button
             onClick={handleDownloadPDF}
             disabled={isDownloading}
-            className="bg-secondary hover:bg-secondary/90 text-secondary-foreground"
+            className="bg-secondary hover:bg-secondary/90 text-secondary-foreground w-full sm:w-auto"
           >
             <Download className="w-4 h-4 mr-2" />
             {isDownloading ? 'Generating PDF...' : 'Download PDF Report'}
           </Button>
 
-          <Button variant="outline" onClick={onBackToHome}>
+          <Button variant="outline" onClick={onBackToHome} className="w-full sm:w-auto">
             <Home className="w-4 h-4 mr-2" />
             Back to Home
           </Button>

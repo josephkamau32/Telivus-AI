@@ -250,13 +250,13 @@ export const SymptomFlow = ({ onComplete, onBack }: SymptomFlowProps) => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
                 {FEELING_OPTIONS.map((option) => (
                   <Button
                     key={option.value}
                     variant={feelings === option.value ? "default" : "outline"}
                     onClick={() => setFeelings(option.value)}
-                    className={`p-4 h-auto ${
+                    className={`p-4 h-auto text-sm sm:text-base ${
                       feelings === option.value ? option.color : ''
                     }`}
                   >
@@ -283,12 +283,12 @@ export const SymptomFlow = ({ onComplete, onBack }: SymptomFlowProps) => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
                 {SYMPTOM_OPTIONS.map((symptom) => (
                   <Badge
                     key={symptom}
                     variant={symptoms.includes(symptom) ? "default" : "outline"}
-                    className={`cursor-pointer p-2 justify-center ${
+                    className={`cursor-pointer p-3 justify-center text-sm ${
                       symptoms.includes(symptom)
                         ? 'bg-primary text-primary-foreground'
                         : 'hover:bg-accent'
