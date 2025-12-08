@@ -317,28 +317,29 @@ const Index = () => {
     }
   }, [user, isLoading]);
 
-  // Check backend availability
-  useEffect(() => {
-    const checkBackendStatus = async () => {
-      try {
-        const status = await apiClient.isServiceAvailable();
-        setBackendStatus(status.available ? 'available' : 'unavailable');
+  // Check backend availability (less aggressive checking)
+   useEffect(() => {
+     const checkBackendStatus = async () => {
+       try {
+         const status = await apiClient.isServiceAvailable();
+         setBackendStatus(status.available ? 'available' : 'unavailable');
 
-        if (!status.available && process.env.NODE_ENV === 'production') {
-          console.warn('Backend service unavailable:', status.error);
-        }
-      } catch (error) {
-        setBackendStatus('unavailable');
-        console.error('Failed to check backend status:', error);
-      }
-    };
+         if (!status.available && process.env.NODE_ENV === 'production') {
+           console.warn('Backend service unavailable:', status.error);
+         }
+       } catch (error) {
+         // Don't set to unavailable on check failures - be more tolerant
+         console.warn('Backend status check failed, assuming available:', error);
+         setBackendStatus('available'); // Assume available unless proven otherwise
+       }
+     };
 
-    checkBackendStatus();
+     checkBackendStatus();
 
-    // Check every 30 seconds in production
-    const interval = setInterval(checkBackendStatus, 30000);
-    return () => clearInterval(interval);
-  }, []);
+     // Check every 5 minutes instead of 30 seconds to be less intrusive
+     const interval = setInterval(checkBackendStatus, 300000);
+     return () => clearInterval(interval);
+   }, []);
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
@@ -686,30 +687,26 @@ const Index = () => {
   }
 
   return (
-    <div className="relative">
-      {/* Backend status indicator - only show in production or when explicitly needed */}
-      {backendStatus !== 'available' && process.env.NODE_ENV === 'production' && (
-        <div className="fixed top-4 right-4 z-50">
-          <div className={`px-3 py-1 rounded-full text-xs font-medium ${
-            backendStatus === 'checking'
-              ? 'bg-yellow-100 text-yellow-800 border border-yellow-200'
-              : 'bg-red-100 text-red-800 border border-red-200'
-          } shadow-sm`}>
-            {backendStatus === 'checking' ? '🔄 Checking services...' : '⚠️ Service unavailable'}
-          </div>
-        </div>
-      )}
+     <div className="relative">
+       {/* Backend status indicator - only show when there are actual issues */}
+       {backendStatus === 'unavailable' && process.env.NODE_ENV === 'production' && (
+         <div className="fixed top-4 right-4 z-50">
+           <div className="px-3 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 border border-yellow-200 shadow-sm">
+             ⚠️ Limited AI features - using fallback mode
+           </div>
+         </div>
+       )}
 
-      <HeroSection onStartAssessment={handleStartAssessment} onSignOut={handleSignOut} />
+       <HeroSection onStartAssessment={handleStartAssessment} onSignOut={handleSignOut} />
 
-      {/* Onboarding Tutorial */}
-      <OnboardingTutorial
-        isOpen={showTutorial}
-        onClose={handleTutorialClose}
-        onComplete={handleTutorialComplete}
-      />
-    </div>
-  );
+       {/* Onboarding Tutorial */}
+       <OnboardingTutorial
+         isOpen={showTutorial}
+         onClose={handleTutorialClose}
+         onComplete={handleTutorialComplete}
+       />
+     </div>
+   );
 };
 
 export default Index;

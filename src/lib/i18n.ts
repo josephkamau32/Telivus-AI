@@ -147,6 +147,7 @@ export interface Translations {
   previousSurgeries: string;
   medicationsAllergies: string;
   saferRecommendations: string;
+  currentMedications: string;
   listMedications: string;
   drugFoodAllergies: string;
   backToHome: string;
@@ -359,6 +360,7 @@ const englishTranslations: Translations = {
   previousSurgeries: 'Any previous surgeries or procedures',
   medicationsAllergies: 'Medications & Allergies',
   saferRecommendations: 'Optional - Help us provide safer recommendations',
+  currentMedications: 'Current Medications (optional)',
   listMedications: 'List any medications you\'re currently taking',
   drugFoodAllergies: 'Any drug allergies, food allergies, or other allergies',
   backToHome: 'Back to Home',
@@ -571,6 +573,7 @@ const swahiliTranslations: Translations = {
   previousSurgeries: 'Upasuaji wowote uliopita au taratibu',
   medicationsAllergies: 'Dawa na Mzio',
   saferRecommendations: 'Si lazima - Tusaidie kutoa mapendekezo salama zaidi',
+  currentMedications: 'Dawa za Sasa (si lazima)',
   listMedications: 'Orodhesha dawa zozote unazotumia sasa',
   drugFoodAllergies: 'Mzio wowote wa dawa, chakula, au mzio mwingine',
   backToHome: 'Rudi Nyumbani',

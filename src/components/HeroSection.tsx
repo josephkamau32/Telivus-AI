@@ -48,19 +48,19 @@ export const HeroSection = ({ onStartAssessment, onSignOut }: HeroSectionProps) 
           </div>
           
           {/* Title with gradient text */}
-          <h1 className="text-6xl md:text-7xl font-bold mb-6 bg-gradient-to-r from-primary via-secondary to-primary bg-clip-text text-transparent animate-gradient-shift">
+          <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold mb-6 bg-gradient-to-r from-primary via-secondary to-primary bg-clip-text text-transparent animate-gradient-shift">
             Telivus AI
           </h1>
           
           <div className="flex items-center justify-center gap-2 mb-8">
             <Sparkles className="w-6 h-6 text-primary animate-pulse" />
-            <p className="text-xl md:text-2xl text-foreground font-medium">
+            <p className="text-lg sm:text-xl md:text-2xl text-foreground font-medium">
               {t.heroDescription}
             </p>
             <Sparkles className="w-6 h-6 text-secondary animate-pulse" style={{ animationDelay: '0.5s' }} />
           </div>
           
-          <p className="text-lg text-muted-foreground mb-12 max-w-2xl mx-auto leading-relaxed">
+          <p className="text-base sm:text-lg text-muted-foreground mb-12 max-w-2xl mx-auto leading-relaxed">
             {t.heroSubDescription}
           </p>
           
