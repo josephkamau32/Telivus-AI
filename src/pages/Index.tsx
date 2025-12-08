@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { HeroSection } from '@/components/HeroSection';
 import { SymptomFlow, type PatientData } from '@/components/SymptomFlow';
 import { MedicalReport } from '@/components/MedicalReport';
-import { OnboardingTutorial } from '@/components/OnboardingTutorial';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -293,7 +292,6 @@ const Index = () => {
   const [reportTimestamp, setReportTimestamp] = useState<string>('');
   const [assessmentData, setAssessmentData] = useState<PatientData | null>(null);
   const [backendStatus, setBackendStatus] = useState<'checking' | 'available' | 'unavailable'>('checking');
-  const [showTutorial, setShowTutorial] = useState(false);
   const { toast } = useToast();
 
   // Redirect if not authenticated
@@ -303,19 +301,6 @@ const Index = () => {
     }
   }, [user, isLoading, navigate]);
 
-  // Check if user has completed onboarding tutorial
-  useEffect(() => {
-    if (user && !isLoading) {
-      const tutorialCompleted = localStorage.getItem(`telivus-tutorial-${user.id}`);
-      if (!tutorialCompleted) {
-        // Show tutorial for new users after a brief delay
-        const timer = setTimeout(() => {
-          setShowTutorial(true);
-        }, 1500);
-        return () => clearTimeout(timer);
-      }
-    }
-  }, [user, isLoading]);
 
   // Check backend availability (less aggressive checking)
    useEffect(() => {
@@ -346,20 +331,6 @@ const Index = () => {
     navigate('/');
   };
 
-  const handleTutorialComplete = () => {
-    if (user) {
-      localStorage.setItem(`telivus-tutorial-${user.id}`, 'completed');
-    }
-    setShowTutorial(false);
-    toast({
-      title: "Welcome to Telivus AI! 🎉",
-      description: "You're all set to explore your health insights.",
-    });
-  };
-
-  const handleTutorialClose = () => {
-    setShowTutorial(false);
-  };
 
   const handleStartAssessment = () => {
     setAppState('assessment');
@@ -698,13 +669,6 @@ const Index = () => {
        )}
 
        <HeroSection onStartAssessment={handleStartAssessment} onSignOut={handleSignOut} />
-
-       {/* Onboarding Tutorial */}
-       <OnboardingTutorial
-         isOpen={showTutorial}
-         onClose={handleTutorialClose}
-         onComplete={handleTutorialComplete}
-       />
      </div>
    );
 };
