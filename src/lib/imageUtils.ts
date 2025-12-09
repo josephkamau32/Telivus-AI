@@ -42,8 +42,8 @@ export const preloadImage = (src: string): Promise<void> => {
 export const preloadCriticalImages = async () => {
   const criticalImages = [
     // Add paths to critical images that should be preloaded
-    // '/images/logo.png',
-    // '/images/hero-bg.jpg',
+    '/telivus-logo.png',
+    '/favicon.svg',
   ];
 
   const preloadPromises = criticalImages.map(preloadImage);

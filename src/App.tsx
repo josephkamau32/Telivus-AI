@@ -4,12 +4,13 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
-import { lazy, Suspense, useEffect } from "react";
+import { lazy, Suspense, useEffect, memo } from "react";
 import { Loader2 } from "lucide-react";
 import PWAInstallPrompt from "@/components/PWAInstallPrompt";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { PerformanceMonitor } from "@/components/PerformanceMonitor";
 import { setupGlobalErrorHandling } from "@/lib/errorHandling";
+import { preloadCriticalImages } from "@/lib/imageUtils";
 
 // Lazy load components for better performance
 const Landing = lazy(() => import("./pages/Landing"));
@@ -58,9 +59,11 @@ const queryClient = new QueryClient({
 });
 
 const App = () => {
-  // Setup global error handling on app start
+  // Setup global error handling and preload critical resources on app start
   useEffect(() => {
     setupGlobalErrorHandling();
+    // Preload critical images for better performance
+    preloadCriticalImages();
   }, []);
 
   return (

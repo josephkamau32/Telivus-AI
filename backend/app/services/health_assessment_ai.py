@@ -10,6 +10,7 @@ import logging
 from typing import Dict, List, Any, Optional
 import openai
 import os
+from dotenv import load_dotenv
 
 from app.models.health import (
     HealthAssessmentRequest,
@@ -20,6 +21,9 @@ from app.models.health import (
     DiagnosticPlan
 )
 from app.core.logging import get_logger
+
+# Load environment variables
+load_dotenv()
 
 # Get logger
 logger = get_logger(__name__)
