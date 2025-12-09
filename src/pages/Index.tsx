@@ -54,6 +54,73 @@ const generateDemoReport = (data: PatientData): any | null => {
           max_duration: "3 days - see doctor if no improvement"
         }
       ],
+      reasoning_graph: {
+        nodes: [
+          {
+            id: "symptom_1",
+            type: "symptom",
+            label: "Headache",
+            description: "Patient reports headache symptoms",
+            confidence_score: 0.95,
+            evidence_sources: ["patient_report"],
+            metadata: { severity: "moderate" }
+          },
+          {
+            id: "condition_1",
+            type: "condition",
+            label: "Tension Headache",
+            description: "Most common type of headache, often stress-related",
+            confidence_score: 0.75,
+            evidence_sources: ["medical_knowledge_base", "epidemiology"],
+            metadata: { icd_code: "G44.2" }
+          },
+          {
+            id: "condition_2",
+            type: "condition",
+            label: "Migraine",
+            description: "Less common but possible differential diagnosis",
+            confidence_score: 0.25,
+            evidence_sources: ["medical_knowledge_base"],
+            metadata: { icd_code: "G43.9" }
+          },
+          {
+            id: "factor_1",
+            type: "factor",
+            label: "Stress",
+            description: "Common trigger for tension headaches",
+            confidence_score: 0.6,
+            evidence_sources: ["patient_feeling"],
+            metadata: {}
+          }
+        ],
+        edges: [
+          {
+            source_id: "symptom_1",
+            target_id: "condition_1",
+            relationship_type: "supports",
+            strength: 0.8,
+            explanation: "Headache is primary symptom of tension headache"
+          },
+          {
+            source_id: "symptom_1",
+            target_id: "condition_2",
+            relationship_type: "supports",
+            strength: 0.3,
+            explanation: "Headache can also indicate migraine"
+          },
+          {
+            source_id: "factor_1",
+            target_id: "condition_1",
+            relationship_type: "causes",
+            strength: 0.7,
+            explanation: "Stress is a common trigger for tension headaches"
+          }
+        ],
+        root_symptoms: ["symptom_1"],
+        final_diagnosis: "condition_1",
+        triage_level: "routine",
+        reasoning_summary: "Based on reported headache symptoms and absence of red flags, tension headache is the most likely diagnosis. Migraine is considered but less likely without additional symptoms like nausea or photophobia."
+      },
       timestamp: new Date().toISOString(),
       cached: false,
       demo: true
@@ -86,6 +153,57 @@ const generateDemoReport = (data: PatientData): any | null => {
           max_duration: "3 days - see doctor if fever persists"
         }
       ],
+      reasoning_graph: {
+        nodes: [
+          {
+            id: "symptom_1",
+            type: "symptom",
+            label: "Fever",
+            description: "Patient reports fever symptoms",
+            confidence_score: 0.9,
+            evidence_sources: ["patient_report"],
+            metadata: { severity: "moderate" }
+          },
+          {
+            id: "condition_1",
+            type: "condition",
+            label: "Viral Infection",
+            description: "Most common cause of fever in otherwise healthy adults",
+            confidence_score: 0.7,
+            evidence_sources: ["medical_knowledge_base", "epidemiology"],
+            metadata: { icd_code: "J06.9" }
+          },
+          {
+            id: "condition_2",
+            type: "condition",
+            label: "Bacterial Infection",
+            description: "Possible but less likely without localized symptoms",
+            confidence_score: 0.3,
+            evidence_sources: ["medical_knowledge_base"],
+            metadata: { icd_code: "A49.9" }
+          }
+        ],
+        edges: [
+          {
+            source_id: "symptom_1",
+            target_id: "condition_1",
+            relationship_type: "supports",
+            strength: 0.8,
+            explanation: "Fever is hallmark symptom of viral infections"
+          },
+          {
+            source_id: "symptom_1",
+            target_id: "condition_2",
+            relationship_type: "supports",
+            strength: 0.4,
+            explanation: "Fever can also indicate bacterial infection"
+          }
+        ],
+        root_symptoms: ["symptom_1"],
+        final_diagnosis: "condition_1",
+        triage_level: "routine",
+        reasoning_summary: "Fever in an otherwise healthy adult most likely represents a self-limiting viral infection. Bacterial causes are considered but less likely without additional symptoms."
+      },
       timestamp: new Date().toISOString(),
       cached: false,
       demo: true
@@ -118,6 +236,73 @@ const generateDemoReport = (data: PatientData): any | null => {
           max_duration: "2 days - see doctor if no improvement"
         }
       ],
+      reasoning_graph: {
+        nodes: [
+          {
+            id: "symptom_1",
+            type: "symptom",
+            label: "Nausea",
+            description: "Patient reports nausea symptoms",
+            confidence_score: 0.85,
+            evidence_sources: ["patient_report"],
+            metadata: { severity: "moderate" }
+          },
+          {
+            id: "condition_1",
+            type: "condition",
+            label: "Gastroenteritis",
+            description: "Inflammation of stomach and intestines, often viral",
+            confidence_score: 0.65,
+            evidence_sources: ["medical_knowledge_base", "epidemiology"],
+            metadata: { icd_code: "A08.4" }
+          },
+          {
+            id: "condition_2",
+            type: "condition",
+            label: "Food Intolerance",
+            description: "Adverse reaction to certain foods or ingredients",
+            confidence_score: 0.4,
+            evidence_sources: ["medical_knowledge_base"],
+            metadata: { icd_code: "K90.4" }
+          },
+          {
+            id: "factor_1",
+            type: "factor",
+            label: "Recent Meals",
+            description: "Recent food consumption may be contributing factor",
+            confidence_score: 0.5,
+            evidence_sources: ["common_causes"],
+            metadata: {}
+          }
+        ],
+        edges: [
+          {
+            source_id: "symptom_1",
+            target_id: "condition_1",
+            relationship_type: "supports",
+            strength: 0.7,
+            explanation: "Nausea is common symptom of gastroenteritis"
+          },
+          {
+            source_id: "symptom_1",
+            target_id: "condition_2",
+            relationship_type: "supports",
+            strength: 0.5,
+            explanation: "Nausea can result from food intolerances"
+          },
+          {
+            source_id: "factor_1",
+            target_id: "condition_2",
+            relationship_type: "causes",
+            strength: 0.6,
+            explanation: "Recent meals can trigger food-related nausea"
+          }
+        ],
+        root_symptoms: ["symptom_1"],
+        final_diagnosis: "condition_1",
+        triage_level: "routine",
+        reasoning_summary: "Nausea symptoms most likely represent acute gastroenteritis or food-related issues. Viral gastroenteritis is most common, but food intolerance should also be considered."
+      },
       timestamp: new Date().toISOString(),
       cached: false,
       demo: true
@@ -198,6 +383,156 @@ const generateDemoReport = (data: PatientData): any | null => {
           max_duration: "7 days - see doctor if no improvement"
         }
       ],
+      reasoning_graph: {
+        nodes: [
+          {
+            id: "symptom_1",
+            type: "symptom",
+            label: "Cough",
+            description: "Patient reports persistent cough",
+            confidence_score: 0.85,
+            evidence_sources: ["patient_report"],
+            metadata: { severity: "moderate" }
+          },
+          {
+            id: "condition_1",
+            type: "condition",
+            label: "Viral Upper Respiratory Infection",
+            description: "Common respiratory infection causing cough",
+            confidence_score: 0.7,
+            evidence_sources: ["medical_knowledge_base", "epidemiology"],
+            metadata: { icd_code: "J06.9" }
+          },
+          {
+            id: "condition_2",
+            type: "condition",
+            label: "Allergic Rhinitis",
+            description: "Allergy-related nasal and throat irritation",
+            confidence_score: 0.4,
+            evidence_sources: ["medical_knowledge_base"],
+            metadata: { icd_code: "J30.9" }
+          }
+        ],
+        edges: [
+          {
+            source_id: "symptom_1",
+            target_id: "condition_1",
+            relationship_type: "supports",
+            strength: 0.75,
+            explanation: "Cough is common symptom of viral respiratory infections"
+          },
+          {
+            source_id: "symptom_1",
+            target_id: "condition_2",
+            relationship_type: "supports",
+            strength: 0.5,
+            explanation: "Cough can be caused by allergic reactions"
+          }
+        ],
+        root_symptoms: ["symptom_1"],
+        final_diagnosis: "condition_1",
+        triage_level: "routine",
+        reasoning_summary: "Cough symptoms most likely represent a viral upper respiratory infection. Allergic causes are considered but less likely without additional symptoms like itchy eyes or nasal congestion."
+      },
+      timestamp: new Date().toISOString(),
+      cached: false,
+      demo: true
+    };
+  }
+
+  if (symptoms.includes('fatigue') || symptoms.includes('tired') || feelings.includes('tired') || feelings.includes('fatigued')) {
+    return {
+      demographic_header: {
+        name: data.name || 'Not provided',
+        age: data.age,
+        gender: data.gender || 'Not provided',
+        date: new Date().toISOString().split('T')[0]
+      },
+      chief_complaint: "Fatigue and low energy",
+      history_present_illness: `${data.age}-year-old patient presents with fatigue and reports feeling ${data.feelings}. Fatigue can be caused by various factors including sleep issues, stress, nutritional deficiencies, or medical conditions.`,
+      past_medical_history: data.medicalHistory || 'None reported',
+      past_surgical_history: data.surgicalHistory || 'None reported',
+      medications: data.currentMedications || 'None reported',
+      allergies: data.allergies || 'None reported',
+      assessment: "Most likely fatigue related to inadequate sleep, stress, or nutritional factors. Differential diagnoses include anemia, thyroid dysfunction, depression, or chronic fatigue syndrome. Many cases improve with lifestyle modifications.",
+      diagnostic_plan: "**Consultations**: See primary care if fatigue persists >2 weeks or worsens | **Tests**: Usually none needed initially for routine fatigue | **RED FLAGS**: Unexplained weight loss, severe fatigue with shortness of breath | **Follow-up**: Monitor symptoms and energy levels",
+      otc_recommendations: [
+        {
+          medicine: "Multivitamin (One Daily)",
+          dosage: "1 tablet daily with food",
+          purpose: "Provides essential vitamins and minerals to support energy production",
+          instructions: "Take with a meal to improve absorption.",
+          precautions: "Avoid if you have kidney disease or take other supplements. Safe with no reported medications or allergies.",
+          max_duration: "3 months - see doctor if no improvement"
+        }
+      ],
+      reasoning_graph: {
+        nodes: [
+          {
+            id: "symptom_1",
+            type: "symptom",
+            label: "Fatigue",
+            description: "Patient reports fatigue symptoms",
+            confidence_score: 0.9,
+            evidence_sources: ["patient_report"],
+            metadata: { severity: "moderate" }
+          },
+          {
+            id: "condition_1",
+            type: "condition",
+            label: "Sleep Deprivation",
+            description: "Inadequate sleep causing fatigue",
+            confidence_score: 0.7,
+            evidence_sources: ["common_causes", "epidemiology"],
+            metadata: { icd_code: "G47.9" }
+          },
+          {
+            id: "condition_2",
+            type: "condition",
+            label: "Iron Deficiency",
+            description: "Low iron levels causing fatigue",
+            confidence_score: 0.4,
+            evidence_sources: ["medical_knowledge_base"],
+            metadata: { icd_code: "D50.9" }
+          },
+          {
+            id: "factor_1",
+            type: "factor",
+            label: "Stress",
+            description: "Mental or physical stress contributing to fatigue",
+            confidence_score: 0.6,
+            evidence_sources: ["patient_feeling"],
+            metadata: {}
+          }
+        ],
+        edges: [
+          {
+            source_id: "symptom_1",
+            target_id: "condition_1",
+            relationship_type: "supports",
+            strength: 0.75,
+            explanation: "Fatigue is primary symptom of sleep deprivation"
+          },
+          {
+            source_id: "symptom_1",
+            target_id: "condition_2",
+            relationship_type: "supports",
+            strength: 0.5,
+            explanation: "Fatigue can result from iron deficiency"
+          },
+          {
+            source_id: "factor_1",
+            target_id: "condition_1",
+            relationship_type: "causes",
+            strength: 0.7,
+            explanation: "Stress often leads to poor sleep and fatigue"
+          }
+        ],
+        root_symptoms: ["symptom_1"],
+        final_diagnosis: "condition_1",
+        triage_level: "routine",
+        reasoning_summary: "Fatigue symptoms most likely represent inadequate sleep or stress-related issues. Nutritional deficiencies are considered but less likely without additional symptoms."
+      },
       timestamp: new Date().toISOString(),
       cached: false,
       demo: true
@@ -238,6 +573,247 @@ const generateDemoReport = (data: PatientData): any | null => {
           max_duration: "2 weeks - see doctor if no improvement"
         }
       ],
+      reasoning_graph: {
+        nodes: [
+          {
+            id: "symptom_1",
+            type: "symptom",
+            label: "Abdominal Pain",
+            description: "Patient reports stomach/abdominal discomfort",
+            confidence_score: 0.8,
+            evidence_sources: ["patient_report"],
+            metadata: { severity: "mild" }
+          },
+          {
+            id: "condition_1",
+            type: "condition",
+            label: "Indigestion",
+            description: "Common digestive discomfort, often diet-related",
+            confidence_score: 0.65,
+            evidence_sources: ["medical_knowledge_base", "epidemiology"],
+            metadata: { icd_code: "K30" }
+          },
+          {
+            id: "condition_2",
+            type: "condition",
+            label: "Gastritis",
+            description: "Inflammation of the stomach lining",
+            confidence_score: 0.35,
+            evidence_sources: ["medical_knowledge_base"],
+            metadata: { icd_code: "K29.70" }
+          },
+          {
+            id: "factor_1",
+            type: "factor",
+            label: "Dietary Factors",
+            description: "Recent meals or eating habits may contribute",
+            confidence_score: 0.6,
+            evidence_sources: ["common_causes"],
+            metadata: {}
+          }
+        ],
+        edges: [
+          {
+            source_id: "symptom_1",
+            target_id: "condition_1",
+            relationship_type: "supports",
+            strength: 0.7,
+            explanation: "Abdominal pain is common with indigestion"
+          },
+          {
+            source_id: "symptom_1",
+            target_id: "condition_2",
+            relationship_type: "supports",
+            strength: 0.45,
+            explanation: "Abdominal pain can indicate gastritis"
+          },
+          {
+            source_id: "factor_1",
+            target_id: "condition_1",
+            relationship_type: "causes",
+            strength: 0.65,
+            explanation: "Dietary factors commonly cause indigestion"
+          }
+        ],
+        root_symptoms: ["symptom_1"],
+        final_diagnosis: "condition_1",
+        triage_level: "routine",
+        reasoning_summary: "Abdominal symptoms most likely represent indigestion or dietary-related discomfort. Gastritis is considered but less likely without additional symptoms like nausea or heartburn."
+      },
+      timestamp: new Date().toISOString(),
+      cached: false,
+      demo: true
+    };
+  }
+
+  if (symptoms.includes('dizziness') || symptoms.includes('dizzy') || feelings.includes('dizzy')) {
+    return {
+      demographic_header: {
+        name: data.name || 'Not provided',
+        age: data.age,
+        gender: data.gender || 'Not provided',
+        date: new Date().toISOString().split('T')[0]
+      },
+      chief_complaint: "Dizziness and balance issues",
+      history_present_illness: `${data.age}-year-old patient presents with dizziness and reports feeling ${data.feelings}. Dizziness can be caused by inner ear problems, dehydration, low blood pressure, or other factors.`,
+      past_medical_history: data.medicalHistory || 'None reported',
+      past_surgical_history: data.surgicalHistory || 'None reported',
+      medications: data.currentMedications || 'None reported',
+      allergies: data.allergies || 'None reported',
+      assessment: "Most likely benign paroxysmal positional vertigo (BPPV) or vestibular issue. Differential diagnoses include orthostatic hypotension, medication side effects, or inner ear infection. Many cases resolve spontaneously.",
+      diagnostic_plan: "**Consultations**: See doctor if dizziness persists >1 week or is severe | **Tests**: Usually none needed for routine dizziness | **RED FLAGS**: Severe headache with dizziness, vision changes, weakness | **Follow-up**: Avoid sudden head movements",
+      otc_recommendations: [
+        {
+          medicine: "Dimenhydrinate (Dramamine)",
+          dosage: "50-100 mg every 4-6 hours as needed",
+          purpose: "Helps relieve dizziness and motion sickness",
+          instructions: "Take 30 minutes before activities that trigger dizziness.",
+          precautions: "May cause drowsiness. Avoid alcohol. Safe with no reported medications or allergies.",
+          max_duration: "3 days - see doctor if dizziness persists"
+        }
+      ],
+      reasoning_graph: {
+        nodes: [
+          {
+            id: "symptom_1",
+            type: "symptom",
+            label: "Dizziness",
+            description: "Patient reports dizziness symptoms",
+            confidence_score: 0.85,
+            evidence_sources: ["patient_report"],
+            metadata: { severity: "moderate" }
+          },
+          {
+            id: "condition_1",
+            type: "condition",
+            label: "BPPV",
+            description: "Benign paroxysmal positional vertigo",
+            confidence_score: 0.65,
+            evidence_sources: ["medical_knowledge_base", "epidemiology"],
+            metadata: { icd_code: "H81.13" }
+          },
+          {
+            id: "condition_2",
+            type: "condition",
+            label: "Vestibular Neuritis",
+            description: "Inflammation of the vestibular nerve",
+            confidence_score: 0.4,
+            evidence_sources: ["medical_knowledge_base"],
+            metadata: { icd_code: "H81.2" }
+          }
+        ],
+        edges: [
+          {
+            source_id: "symptom_1",
+            target_id: "condition_1",
+            relationship_type: "supports",
+            strength: 0.7,
+            explanation: "Dizziness is hallmark symptom of BPPV"
+          },
+          {
+            source_id: "symptom_1",
+            target_id: "condition_2",
+            relationship_type: "supports",
+            strength: 0.5,
+            explanation: "Dizziness can result from vestibular nerve inflammation"
+          }
+        ],
+        root_symptoms: ["symptom_1"],
+        final_diagnosis: "condition_1",
+        triage_level: "routine",
+        reasoning_summary: "Dizziness symptoms most likely represent BPPV or vestibular issues. More serious causes are considered but less likely without additional symptoms."
+      },
+      timestamp: new Date().toISOString(),
+      cached: false,
+      demo: true
+    };
+  }
+
+  if (symptoms.includes('rash') || symptoms.includes('skin') || symptoms.includes('itching') || symptoms.includes('itchy')) {
+    return {
+      demographic_header: {
+        name: data.name || 'Not provided',
+        age: data.age,
+        gender: data.gender || 'Not provided',
+        date: new Date().toISOString().split('T')[0]
+      },
+      chief_complaint: "Skin rash and irritation",
+      history_present_illness: `${data.age}-year-old patient presents with skin rash/irritation and reports feeling ${data.feelings}. Skin rashes can be caused by allergic reactions, irritants, infections, or other dermatological conditions.`,
+      past_medical_history: data.medicalHistory || 'None reported',
+      past_surgical_history: data.surgicalHistory || 'None reported',
+      medications: data.currentMedications || 'None reported',
+      allergies: data.allergies || 'None reported',
+      assessment: "Most likely allergic contact dermatitis or irritant dermatitis. Differential diagnoses include eczema, fungal infection, or viral exanthem. Many rashes resolve with topical treatments and avoidance of triggers.",
+      diagnostic_plan: "**Consultations**: See dermatologist if rash persists >1 week or worsens | **Tests**: Usually none needed for routine rashes | **RED FLAGS**: Rash with fever, spreading rapidly, severe pain | **Follow-up**: Keep area clean and moisturized",
+      otc_recommendations: [
+        {
+          medicine: "Hydrocortisone cream 1% (Cortaid)",
+          dosage: "Apply thin layer 2-3 times daily to affected area",
+          purpose: "Reduces inflammation and itching from skin rashes",
+          instructions: "Apply to clean, dry skin. Rub in gently.",
+          precautions: "For external use only. Avoid face and groin areas. Safe with no reported medications or allergies.",
+          max_duration: "7 days - see doctor if no improvement"
+        },
+        {
+          medicine: "Diphenhydramine (Benadryl)",
+          dosage: "25-50 mg every 4-6 hours as needed",
+          purpose: "Relieves itching associated with allergic reactions",
+          instructions: "Take with water. May cause drowsiness.",
+          precautions: "May cause drowsiness. Avoid alcohol. Safe with no reported medications or allergies.",
+          max_duration: "7 days - see doctor if itching persists"
+        }
+      ],
+      reasoning_graph: {
+        nodes: [
+          {
+            id: "symptom_1",
+            type: "symptom",
+            label: "Skin Rash",
+            description: "Patient reports skin rash symptoms",
+            confidence_score: 0.8,
+            evidence_sources: ["patient_report"],
+            metadata: { severity: "mild" }
+          },
+          {
+            id: "condition_1",
+            type: "condition",
+            label: "Contact Dermatitis",
+            description: "Skin inflammation from contact with irritants",
+            confidence_score: 0.7,
+            evidence_sources: ["medical_knowledge_base", "epidemiology"],
+            metadata: { icd_code: "L73.9" }
+          },
+          {
+            id: "condition_2",
+            type: "condition",
+            label: "Allergic Reaction",
+            description: "Immune response to allergens",
+            confidence_score: 0.5,
+            evidence_sources: ["medical_knowledge_base"],
+            metadata: { icd_code: "T78.40" }
+          }
+        ],
+        edges: [
+          {
+            source_id: "symptom_1",
+            target_id: "condition_1",
+            relationship_type: "supports",
+            strength: 0.75,
+            explanation: "Rash is common symptom of contact dermatitis"
+          },
+          {
+            source_id: "symptom_1",
+            target_id: "condition_2",
+            relationship_type: "supports",
+            strength: 0.6,
+            explanation: "Rash can result from allergic reactions"
+          }
+        ],
+        root_symptoms: ["symptom_1"],
+        final_diagnosis: "condition_1",
+        triage_level: "routine",
+        reasoning_summary: "Skin rash symptoms most likely represent contact dermatitis or allergic reaction. More serious causes are considered but less likely without systemic symptoms."
+      },
       timestamp: new Date().toISOString(),
       cached: false,
       demo: true
@@ -415,9 +991,10 @@ const Index = () => {
           allergies: data.allergies || 'None reported',
           assessment: reportData.medical_assessment.assessment,
           diagnostic_plan: reportData.medical_assessment.diagnostic_plan.follow_up ||
-                           `**Consultations**: ${reportData.medical_assessment.diagnostic_plan.consultations?.join(', ') || 'None recommended'}\n**Tests**: ${reportData.medical_assessment.diagnostic_plan.tests?.join(', ') || 'None recommended'}\n**RED FLAGS**: ${reportData.medical_assessment.diagnostic_plan.red_flags?.join(', ') || 'None identified'}\n**Follow-up**: ${reportData.medical_assessment.diagnostic_plan.follow_up || 'As needed'}`,
+                          `**Consultations**: ${reportData.medical_assessment.diagnostic_plan.consultations?.join(', ') || 'None recommended'}\n**Tests**: ${reportData.medical_assessment.diagnostic_plan.tests?.join(', ') || 'None recommended'}\n**RED FLAGS**: ${reportData.medical_assessment.diagnostic_plan.red_flags?.join(', ') || 'None identified'}\n**Follow-up**: ${reportData.medical_assessment.diagnostic_plan.follow_up || 'As needed'}`,
           otc_recommendations: reportData.medical_assessment.otc_recommendations,
           lifestyle_recommendations: reportData.medical_assessment.lifestyle_recommendations,
+          reasoning_graph: (reportData.medical_assessment as any).reasoning_graph,
           timestamp: reportData.generated_at,
           cached: false,
           ai_model_used: reportData.ai_model_used,

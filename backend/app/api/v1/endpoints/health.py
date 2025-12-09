@@ -14,7 +14,7 @@ from app.models.health import (
     PatientInfo,
     MedicalHistory
 )
-from app.services.health_assessment_simple import SimpleHealthAssessmentService
+from app.services.health_assessment import HealthAssessmentService
 from app.core.logging import get_logger
 
 # Create router
@@ -57,8 +57,8 @@ async def assess_health(
     try:
         logger.info(f"Processing health assessment request for patient age {request.patient_info.age}")
 
-        # Initialize simple health assessment service
-        assessment_service = SimpleHealthAssessmentService()
+        # Initialize health assessment service (tries AI first, falls back to simple)
+        assessment_service = HealthAssessmentService()
 
         # Generate assessment report
         report = await assessment_service.generate_assessment(request)
@@ -107,7 +107,7 @@ async def get_symptom_suggestions(
     try:
         logger.info(f"Getting symptom suggestions for age {age}")
 
-        assessment_service = SimpleHealthAssessmentService()
+        assessment_service = HealthAssessmentService()
 
         suggestions = await assessment_service.get_symptom_suggestions(
             symptoms=symptoms,
@@ -149,7 +149,7 @@ async def validate_symptoms(
     try:
         logger.info("Validating symptom data")
 
-        assessment_service = SimpleHealthAssessmentService()
+        assessment_service = HealthAssessmentService()
 
         validation_result = await assessment_service.validate_symptoms(symptom_data)
 
@@ -187,7 +187,7 @@ async def check_emergency_symptoms(
     try:
         logger.warning(f"Emergency check requested for symptoms: {symptoms}")
 
-        assessment_service = SimpleHealthAssessmentService()
+        assessment_service = HealthAssessmentService()
 
         emergency_assessment = await assessment_service.assess_emergency(
             symptoms=symptoms,
