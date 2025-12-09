@@ -92,6 +92,37 @@ class DiagnosticPlan(BaseModel):
     follow_up: Optional[str] = Field(None, description="Follow-up recommendations")
 
 
+class ReasoningNode(BaseModel):
+    """Node in the differential diagnosis reasoning graph."""
+    id: str = Field(..., description="Unique node identifier")
+    type: str = Field(..., description="Node type (symptom, condition, factor, triage)")
+    label: str = Field(..., description="Display label for the node")
+    description: str = Field(..., description="Detailed description")
+    confidence_score: float = Field(..., ge=0.0, le=1.0, description="Confidence score for this node")
+    evidence_sources: List[str] = Field(default_factory=list, description="Sources supporting this conclusion")
+    metadata: Dict[str, Any] = Field(default_factory=dict, description="Additional node metadata")
+
+
+class ReasoningEdge(BaseModel):
+    """Edge connecting nodes in the reasoning graph."""
+    source_id: str = Field(..., description="Source node ID")
+    target_id: str = Field(..., description="Target node ID")
+    relationship_type: str = Field(..., description="Type of relationship (causes, supports, rules_out, etc.)")
+    strength: float = Field(..., ge=0.0, le=1.0, description="Strength of the relationship")
+    explanation: str = Field(..., description="Explanation of the relationship")
+
+
+class ReasoningGraph(BaseModel):
+    """Complete differential diagnosis reasoning graph."""
+    nodes: List[ReasoningNode] = Field(default_factory=list, description="All nodes in the graph")
+    edges: List[ReasoningEdge] = Field(default_factory=list, description="All edges connecting nodes")
+    root_symptoms: List[str] = Field(default_factory=list, description="Initial symptom node IDs")
+    final_diagnosis: Optional[str] = Field(None, description="Final diagnosis node ID")
+    triage_level: str = Field(..., description="Triage urgency level (routine, urgent, emergency)")
+    reasoning_summary: str = Field(..., description="High-level summary of the reasoning process")
+    generated_at: datetime = Field(default_factory=datetime.utcnow, description="When the graph was generated")
+
+
 class MedicalAssessment(BaseModel):
     """Model for medical assessment results."""
     chief_complaint: str = Field(..., description="Primary complaint summary")
@@ -101,6 +132,7 @@ class MedicalAssessment(BaseModel):
     otc_recommendations: List[OTCRecommendation] = Field(default_factory=list, description="OTC medication recommendations")
     lifestyle_recommendations: Optional[List[str]] = Field(None, description="Lifestyle and self-care recommendations")
     when_to_seek_help: Optional[str] = Field(None, description="When to seek immediate medical help")
+    reasoning_graph: Optional[ReasoningGraph] = Field(None, description="Explainable AI reasoning graph")
 
 
 class HealthReport(BaseModel):

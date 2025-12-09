@@ -196,6 +196,8 @@ class HealthAssessmentAgent(BaseHealthAgent):
             - Current medications: {medical_history.get('current_medications', 'None reported')}
             - Allergies: {', '.join(allergies) if allergies else 'None reported'}
 
+            CRITICAL: You must generate an explainable reasoning graph showing how you arrived at your conclusions.
+
             Please structure your assessment as a JSON object with the following fields:
             {{
                 "chief_complaint": "Primary symptoms summary",
@@ -218,8 +220,52 @@ class HealthAssessmentAgent(BaseHealthAgent):
                     }}
                 ],
                 "lifestyle_recommendations": ["Self-care advice"],
-                "when_to_seek_help": "When to seek immediate medical attention"
+                "when_to_seek_help": "When to seek immediate medical attention",
+                "reasoning_graph": {{
+                    "nodes": [
+                        {{
+                            "id": "symptom_1",
+                            "type": "symptom",
+                            "label": "Fever",
+                            "description": "Patient reports fever of 101°F",
+                            "confidence_score": 0.95,
+                            "evidence_sources": ["patient_report"],
+                            "metadata": {{"severity": "moderate"}}
+                        }},
+                        {{
+                            "id": "condition_1",
+                            "type": "condition",
+                            "label": "Viral Infection",
+                            "description": "Common cause of fever with respiratory symptoms",
+                            "confidence_score": 0.75,
+                            "evidence_sources": ["medical_knowledge_base", "epidemiology"],
+                            "metadata": {{"icd_code": "J06.9"}}
+                        }}
+                    ],
+                    "edges": [
+                        {{
+                            "source_id": "symptom_1",
+                            "target_id": "condition_1",
+                            "relationship_type": "supports",
+                            "strength": 0.8,
+                            "explanation": "Fever is a common symptom of viral infections"
+                        }}
+                    ],
+                    "root_symptoms": ["symptom_1"],
+                    "final_diagnosis": "condition_1",
+                    "triage_level": "routine",
+                    "reasoning_summary": "Based on reported symptoms and medical knowledge, viral infection is the most likely cause"
+                }}
             }}
+
+            REASONING GRAPH REQUIREMENTS:
+            1. Create nodes for each reported symptom (type: "symptom")
+            2. Create nodes for possible conditions/diagnoses (type: "condition")
+            3. Create nodes for risk factors or contributing factors (type: "factor")
+            4. Create edges showing relationships between symptoms and conditions
+            5. Include confidence scores based on medical knowledge and symptom patterns
+            6. Set triage_level to: "emergency" (immediate ER), "urgent" (see doctor today), "routine" (see doctor within week)
+            7. Provide evidence_sources for each conclusion
             """
 
             # Execute agent
@@ -228,7 +274,22 @@ class HealthAssessmentAgent(BaseHealthAgent):
             # Parse JSON response
             try:
                 assessment_data = json.loads(response)
-                logger.info("Successfully generated health assessment")
+                logger.info("Successfully generated health assessment with reasoning graph")
+
+                # Validate reasoning graph structure if present
+                if "reasoning_graph" in assessment_data:
+                    graph = assessment_data["reasoning_graph"]
+                    # Ensure required fields exist
+                    if "nodes" not in graph:
+                        graph["nodes"] = []
+                    if "edges" not in graph:
+                        graph["edges"] = []
+                    if "root_symptoms" not in graph:
+                        graph["root_symptoms"] = []
+                    if "triage_level" not in graph:
+                        graph["triage_level"] = "routine"
+                    if "reasoning_summary" not in graph:
+                        graph["reasoning_summary"] = "Assessment completed with AI reasoning"
 
                 return {
                     "assessment": assessment_data,
@@ -300,6 +361,16 @@ class HealthAssessmentAgent(BaseHealthAgent):
             if isinstance(otc, dict):
                 otc_recommendations.append(OTCRecommendation(**otc))
 
+        # Build reasoning graph if present
+        reasoning_graph = None
+        if "reasoning_graph" in assessment_data:
+            from app.models.health import ReasoningGraph
+            try:
+                reasoning_graph = ReasoningGraph(**assessment_data["reasoning_graph"])
+            except Exception as e:
+                logger.warning(f"Failed to parse reasoning graph: {e}")
+                reasoning_graph = None
+
         return MedicalAssessment(
             chief_complaint=assessment_data.get("chief_complaint", ""),
             history_present_illness=assessment_data.get("history_present_illness", ""),
@@ -307,5 +378,6 @@ class HealthAssessmentAgent(BaseHealthAgent):
             diagnostic_plan=diagnostic_plan,
             otc_recommendations=otc_recommendations,
             lifestyle_recommendations=assessment_data.get("lifestyle_recommendations", []),
-            when_to_seek_help=assessment_data.get("when_to_seek_help", "")
+            when_to_seek_help=assessment_data.get("when_to_seek_help", ""),
+            reasoning_graph=reasoning_graph
         )

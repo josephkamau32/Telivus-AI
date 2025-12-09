@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Download, Home, AlertTriangle, Clock, User, FileText, Loader2, TrendingUp } from 'lucide-react';
 import jsPDF from 'jspdf';
+import ReasoningGraph from './ReasoningGraph';
 
 interface MedicalReportProps {
   report: any;
@@ -184,7 +185,7 @@ export const MedicalReport = ({ report, userInfo, timestamp, onBackToHome }: Med
   };
 
   return (
-    <div className="min-h-screen bg-background p-6">
+    <div className="min-h-screen bg-background p-6 pb-24 md:pb-6">
       <div className="max-w-4xl mx-auto space-y-6">
         {/* Demo Report Banner */}
         {parsedReport?.demo && <DemoReportBanner />}
@@ -371,6 +372,13 @@ export const MedicalReport = ({ report, userInfo, timestamp, onBackToHome }: Med
               </Card>
             )}
 
+            {/* AI Reasoning Graph */}
+            {parsedReport.reasoning_graph && (
+              <div className="space-y-4">
+                <ReasoningGraph graph={parsedReport.reasoning_graph} />
+              </div>
+            )}
+
             {/* Diagnostic Plan */}
             {hasContent(parsedReport.diagnostic_plan) && (
               <Card className="border-l-4 border-l-blue-500 bg-blue-50/50 dark:bg-blue-950/20">
@@ -481,28 +489,34 @@ export const MedicalReport = ({ report, userInfo, timestamp, onBackToHome }: Med
         </Alert>
 
         {/* Actions */}
-        <div className="flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4 justify-center">
-          <Button
-            onClick={() => navigate('/trajectory')}
-            className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 w-full sm:w-auto"
-          >
-            <TrendingUp className="w-4 h-4 mr-2" />
-            View Health Trajectory
-          </Button>
+        <div className="mt-8 pt-6 border-t border-border">
+          <div className="flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4 justify-center max-w-4xl mx-auto">
+            <Button
+              onClick={() => navigate('/trajectory')}
+              className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 w-full sm:w-auto min-h-[48px] text-base font-medium shadow-lg hover:shadow-xl transition-all duration-200"
+            >
+              <TrendingUp className="w-5 h-5 mr-2" />
+              View Health Trajectory
+            </Button>
 
-          <Button
-            onClick={handleDownloadPDF}
-            disabled={isDownloading}
-            className="bg-secondary hover:bg-secondary/90 text-secondary-foreground w-full sm:w-auto"
-          >
-            <Download className="w-4 h-4 mr-2" />
-            {isDownloading ? 'Generating PDF...' : 'Download PDF Report'}
-          </Button>
+            <Button
+              onClick={handleDownloadPDF}
+              disabled={isDownloading}
+              className="bg-secondary hover:bg-secondary/90 text-secondary-foreground w-full sm:w-auto min-h-[48px] text-base font-medium shadow-lg hover:shadow-xl transition-all duration-200"
+            >
+              <Download className="w-5 h-5 mr-2" />
+              {isDownloading ? 'Generating PDF...' : 'Download PDF Report'}
+            </Button>
 
-          <Button variant="outline" onClick={onBackToHome} className="w-full sm:w-auto">
-            <Home className="w-4 h-4 mr-2" />
-            Back to Home
-          </Button>
+            <Button
+              variant="outline"
+              onClick={onBackToHome}
+              className="w-full sm:w-auto min-h-[48px] text-base font-medium border-2 shadow-lg hover:shadow-xl transition-all duration-200"
+            >
+              <Home className="w-5 h-5 mr-2" />
+              Back to Home
+            </Button>
+          </div>
         </div>
 
       </div>
