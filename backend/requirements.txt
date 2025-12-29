@@ -1,10 +1,10 @@
-# Core FastAPI (compatible versions)
+# Core dependencies (keep existing)
 fastapi==0.104.1
 uvicorn[standard]==0.24.0
 pydantic==2.5.0
 pydantic-settings==2.1.0
 
-# AI Dependencies (production-ready)
+# AI Dependencies
 openai>=1.0.0
 
 # Utilities
@@ -28,21 +28,43 @@ keras==2.15.0
 xgboost==2.0.0
 lightgbm==4.1.0
 catboost==1.2.2
-optuna==3.4.0  # For hyperparameter optimization
+optuna==3.4.0
 
-# Testing
+# Testing Framework (NEW - Priority 1)
 pytest==7.4.3
 pytest-asyncio==0.21.1
+pytest-cov==4.1.0
+pytest-mock==3.12.0
 httpx==0.25.2
+faker==20.1.0
 
-# Development (optional for now)
-# black==23.11.0
-# isort==5.12.0
-# flake8==6.1.0
-# mypy==1.7.1
-colorlog==6.8.0
-python-json-logger==2.0.7
+# Caching & Performance (NEW - Priority 2)
+redis[hiredis]==5.0.1
+slowapi==0.1.9
 
-# Documentation (optional for now)
-# mkdocs==1.5.3
-# mkdocs-material==9.4.8
+# Security & Authentication (NEW - Priority 3)
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+python-multipart==0.0.6
+bleach==6.1.0
+
+# Monitoring & Observability (NEW - Priority 4)
+sentry-sdk[fastapi]==1.39.1
+structlog==23.2.0
+prometheus-client==0.19.0
+
+# Code Quality (NEW - Priority 5)
+black==23.11.0
+isort==5.12.0
+flake8==6.1.0
+mypy==1.7.1
+pre-commit==3.5.0
+
+# Database (PostgreSQL)
+psycopg2-binary==2.9.9
+sqlalchemy[asyncio]==2.0.23
+alembic==1.13.1
+
+# Development tools
+ipython==8.18.1
+ipdb==0.13.13
