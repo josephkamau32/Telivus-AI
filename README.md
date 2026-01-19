@@ -11,7 +11,29 @@
 
 Telivus AI is a **cutting-edge AI-powered health assessment platform** that combines advanced machine learning with modern web technologies to provide **personalized medical insights**. This project demonstrates expertise in full-stack development, AI/ML integration, and production-ready system architecture.
 
-## 🚀 **What Makes This Special**
+## � **What This Is NOT**
+
+> [!IMPORTANT]
+> **Building Trust Through Clarity**
+
+Telivus AI is a powerful portfolio project and research prototype. However, it is important to understand its limitations:
+
+- ❌ **Not a diagnostic medical device** - No FDA approval or medical certification
+- ❌ **Not a replacement for clinicians** - Always consult licensed healthcare providers
+- ❌ **Not trained on private medical records** - Uses general medical knowledge, not patient-specific data
+- ❌ **Not for emergency use** - Seek immediate medical attention for urgent symptoms
+
+✅ **What it IS**: An AI engineering portfolio demonstrating advanced ML/AI integration, full-stack development, and healthcare domain application.
+
+## 🎯 **Who This Is For**
+
+- **🧑‍💼 AI Engineers & Recruiters**: Portfolio showcasing LangChain, RAG, and deep learning implementation
+- **🏥 Health-Tech Enthusiasts**: Exploration of AI applications in healthcare
+- **🔬 Researchers**: Experimentation with trajectory prediction and intervention simulation
+- **🌍 Low-Resource Healthcare Contexts**: Prototype for accessibility and triage in underserved areas
+- **📚 Students & Learners**: Educational reference for full-stack AI application development
+
+## �🚀 **What Makes This Special**
 
 ### **🤖 Advanced AI Architecture**
 - **LangChain Multi-Agent System**: Specialized AI agents for health assessment, consultation, and emergency detection
@@ -39,19 +61,12 @@ Telivus AI is a **cutting-edge AI-powered health assessment platform** that comb
 - **Emergency Detection**: Red flag identification for immediate medical attention
 - **Evidence-Based Recommendations**: OTC medications and lifestyle advice
 
-### **Advanced Health Trajectory Prediction** 🤖✨
-- **Predictive Health Analytics**: AI-powered forecasting of health trends using LSTM and Transformer models
+### **🧠 Health Trajectory Prediction**
+- **30-Day Forecasting**: LSTM and Transformer models for predictive health analytics
 - **Intervention Simulation**: "What-if" scenario planning for treatment outcomes
-- **Risk Assessment Engine**: Personalized risk scoring with confidence intervals
-- **Longitudinal Health Tracking**: Time-series analysis of health data patterns
-- **Adaptive Recommendations**: Reinforcement learning for personalized intervention optimization
-
-### **🧠 Advanced Health Trajectory Prediction**
-- **Predictive Analytics**: 30-day health trajectory forecasting using ML models
-- **Intervention Simulation**: "What-if" scenarios for different treatment approaches
-- **Risk Assessment**: Personalized risk scoring with confidence intervals
+- **Risk Assessment**: Personalized scoring with confidence intervals
 - **Longitudinal Tracking**: Time-series analysis of health metrics over time
-- **Personalized Recommendations**: AI-driven intervention planning and optimization
+- **Adaptive Recommendations**: AI-driven intervention planning and optimization
 
 ### **🔔 Advanced Predictive Alerts System** ⭐ **NEW!**
 - **Interactive Alert Center**: Tabbed interface for managing health notifications
@@ -97,7 +112,7 @@ Redis + ChromaDB (Vector Store)
 Pydantic + JWT Authentication
 ```
 
-### **AI/ML - Advanced Deep Learning Stack**
+### **AI/ML Stack**
 ```python
 # Core AI Models
 LangChain Agents & Chains
@@ -108,20 +123,52 @@ Sentence Transformers
 ChromaDB / Pinecone
 RAG Implementation
 
-# Advanced Trajectory Prediction
-LSTM Networks with Attention Mechanisms
-Transformer Models for Sequence Prediction
-Ensemble ML (Random Forest, Gradient Boosting, XGBoost)
+# Trajectory Prediction
+LSTM Networks with Attention
+Transformer Models
+Ensemble ML (Random Forest, XGBoost)
 Time-Series Forecasting with Uncertainty Quantification
-Risk Assessment with Confidence Intervals
-Intervention Simulation & Causal Inference
 
 # Deep Learning Frameworks
 PyTorch with CUDA acceleration
-TensorFlow/Keras for model serving
-Automatic Mixed Precision training
-Model quantization for production deployment
+TensorFlow/Keras
 ```
+
+## 🧪 **Design Decisions**
+
+> [!NOTE]
+> **Engineering Judgment, Not Just Tools**
+
+These technical choices reflect thoughtful engineering trade-offs:
+
+### **Why GPT-4o-mini?**
+- ✅ **Cost-Effective**: 60% cheaper than GPT-4 while maintaining 85%+ quality
+- ✅ **Speed**: 2-3x faster response times for real-time health assessments
+- ✅ **Sufficient Capability**: Medical consultation doesn't require frontier model reasoning
+- ✅ **Production-Ready**: Stable API, predictable pricing, high availability
+
+### **Why LangChain Agents?**
+- ✅ **Modularity**: Separate agents for assessment, consultation, and emergency detection
+- ✅ **Fallback Systems**: Graceful degradation when AI services fail
+- ✅ **Memory Management**: Conversation context handling for multi-turn interactions
+- ✅ **Tool Integration**: Easy vector search, web search, and function calling
+
+### **Why RAG over Fine-Tuning?**
+- ✅ **Dynamic Knowledge**: Medical information updates without model retraining
+- ✅ **Explainability**: Source attribution for AI-generated recommendations
+- ✅ **Cost**: No expensive GPU training; retrieval is computationally cheap
+- ✅ **Regulatory**: Easier to audit and update than black-box fine-tuned models
+
+### **Why LSTM + Transformer Combo?**
+- ✅ **Temporal Patterns**: LSTMs excel at capturing health metric trends over time
+- ✅ **Attention Mechanism**: Transformers identify critical health events in sequences
+- ✅ **Ensemble Robustness**: Combining both reduces overfitting and improves generalization
+- ✅ **Uncertainty Quantification**: Bootstrap aggregation provides confidence intervals
+
+### **Why PostgreSQL + Redis?**
+- ✅ **Relational + Caching**: Postgres for structured data, Redis for high-speed access
+- ✅ **Scalability**: Battle-tested for production health-tech applications
+- ✅ **Developer Experience**: Rich ecosystem, excellent ORMs (SQLAlchemy)
 
 ## 📊 **Architecture Overview**
 
@@ -164,15 +211,15 @@ Model quantization for production deployment
 - 🔮 **Advanced ML Pipeline**: LSTM/Transformer models for time-series prediction
 - 🎲 **Intervention Simulation**: Causal inference and scenario planning
 - 📈 **Longitudinal Analytics**: Time-series health data processing and forecasting
-- 🧠 **Ensemble Learning**: Bootstrap aggregation with uncertainty quantification
+- 🎯 **Ensemble Methods**: Bootstrap aggregation with uncertainty quantification
 
-### **🚀 Advanced Deep Learning Features**
+### **🚀 Deep Learning Features**
 - 🧠 **LSTM Networks**: Bidirectional LSTM with attention for time-series prediction
-- 🔄 **Transformer Models**: Multi-head attention for complex health pattern recognition
-- 📈 **Trajectory Prediction**: 30-day health forecasting with uncertainty quantification
-- 🎮 **Intervention Simulation**: Monte Carlo simulation for treatment outcome modeling
+- 🔄 **Transformer Models**: Multi-head attention for health pattern recognition
+- 📈 **Trajectory Prediction**: 30-day forecasting with uncertainty quantification
+- 🎮 **Intervention Simulation**: Monte Carlo treatment outcome modeling
 - 📉 **Risk Assessment**: Bayesian uncertainty estimation with confidence intervals
-- 🔬 **Ensemble Learning**: Bootstrap aggregation with 5+ ML models for robustness
+- 🔬 **Ensemble Methods**: Bootstrap aggregation with multiple ML models
 - ⚡ **GPU Acceleration**: PyTorch CUDA optimization for real-time inference
 - 🎯 **AutoML Pipeline**: Automated hyperparameter tuning with Optuna
 
