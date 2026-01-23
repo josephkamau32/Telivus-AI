@@ -868,43 +868,103 @@ const Index = () => {
   const [reportTimestamp, setReportTimestamp] = useState<string>('');
   const [assessmentData, setAssessmentData] = useState<PatientData | null>(null);
   const [backendStatus, setBackendStatus] = useState<'checking' | 'available' | 'unavailable'>('checking');
+  const [isNavigating, setIsNavigating] = useState(false);
   const { toast } = useToast();
 
-  // Redirect if not authenticated
+  // Redirect if not authenticated - but only on initial load, not during active navigation
   useEffect(() => {
-    if (!isLoading && !user) {
-      navigate('/');
+    // Don't redirect if we're in the middle of a navigation action
+    if (!isLoading && !user && !isNavigating) {
+      // This is Index page (home), so we're already at '/', no need to redirect
+      // The Index page is the home page, users can stay here
+      console.log('User not authenticated, staying on home page');
     }
-  }, [user, isLoading, navigate]);
+  }, [user, isLoading, isNavigating]);
 
 
   // Check backend availability (less aggressive checking)
-   useEffect(() => {
-     const checkBackendStatus = async () => {
-       try {
-         const status = await apiClient.isServiceAvailable();
-         setBackendStatus(status.available ? 'available' : 'unavailable');
+  useEffect(() => {
+    const checkBackendStatus = async () => {
+      try {
+        const status = await apiClient.isServiceAvailable();
+        setBackendStatus(status.available ? 'available' : 'unavailable');
 
-         if (!status.available && process.env.NODE_ENV === 'production') {
-           console.warn('Backend service unavailable:', status.error);
-         }
-       } catch (error) {
-         // Don't set to unavailable on check failures - be more tolerant
-         console.warn('Backend status check failed, assuming available:', error);
-         setBackendStatus('available'); // Assume available unless proven otherwise
-       }
-     };
+        if (!status.available && process.env.NODE_ENV === 'production') {
+          console.warn('Backend service unavailable:', status.error);
+        }
+      } catch (error) {
+        // Don't set to unavailable on check failures - be more tolerant
+        console.warn('Backend status check failed, assuming available:', error);
+        setBackendStatus('available'); // Assume available unless proven otherwise
+      }
+    };
 
-     checkBackendStatus();
+    checkBackendStatus();
 
-     // Check every 5 minutes instead of 30 seconds to be less intrusive
-     const interval = setInterval(checkBackendStatus, 300000);
-     return () => clearInterval(interval);
-   }, []);
+    // Check every 5 minutes instead of 30 seconds to be less intrusive
+    const interval = setInterval(checkBackendStatus, 300000);
+    return () => clearInterval(interval);
+  }, []);
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    navigate('/');
+    try {
+      console.log('Sign out initiated...');
+
+      // Set navigating flag to prevent redirect interference
+      setIsNavigating(true);
+
+      // Clear any local state first
+      setAppState('home');
+      setCurrentReport(null);
+      setAssessmentData(null);
+
+      // Sign out from Supabase with proper scope
+      const { error } = await supabase.auth.signOut({ scope: 'local' });
+
+      if (error) {
+        console.error('Sign out error:', error);
+        setIsNavigating(false);
+        toast({
+          title: "Sign Out Failed",
+          description: error.message || "Please try again",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      console.log('Sign out successful');
+
+      // Clear all localStorage related to auth
+      localStorage.removeItem('supabase.auth.token');
+      sessionStorage.clear();
+
+      // Show success message
+      toast({
+        title: "Signed Out",
+        description: "You have been successfully signed out",
+      });
+
+      // Navigate to auth page (not home)
+      navigate('/auth', { replace: true });
+
+    } catch (error) {
+      console.error('Unexpected sign out error:', error);
+      setIsNavigating(false);
+      toast({
+        title: "Sign Out Error",
+        description: "An unexpected error occurred",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Handle navigation from HeroSection buttons
+  const handleNavigate = (path: string) => {
+    console.log('Navigation requested to:', path);
+    setIsNavigating(true);
+    navigate(path);
+    // Reset navigation flag after a short delay
+    setTimeout(() => setIsNavigating(false), 100);
   };
 
 
@@ -991,7 +1051,7 @@ const Index = () => {
           allergies: data.allergies || 'None reported',
           assessment: reportData.medical_assessment.assessment,
           diagnostic_plan: reportData.medical_assessment.diagnostic_plan.follow_up ||
-                          `**Consultations**: ${reportData.medical_assessment.diagnostic_plan.consultations?.join(', ') || 'None recommended'}\n**Tests**: ${reportData.medical_assessment.diagnostic_plan.tests?.join(', ') || 'None recommended'}\n**RED FLAGS**: ${reportData.medical_assessment.diagnostic_plan.red_flags?.join(', ') || 'None identified'}\n**Follow-up**: ${reportData.medical_assessment.diagnostic_plan.follow_up || 'As needed'}`,
+            `**Consultations**: ${reportData.medical_assessment.diagnostic_plan.consultations?.join(', ') || 'None recommended'}\n**Tests**: ${reportData.medical_assessment.diagnostic_plan.tests?.join(', ') || 'None recommended'}\n**RED FLAGS**: ${reportData.medical_assessment.diagnostic_plan.red_flags?.join(', ') || 'None identified'}\n**Follow-up**: ${reportData.medical_assessment.diagnostic_plan.follow_up || 'As needed'}`,
           otc_recommendations: reportData.medical_assessment.otc_recommendations,
           lifestyle_recommendations: reportData.medical_assessment.lifestyle_recommendations,
           reasoning_graph: (reportData.medical_assessment as any).reasoning_graph,
@@ -1153,19 +1213,19 @@ const Index = () => {
               <span className="text-sm font-medium">Validating your health information</span>
             </div>
             <div className="flex items-center space-x-3 p-3 bg-primary/5 rounded-lg">
-              <div className="w-3 h-3 bg-blue-500 rounded-full animate-pulse" style={{animationDelay: '0.3s'}}></div>
+              <div className="w-3 h-3 bg-blue-500 rounded-full animate-pulse" style={{ animationDelay: '0.3s' }}></div>
               <span className="text-sm font-medium">Checking for cached similar cases</span>
             </div>
             <div className="flex items-center space-x-3 p-3 bg-primary/5 rounded-lg">
-              <div className="w-3 h-3 bg-purple-500 rounded-full animate-pulse" style={{animationDelay: '0.6s'}}></div>
+              <div className="w-3 h-3 bg-purple-500 rounded-full animate-pulse" style={{ animationDelay: '0.6s' }}></div>
               <span className="text-sm font-medium">AI analyzing symptoms and medical history</span>
             </div>
             <div className="flex items-center space-x-3 p-3 bg-primary/5 rounded-lg">
-              <div className="w-3 h-3 bg-orange-500 rounded-full animate-pulse" style={{animationDelay: '0.9s'}}></div>
+              <div className="w-3 h-3 bg-orange-500 rounded-full animate-pulse" style={{ animationDelay: '0.9s' }}></div>
               <span className="text-sm font-medium">Generating personalized recommendations</span>
             </div>
             <div className="flex items-center space-x-3 p-3 bg-primary/5 rounded-lg">
-              <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse" style={{animationDelay: '1.2s'}}></div>
+              <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse" style={{ animationDelay: '1.2s' }}></div>
               <span className="text-sm font-medium">Finalizing your comprehensive report</span>
             </div>
           </div>
@@ -1235,19 +1295,19 @@ const Index = () => {
   }
 
   return (
-     <div className="relative">
-       {/* Backend status indicator - only show when there are actual issues */}
-       {backendStatus === 'unavailable' && process.env.NODE_ENV === 'production' && (
-         <div className="fixed top-4 right-4 z-50">
-           <div className="px-3 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 border border-yellow-200 shadow-sm">
-             ⚠️ Limited AI features - using fallback mode
-           </div>
-         </div>
-       )}
+    <div className="relative">
+      {/* Backend status indicator - only show when there are actual issues */}
+      {backendStatus === 'unavailable' && process.env.NODE_ENV === 'production' && (
+        <div className="fixed top-4 right-4 z-50">
+          <div className="px-3 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 border border-yellow-200 shadow-sm">
+            ⚠️ Limited AI features - using fallback mode
+          </div>
+        </div>
+      )}
 
-       <HeroSection onStartAssessment={handleStartAssessment} onSignOut={handleSignOut} />
-     </div>
-   );
+      <HeroSection onStartAssessment={handleStartAssessment} onSignOut={handleSignOut} onNavigate={handleNavigate} />
+    </div>
+  );
 };
 
 export default Index;

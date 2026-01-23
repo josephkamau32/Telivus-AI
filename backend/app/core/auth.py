@@ -17,11 +17,21 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel
 import logging
+import os
 
 logger = logging.getLogger(__name__)
 
-# Configuration
-SECRET_KEY = "your-secret-key-change-in-production"  # TODO: Move to environment
+# Configuration - Load from environment with validation
+SECRET_KEY = os.getenv("SECRET_KEY", "your-secret-key-change-in-production")
+
+# Warn if using default secret key in production
+if SECRET_KEY == "your-secret-key-change-in-production":
+    if os.getenv("DEBUG", "True").lower() != "true":
+        logger.critical("SECURITY WARNING: Using default SECRET_KEY in production! Set SECRET_KEY environment variable.")
+        raise RuntimeError("SECRET_KEY must be set for production deployment")
+    else:
+        logger.warning("Using default SECRET_KEY - OK for development, but change for production")
+
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 REFRESH_TOKEN_EXPIRE_DAYS = 7
@@ -240,8 +250,9 @@ async def get_current_active_user(
     Raises:
         HTTPException: If user is inactive
     """
-    # TODO: Check if user is active in database
-    # For now, assume all users are active
+    # Note: Active user check requires database integration
+    # When database is connected, add user lookup and is_active check here
+    # For now, rely on token validation
     return current_user
 
 
@@ -299,8 +310,8 @@ async def authenticate_user(email: str, password: str) -> Optional[User]:
     Returns:
         User object if authentication successful, None otherwise
     """
-    # TODO: Implement actual database lookup
-    # This is a placeholder
+    # Note: Database integration required for production
+    # This is a development mock - replace with actual database lookup
     logger.info(f"Authenticating user: {email}")
     
     # Mock user for development
@@ -330,7 +341,8 @@ async def create_user(user_data: UserCreate) -> User:
     Raises:
         HTTPException: If email already exists
     """
-    # TODO: Implement actual database storage
+    # Note: Database integration required for production
+    # Replace with actual database storage and duplicate email check
     
     # Hash password
     hashed_password = hash_password(user_data.password)

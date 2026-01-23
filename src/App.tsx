@@ -11,6 +11,7 @@ import { LanguageProvider } from "@/contexts/LanguageContext";
 import { PerformanceMonitor } from "@/components/PerformanceMonitor";
 import { setupGlobalErrorHandling } from "@/lib/errorHandling";
 import { preloadCriticalImages } from "@/lib/imageUtils";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 // Lazy load components for better performance
 const Landing = lazy(() => import("./pages/Landing"));
@@ -22,6 +23,8 @@ const Contact = lazy(() => import("./pages/Contact"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const Trajectory = lazy(() => import("./pages/Trajectory"));
+const DigitalTwin = lazy(() => import("./pages/DigitalTwin"));
+const CCEEDemo = lazy(() => import("./pages/CCEEDemo"));
 
 // Loading component
 const PageLoader = () => (
@@ -75,20 +78,25 @@ const App = () => {
             <Toaster />
             <Sonner />
             <BrowserRouter>
-              <Suspense fallback={<PageLoader />}>
-                <Routes>
-                  <Route path="/" element={<Landing />} />
-                  <Route path="/dashboard" element={<Index />} />
-                  <Route path="/health-dashboard" element={<Dashboard />} />
-                  <Route path="/trajectory" element={<Trajectory />} />
-                  <Route path="/auth" element={<Auth />} />
-                  <Route path="/chat" element={<Chat />} />
-                  <Route path="/about" element={<About />} />
-                  <Route path="/contact" element={<Contact />} />
-                  {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-              </Suspense>
+              <ErrorBoundary>
+                <Suspense fallback={<PageLoader />}>
+                  <Routes>
+                    <Route path="/" element={<Index />} />
+                    <Route path="/digital-twin" element={<DigitalTwin />} />
+                    <Route path="/landing" element={<Landing />} />
+                    <Route path="/dashboard" element={<Dashboard />} />
+                    <Route path="/health-dashboard" element={<Dashboard />} />
+                    <Route path="/trajectory" element={<Trajectory />} />
+                    <Route path="/auth" element={<Auth />} />
+                    <Route path="/chat" element={<Chat />} />
+                    <Route path="/about" element={<About />} />
+                    <Route path="/contact" element={<Contact />} />
+                    <Route path="/ccee-demo" element={<CCEEDemo />} />
+                    {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                    <Route path="*" element={<NotFound />} />
+                  </Routes>
+                </Suspense>
+              </ErrorBoundary>
             </BrowserRouter>
             <PWAInstallPrompt />
           </TooltipProvider>

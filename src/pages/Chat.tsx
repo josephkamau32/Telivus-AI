@@ -21,12 +21,12 @@ const Chat = () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        navigate('/');
+        navigate('/auth');
         return;
       }
     } catch (error) {
       console.error('Auth check error:', error);
-      navigate('/');
+      navigate('/auth');
     } finally {
       setLoading(false);
     }
@@ -40,7 +40,7 @@ const Chat = () => {
       setVerifying(true);
       try {
         const { data: { session } } = await supabase.auth.getSession();
-        
+
         const response = await supabase.functions.invoke('verify-payment', {
           body: { reference },
           headers: {

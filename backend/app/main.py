@@ -19,6 +19,7 @@ import uuid
 
 # Use simple versions for now to avoid complex dependencies
 from app.api.v1.endpoints.health import router as health_router
+from app.api.v1.endpoints.digital_twin import router as twin_router
 from app.core.config import settings
 from app.core.logging import setup_logging
 from app.services.vector_store_simple import initialize_vector_store
@@ -110,7 +111,7 @@ async def log_requests(request: Request, call_next):
     process_time = time.time() - start_time
 
     # Log response
-    logger.info(".2f")
+    logger.info(f"Response: {request.method} {request.url.path} - Status: {response.status_code} - Time: {process_time:.2f}s")
 
     # Add CORS headers explicitly
     allowed_origins = [
@@ -215,6 +216,7 @@ async def cors_test():
 
 # Include API routers
 app.include_router(health_router, prefix=f"{settings.API_V1_STR}/health", tags=["health"])
+app.include_router(twin_router, tags=["Digital Twin"])
 
 # Add explicit OPTIONS handling for CORS preflight requests
 @app.options("/{path:path}")
