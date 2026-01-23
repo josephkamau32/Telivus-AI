@@ -6,6 +6,7 @@
  */
 
 import { classifyError, withErrorRecovery, AppError } from './errorHandling';
+import logger from './logger';
 
 const API_BASE_URL = process.env.NODE_ENV === 'production'
   ? (import.meta.env.VITE_API_BASE_URL || 'https://telivus-ai.onrender.com')
@@ -84,12 +85,12 @@ class ApiClient {
       const startTime = Date.now();
 
       try {
-        console.log(`API Request: ${config.method || 'GET'} ${url}`);
+        logger.info(`API Request: ${config.method || 'GET'} ${url}`);
 
         const response = await fetch(url, config);
         const responseTime = Date.now() - startTime;
 
-        console.log(`API Response: ${response.status} ${response.statusText} (${responseTime}ms)`);
+        logger.info(`API Response: ${response.status} ${response.statusText} (${responseTime}ms)`);
 
         if (!response.ok) {
           let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
@@ -119,7 +120,7 @@ class ApiClient {
           (apiError as any).responseTime = responseTime;
 
           // Log detailed error information
-          console.error('API Error:', {
+          logger.error('API Error:', {
             url,
             method: config.method || 'GET',
             status: response.status,
@@ -134,10 +135,8 @@ class ApiClient {
 
         const data = await response.json();
 
-        // Log successful requests in development
-        if (process.env.NODE_ENV === 'development') {
-          console.log('API Success:', { url, responseTime, dataSize: JSON.stringify(data).length });
-        }
+        // Log successful requests
+        logger.info('API Success:', { url, responseTime, dataSize: JSON.stringify(data).length });
 
         return data;
       } catch (error) {
@@ -157,7 +156,7 @@ class ApiClient {
             (enhancedError as any).statusText = (error as any).statusText;
           }
 
-          console.error('API Request Failed:', {
+          logger.error('API Request Failed:', {
             url,
             method: config.method || 'GET',
             error: error.message,
@@ -174,7 +173,7 @@ class ApiClient {
         (networkError as any).url = url;
         (networkError as any).responseTime = responseTime;
 
-        console.error('Network Error:', {
+        logger.error('Network Error:', {
           url,
           method: config.method || 'GET',
           responseTime,
@@ -191,12 +190,12 @@ class ApiClient {
       retryDelay: 1000,
       exponentialBackoff: true,
       onRetry: (attempt, error) => {
-        console.log(`Retrying API request (attempt ${attempt}):`, url);
+        logger.info(`Retrying API request (attempt ${attempt}):`, url);
       },
       onFailure: (error) => {
         // Classify and report the error
         const classifiedError = classifyError(error);
-        console.error('API request failed after retries:', classifiedError);
+        logger.error('API request failed after retries:', classifiedError);
 
         // In production, send to error reporting
         if (process.env.NODE_ENV === 'production') {
@@ -302,7 +301,7 @@ class ApiClient {
       await this.healthCheck();
       return true;
     } catch (error) {
-      console.error('API connection test failed:', error);
+      logger.error('API connection test failed:', error);
       return false;
     }
   }
@@ -354,7 +353,7 @@ export const apiClient = new ApiClient();
 if (typeof window !== 'undefined') {
   // Monitor unhandled promise rejections
   window.addEventListener('unhandledrejection', (event) => {
-    console.error('Unhandled promise rejection:', event.reason);
+    logger.error('Unhandled promise rejection:', event.reason);
 
     // In production, you might want to send this to an error reporting service
     if (process.env.NODE_ENV === 'production') {
@@ -369,7 +368,7 @@ if (typeof window !== 'undefined') {
 
   // Monitor global errors
   window.addEventListener('error', (event) => {
-    console.error('Global error:', {
+    logger.error('Global error:', {
       message: event.message,
       filename: event.filename,
       lineno: event.lineno,

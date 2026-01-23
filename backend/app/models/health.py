@@ -135,6 +135,59 @@ class MedicalAssessment(BaseModel):
     reasoning_graph: Optional[ReasoningGraph] = Field(None, description="Explainable AI reasoning graph")
 
 
+# CCEE (Clinical Confidence & Explainability Engine) Models
+
+class ConfidenceBreakdown(BaseModel):
+    """Detailed confidence score breakdown."""
+    data_completeness: float = Field(..., ge=0.0, le=1.0, description="Data completeness score")
+    symptom_signal_strength: float = Field(..., ge=0.0, le=1.0, description="Symptom signal strength")
+    rag_relevance: float = Field(..., ge=0.0, le=1.0, description="RAG retrieval relevance")
+    agent_agreement: float = Field(..., ge=0.0, le=1.0, description="Agent agreement score")
+    model_consistency: float = Field(..., ge=0.0, le=1.0, description="Model consistency score")
+
+
+class EvidenceItem(BaseModel):
+    """Evidence mapping for a symptom."""
+    symptom: str = Field(..., description="Symptom name")
+    supporting_sources: List[str] = Field(..., description="Medical sources supporting this symptom assessment")
+    confidence_contribution: float = Field(..., ge=0.0, le=1.0, description="How much this symptom contributed to confidence")
+
+
+class UncertaintyFactor(BaseModel):
+    """Factor contributing to uncertainty."""
+    category: str = Field(..., description="Category: missing_data, vague_symptoms, conflicting_info")
+    description: str = Field(..., description="Description of the uncertainty factor")
+    impact: str = Field(..., description="Impact on confidence (e.g., 'Reduces confidence by 15%')")
+    suggestion: str = Field(..., description="What data would help reduce this uncertainty")
+
+
+class SafetyLevel(str, Enum):
+    """Medical safety levels."""
+    GREEN = "green"
+    AMBER = "amber"
+    RED = "red"
+
+
+class SafetyResult(BaseModel):
+    """Safety scoring result."""
+    safety_level: SafetyLevel = Field(..., description="Safety level: green, amber, or red")
+    safety_notes: str = Field(..., description="Safety assessment notes and recommendations")
+    triggered_rules: List[str] = Field(..., description="Which safety rules triggered this level")
+    requires_immediate_care: bool = Field(..., description="Whether immediate medical care is required")
+
+
+class ConfidenceAndExplainability(BaseModel):
+    """Complete CCEE (Clinical Confidence & Explainability Engine) response."""
+    confidence_score: int = Field(..., ge=0, le=100, description="Overall confidence score (0-100)")
+    confidence_level: str = Field(..., description="Confidence level: low, medium, or high")
+    confidence_breakdown: ConfidenceBreakdown = Field(..., description="Detailed breakdown of confidence components")
+    evidence: List[EvidenceItem] = Field(..., description="Evidence mapping showing symptom → source connections")
+    explanation_summary: str = Field(..., description="Human-readable explanation of reasoning")
+    uncertainty_factors: List[UncertaintyFactor] = Field(..., description="Factors contributing to uncertainty")
+    suggested_data_improvements: List[str] = Field(..., description="Suggestions for improving confidence")
+    safety: SafetyResult = Field(..., description="Safety scoring and guardrails")
+
+
 class HealthReport(BaseModel):
     """Complete health report model."""
     id: str = Field(..., description="Unique report identifier")
@@ -144,7 +197,8 @@ class HealthReport(BaseModel):
     generated_at: datetime = Field(default_factory=datetime.utcnow, description="Report generation timestamp")
     report_version: str = Field(default="1.0", description="Report format version")
     ai_model_used: str = Field(..., description="AI model used for generation")
-    confidence_score: Optional[float] = Field(None, ge=0.0, le=1.0, description="AI confidence score")
+    confidence_score: Optional[float] = Field(None, ge=0.0, le=1.0, description="AI confidence score (DEPRECATED: use confidence_and_explainability)")
+    confidence_and_explainability: Optional[ConfidenceAndExplainability] = Field(None, description="CCEE confidence, explainability, and safety data")
     disclaimer: str = Field(
         default="This report is for informational purposes only and should not replace professional medical advice.",
         description="Medical disclaimer"

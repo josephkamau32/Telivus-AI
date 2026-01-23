@@ -68,3 +68,16 @@ alembic==1.13.1
 # Development tools
 ipython==8.18.1
 ipdb==0.13.13
+
+# Digital Twin & Graph Processing
+networkx==3.2.1
+pgmpy==0.1.24
+statsmodels==0.14.1
+
+# Background Tasks
+celery==5.3.4
+kombu==5.3.4
+
+# Enhanced ML for Digital Twin
+imbalanced-learn==0.11.0
+bayesian-optimization==1.4.3
