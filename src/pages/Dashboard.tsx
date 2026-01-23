@@ -64,7 +64,8 @@ import {
   Settings,
   Smartphone,
   User,
-  Trash2
+  Trash2,
+  Sparkles
 } from 'lucide-react';
 
 interface HealthMetric {
@@ -139,17 +140,19 @@ const Dashboard = () => {
   });
   const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>('default');
   const [showNotificationTest, setShowNotificationTest] = useState(false);
+  const [isNavigating, setIsNavigating] = useState(false);
 
   useEffect(() => {
-    if (!isLoading && !user) {
-      navigate('/');
+    // Only redirect to auth if not authenticated and not in the middle of navigation
+    if (!isLoading && !user && !isNavigating) {
+      navigate('/auth');
       return;
     }
 
     if (user) {
       loadDashboardData();
     }
-  }, [user, isLoading, navigate]);
+  }, [user, isLoading, isNavigating, navigate]);
 
   const loadDashboardData = async () => {
     try {
@@ -316,7 +319,7 @@ const Dashboard = () => {
     };
 
     const dataStr = JSON.stringify(exportData, null, 2);
-    const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+    const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
 
     const exportFileDefaultName = `health-dashboard-${new Date().toISOString().split('T')[0]}.json`;
 
@@ -790,6 +793,51 @@ const Dashboard = () => {
           </Card>
         </div>
 
+        {/* Digital Twin Call to Action */}
+        <Card className="mb-8 bg-gradient-to-br from-purple-50 to-blue-50 dark:from-purple-950/20 dark:to-blue-950/20 border-2 border-purple-200 dark:border-purple-800">
+          <CardContent className="p-6">
+            <div className="flex flex-col md:flex-row items-center gap-6">
+              <div className="flex-shrink-0">
+                <div className="p-4 bg-gradient-to-br from-purple-500 to-blue-500 rounded-2xl shadow-lg">
+                  <Brain className="w-12 h-12 text-white" />
+                </div>
+              </div>
+              <div className="flex-1 text-center md:text-left">
+                <h3 className="text-xl font-bold mb-2 bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+                  Meet Your Digital Health Twin
+                </h3>
+                <p className="text-muted-foreground mb-4">
+                  Your AI-powered health avatar that learns from every interaction. Get personalized insights, proactive alerts, and discover patterns in your health journey.
+                </p>
+                <div className="flex flex-wrap gap-2 justify-center md:justify-start">
+                  <Badge variant="secondary" className="gap-1">
+                    <Sparkles className="w-3 h-3" />
+                    Auto-learns from your data
+                  </Badge>
+                  <Badge variant="secondary" className="gap-1">
+                    <TrendingUp className="w-3 h-3" />
+                    Predicts health risks
+                  </Badge>
+                  <Badge variant="secondary" className="gap-1">
+                    <AlertTriangle className="w-3 h-3" />
+                    Proactive alerts
+                  </Badge>
+                </div>
+              </div>
+              <div className="flex-shrink-0">
+                <Button
+                  onClick={() => navigate('/digital-twin')}
+                  size="lg"
+                  className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 gap-2 shadow-lg"
+                >
+                  <Brain className="w-5 h-5" />
+                  Open Digital Twin
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* AI Insights */}
         <Card className="mb-8">
           <CardHeader>
@@ -802,11 +850,10 @@ const Dashboard = () => {
             <div className="space-y-4">
               {aiInsights.map((insight) => (
                 <div key={insight.id} className="flex items-start gap-3 p-4 border rounded-lg">
-                  <div className={`p-2 rounded-lg ${
-                    insight.type === 'warning' ? 'bg-red-100 text-red-600' :
+                  <div className={`p-2 rounded-lg ${insight.type === 'warning' ? 'bg-red-100 text-red-600' :
                     insight.type === 'recommendation' ? 'bg-blue-100 text-blue-600' :
-                    'bg-green-100 text-green-600'
-                  }`}>
+                      'bg-green-100 text-green-600'
+                    }`}>
                     {insight.type === 'warning' && <AlertTriangle className="w-4 h-4" />}
                     {insight.type === 'recommendation' && <Lightbulb className="w-4 h-4" />}
                     {insight.type === 'achievement' && <CheckCircle className="w-4 h-4" />}
@@ -989,16 +1036,14 @@ const Dashboard = () => {
           <CardContent>
             <div className="space-y-3">
               {getHealthReminders().map((reminder) => (
-                <div key={reminder.id} className={`flex items-start gap-3 p-3 rounded-lg border ${
-                  reminder.type === 'warning' ? 'bg-red-50 border-red-200 dark:bg-red-950/20' :
+                <div key={reminder.id} className={`flex items-start gap-3 p-3 rounded-lg border ${reminder.type === 'warning' ? 'bg-red-50 border-red-200 dark:bg-red-950/20' :
                   reminder.type === 'success' ? 'bg-green-50 border-green-200 dark:bg-green-950/20' :
-                  'bg-blue-50 border-blue-200 dark:bg-blue-950/20'
-                }`}>
-                  <div className={`p-2 rounded-lg ${
-                    reminder.type === 'warning' ? 'bg-red-100 text-red-600' :
-                    reminder.type === 'success' ? 'bg-green-100 text-green-600' :
-                    'bg-blue-100 text-blue-600'
+                    'bg-blue-50 border-blue-200 dark:bg-blue-950/20'
                   }`}>
+                  <div className={`p-2 rounded-lg ${reminder.type === 'warning' ? 'bg-red-100 text-red-600' :
+                    reminder.type === 'success' ? 'bg-green-100 text-green-600' :
+                      'bg-blue-100 text-blue-600'
+                    }`}>
                     {reminder.type === 'warning' && <AlertTriangle className="w-4 h-4" />}
                     {reminder.type === 'success' && <CheckCircle className="w-4 h-4" />}
                     {reminder.type === 'info' && <Bell className="w-4 h-4" />}

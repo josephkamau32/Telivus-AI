@@ -42,7 +42,7 @@ export const preloadImage = (src: string): Promise<void> => {
 export const preloadCriticalImages = async () => {
   const criticalImages = [
     // Add paths to critical images that should be preloaded
-    '/telivus-logo.png',
+    // Note: telivus-logo.png is in assets and imported directly, not in public folder
     '/favicon.svg',
   ];
 
