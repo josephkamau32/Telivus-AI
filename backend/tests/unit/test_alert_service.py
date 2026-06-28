@@ -12,6 +12,18 @@ import pytest
 from unittest.mock import Mock, patch
 from datetime import datetime, timedelta
 
+# Guard against missing ML dependencies (alert_service -> trajectory_prediction -> optuna)
+try:
+    import optuna  # noqa: F401
+    HAS_OPTUNA = True
+except ImportError:
+    HAS_OPTUNA = False
+
+pytestmark = pytest.mark.skipif(
+    not HAS_OPTUNA,
+    reason="optuna not installed (optional ML dependency for trajectory prediction)",
+)
+
 
 class TestAlertService:
     """Test suite for predictive alert system"""

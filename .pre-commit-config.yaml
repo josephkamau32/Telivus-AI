@@ -11,6 +11,16 @@ repos:
       - id: check-json
       - id: check-merge-conflict
       - id: detect-private-key
+
+  # Ruff — fast Python linter and formatter (replaces flake8+isort+black)
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.1.6
+    hooks:
+      - id: ruff
+        args: ['--fix']
+        files: ^backend/
+      - id: ruff-format
+        files: ^backend/
   
   # Python formatting with Black
   - repo: https://github.com/psf/black
@@ -52,6 +62,13 @@ repos:
       - id: bandit
         args: ['-c', 'pyproject.toml']
         files: ^backend/
+  
+  - repo: https://github.com/Yelp/detect-secrets
+    rev: v1.4.0
+    hooks:
+      - id: detect-secrets
+        args: ['--baseline', '.secrets.baseline']
+        exclude: package\.json|\.lock$
   
   # Frontend - TypeScript/JavaScript
   - repo: https://github.com/pre-commit/mirrors-eslint

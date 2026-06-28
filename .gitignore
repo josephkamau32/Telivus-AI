@@ -15,6 +15,8 @@ dist-ssr
 
 # Environment variables (CRITICAL - Never commit these!)
 .env
+.env.*
+*.env
 .env.local
 .env.development
 .env.production
@@ -112,3 +114,39 @@ temp/
 *.pfx
 secrets.json
 credentials.json
+
+# Binaries
+*.exe
+*.tar.gz
+*.bin
+*.zip
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+*.egg
+.eggs/
+venv/
+.venv/
+
+# Testing & Coverage
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+.pytest_cache/
+.hypothesis/
+
+# Type checking & Linting
+.mypy_cache/
+.ruff_cache/
+.dmypy.json
+
+# Security
+.secrets.baseline
+.secrets-scan.json
+

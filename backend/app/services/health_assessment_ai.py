@@ -19,6 +19,8 @@ from app.models.health import (
     MedicalAssessment,
     OTCRecommendation,
     DiagnosticPlan,
+    SymptomAssessment,
+    MedicalHistory,
     ConfidenceAndExplainability,
     ConfidenceBreakdown,
     EvidenceItem,
@@ -576,3 +578,241 @@ IMPORTANT:
     async def get_assessment_history(self, user_id: str, limit: int = 10) -> List[Dict[str, Any]]:
         """Get assessment history."""
         return []
+
+
+# ---------------------------------------------------------------------------
+# Module-level convenience functions
+# Used by tests and other modules that import from this module directly.
+# ---------------------------------------------------------------------------
+
+# Lazy singleton for the service instance
+_service_instance: Optional[AIHealthAssessmentService] = None
+
+
+def _get_service() -> AIHealthAssessmentService:
+    """Get or create the singleton service instance."""
+    global _service_instance
+    if _service_instance is None:
+        _service_instance = AIHealthAssessmentService()
+    return _service_instance
+
+
+async def assess_health(
+    feeling: Optional[str] = None,
+    symptom_assessment: Optional[Dict[str, Any]] = None,
+    patient_info: Optional[Dict[str, Any]] = None,
+    medical_history: Optional[Dict[str, Any]] = None,
+) -> Dict[str, Any]:
+    """
+    Module-level function to generate a health assessment.
+
+    Wraps the AIHealthAssessmentService for convenience.
+
+    Args:
+        feeling: Patient's general feeling (required).
+        symptom_assessment: Dict with symptoms, severity, duration.
+        patient_info: Dict with name, age, gender.
+        medical_history: Dict with past conditions, medications, etc.
+
+    Returns:
+        Dict containing the assessment result.
+
+    Raises:
+        ValueError: If required fields are missing or invalid.
+    """
+    # Validate required fields
+    if not feeling:
+        raise ValueError("'feeling' is a required field and cannot be None or empty")
+
+    if not symptom_assessment or not symptom_assessment.get("symptoms"):
+        raise ValueError("'symptom_assessment' with at least one symptom is required")
+
+    if not patient_info or "age" not in patient_info:
+        raise ValueError("'patient_info' with 'age' is required")
+
+    # Validate age
+    age = patient_info.get("age", 0)
+    if age < 0 or age > 130:
+        raise ValueError(f"Invalid age: {age}. Must be between 0 and 130.")
+
+    service = _get_service()
+
+    try:
+        # Build a request object
+        request = HealthAssessmentRequest(
+            feeling=feeling,
+            symptom_assessment=SymptomAssessment(**symptom_assessment),
+            patient_info=PatientInfo(**patient_info),
+            medical_history=MedicalHistory(**medical_history) if medical_history else None,
+        )
+
+        report = await service.generate_assessment(request)
+        return report.dict()
+
+    except ValueError:
+        raise
+    except Exception as e:
+        logger.error(f"assess_health module function error: {e}")
+        # Return fallback response
+        return {
+            "medical_assessment": {
+                "chief_complaint": "Assessment generated with fallback",
+                "history_present_illness": "Unable to complete full AI assessment",
+                "assessment": "Please consult a healthcare professional",
+                "diagnostic_plan": {"red_flags": [], "tests": [], "consultations": [], "follow_up": ""},
+                "otc_recommendations": [],
+                "lifestyle_recommendations": ["Consult a healthcare provider"],
+                "when_to_seek_help": "If symptoms worsen",
+            },
+            "confidence_score": 0.5,
+        }
+
+
+def categorize_symptoms(symptoms: List[str]) -> Dict[str, Any]:
+    """
+    Categorize symptoms as common, serious, or emergency.
+
+    Args:
+        symptoms: List of symptom strings.
+
+    Returns:
+        Dict with 'category' and 'risk_level'.
+    """
+    if not symptoms:
+        return {"category": "none", "risk_level": "low"}
+
+    emergency_keywords = [
+        "chest pain", "difficulty breathing", "severe bleeding",
+        "severe headache", "confusion", "unconscious", "seizure",
+        "severe burn", "paralysis", "stroke symptoms",
+    ]
+
+    serious_keywords = [
+        "high fever", "severe pain", "persistent vomiting",
+        "blood in stool", "blood in urine", "severe diarrhea",
+        "rapid heartbeat", "difficulty swallowing",
+    ]
+
+    symptoms_lower = [s.lower() for s in symptoms]
+
+    for keyword in emergency_keywords:
+        if any(keyword in symptom for symptom in symptoms_lower):
+            return {
+                "category": "emergency",
+                "risk_level": "critical",
+                "action": "Seek immediate medical attention",
+            }
+
+    for keyword in serious_keywords:
+        if any(keyword in symptom for symptom in symptoms_lower):
+            return {
+                "category": "serious",
+                "risk_level": "high",
+                "action": "Consult a doctor within 24 hours",
+            }
+
+    return {
+        "category": "common",
+        "risk_level": "low",
+        "action": "Monitor symptoms and self-care",
+    }
+
+
+def validate_assessment_structure(assessment: Dict[str, Any]) -> bool:
+    """
+    Validate that an assessment dictionary has the required structure.
+
+    Args:
+        assessment: Assessment dictionary to validate.
+
+    Returns:
+        True if structure is valid.
+
+    Raises:
+        ValueError: If structure is invalid.
+    """
+    required_fields = [
+        "patient_info",
+        "medical_assessment",
+        "confidence_score",
+        "generated_at",
+    ]
+
+    for field in required_fields:
+        if field not in assessment:
+            raise ValueError(f"Missing required field: {field}")
+
+    medical_required = [
+        "chief_complaint",
+        "assessment",
+        "diagnostic_plan",
+        "otc_recommendations",
+        "lifestyle_recommendations",
+    ]
+
+    medical_assessment = assessment.get("medical_assessment", {})
+    for field in medical_required:
+        if field not in medical_assessment:
+            raise ValueError(f"Missing medical assessment field: {field}")
+
+    return True
+
+
+def calculate_confidence_score(
+    symptoms: List[str],
+    symptom_count: int,
+    medical_history_provided: bool,
+) -> float:
+    """
+    Calculate a confidence score for an assessment.
+
+    Args:
+        symptoms: List of symptom strings.
+        symptom_count: Number of symptoms reported.
+        medical_history_provided: Whether medical history was provided.
+
+    Returns:
+        Float confidence score between 0.0 and 0.95.
+    """
+    base_score = 0.5
+
+    if symptom_count >= 3:
+        base_score += 0.2
+    elif symptom_count >= 2:
+        base_score += 0.1
+
+    if medical_history_provided:
+        base_score += 0.15
+
+    if symptoms and any(len(s) > 10 for s in symptoms):
+        base_score += 0.1
+
+    return min(base_score, 0.95)
+
+
+async def get_openai_response(prompt: str) -> str:
+    """
+    Get a response from OpenAI API.
+
+    This is a module-level wrapper used by tests to mock OpenAI calls.
+
+    Args:
+        prompt: The prompt to send.
+
+    Returns:
+        Response string from OpenAI.
+    """
+    import openai as _openai
+
+    api_key = os.getenv("OPENAI_API_KEY")
+    if not api_key:
+        raise ValueError("OPENAI_API_KEY not set")
+
+    client = _openai.AsyncOpenAI(api_key=api_key)
+    response = await client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[{"role": "user", "content": prompt}],
+        max_tokens=1500,
+        temperature=0.1,
+    )
+    return response.choices[0].message.content.strip()

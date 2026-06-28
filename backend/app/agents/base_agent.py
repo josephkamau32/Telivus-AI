@@ -15,6 +15,12 @@ from langchain.schema import BaseMessage
 from langchain.memory import ConversationBufferWindowMemory
 from langchain.tools import BaseTool
 
+# Optional Langfuse import
+try:
+    from langfuse.callback import CallbackHandler
+except ImportError:
+    CallbackHandler = None
+
 from app.core.config import settings
 from app.core.logging import get_logger
 
@@ -118,10 +124,22 @@ class BaseHealthAgent(ABC):
             Agent's response as string
         """
         try:
-            response = await self.agent_executor.ainvoke({
-                "input": input_text,
-                **kwargs
-            })
+            callbacks = []
+            if CallbackHandler and settings.LANGFUSE_PUBLIC_KEY and settings.LANGFUSE_SECRET_KEY:
+                langfuse_handler = CallbackHandler(
+                    public_key=settings.LANGFUSE_PUBLIC_KEY,
+                    secret_key=settings.LANGFUSE_SECRET_KEY,
+                    host=settings.LANGFUSE_HOST
+                )
+                callbacks.append(langfuse_handler)
+
+            response = await self.agent_executor.ainvoke(
+                {
+                    "input": input_text,
+                    **kwargs
+                },
+                config={"callbacks": callbacks} if callbacks else None
+            )
 
             result = response.get("output", "")
             logger.info(f"{self.agent_name} processed request successfully")

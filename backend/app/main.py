@@ -17,12 +17,15 @@ import logging
 import time
 import uuid
 
+from prometheus_fastapi_instrumentator import Instrumentator
+
 # Use simple versions for now to avoid complex dependencies
 from app.api.v1.endpoints.health import router as health_router
 from app.api.v1.endpoints.digital_twin import router as twin_router
 from app.core.config import settings
 from app.core.logging import setup_logging
 from app.services.vector_store_simple import initialize_vector_store
+from app.core.exceptions import TelivusBaseException
 
 # Simple database initialization (no complex async setup for now)
 async def create_tables():
@@ -67,6 +70,9 @@ app = FastAPI(
     redoc_url="/redoc",
     lifespan=lifespan,
 )
+
+# Expose metrics endpoint
+Instrumentator().instrument(app).expose(app, include_in_schema=False, should_gzip=True)
 
 # Set up CORS with comprehensive configuration
 app.add_middleware(
@@ -145,7 +151,17 @@ async def global_exception_handler(request: Request, exc: Exception):
     logger.error("Full traceback:", exc_info=True)
 
     # Determine appropriate error response
-    if isinstance(exc, HTTPException):
+    if isinstance(exc, TelivusBaseException):
+        # Handle custom application exceptions
+        return JSONResponse(
+            status_code=500, # Use a proper status code logic if available on the exception
+            content={
+                "error": exc.__class__.__name__,
+                "message": str(exc),
+                "request_id": str(uuid.uuid4())
+            }
+        )
+    elif isinstance(exc, HTTPException):
         # FastAPI HTTPException - preserve status code
         return JSONResponse(
             status_code=exc.status_code,

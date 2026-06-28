@@ -2,39 +2,30 @@
 Pytest Configuration and Shared Fixtures
 
 This module provides shared fixtures for testing including:
-- Database setup/teardown
 - Mock AI services
 - Test clients
 - Sample data
 """
 
-import asyncio
 import pytest
 from typing import AsyncGenerator, Generator
 from fastapi.testclient import TestClient
-from httpx import AsyncClient
+from httpx import AsyncClient, ASGITransport
 import os
 
-# Set test environment
+# Set test environment before importing app
 os.environ["TESTING"] = "1"
 os.environ["DEBUG"] = "True"
+os.environ["OPENAI_API_KEY"] = "test-key-not-real"
 
 from app.main import app
-
-
-@pytest.fixture(scope="session")
-def event_loop() -> Generator:
-    """Create an instance of the default event loop for the test session."""
-    loop = asyncio.get_event_loop_policy().new_event_loop()
-    yield loop
-    loop.close()
 
 
 @pytest.fixture
 def test_client() -> Generator:
     """
     Create a test client for synchronous API testing.
-    
+
     Usage:
         def test_endpoint(test_client):
             response = test_client.get("/health")
@@ -48,13 +39,14 @@ def test_client() -> Generator:
 async def async_client() -> AsyncGenerator:
     """
     Create an async test client for async API testing.
-    
+
     Usage:
         async def test_endpoint(async_client):
             response = await async_client.get("/health")
             assert response.status_code == 200
     """
-    async with AsyncClient(app=app, base_url="http://test") as client:
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
         yield client
 
 
@@ -88,7 +80,7 @@ def mock_ai_assessment():
         "patient_info": {
             "name": "Test Patient",
             "age": 30,
-            "gender": "male"
+            "gender": "male",
         },
         "medical_assessment": {
             "chief_complaint": "Headache and fever",
@@ -97,25 +89,25 @@ def mock_ai_assessment():
             "diagnostic_plan": {
                 "recommended_tests": ["Complete Blood Count"],
                 "red_flags": ["Severe headache", "High fever >103F"],
-                "follow_up": "If symptoms persist beyond 5 days"
+                "follow_up": "If symptoms persist beyond 5 days",
             },
             "otc_recommendations": [
                 {
                     "medication": "Acetaminophen",
                     "dosage": "500mg every 6 hours",
-                    "purpose": "Fever and pain relief"
+                    "purpose": "Fever and pain relief",
                 }
             ],
             "lifestyle_recommendations": [
                 "Get adequate rest",
                 "Stay hydrated",
-                "Monitor temperature"
+                "Monitor temperature",
             ],
-            "when_to_seek_help": "Seek immediate care if fever exceeds 103F"
+            "when_to_seek_help": "Seek immediate care if fever exceeds 103F",
         },
         "confidence_score": 0.85,
         "generated_at": "2025-12-29T11:00:00Z",
-        "ai_model_used": "gpt-4o-mini"
+        "ai_model_used": "gpt-4o-mini",
     }
 
 
@@ -128,7 +120,7 @@ def sample_patient_data():
         "name": "John Doe",
         "age": 30,
         "gender": "male",
-        "email": "john.doe@example.com"
+        "email": "john.doe@example.com",
     }
 
 
@@ -140,13 +132,13 @@ def sample_symptoms():
         "severity": {
             "headache": 7,
             "fever": 8,
-            "fatigue": 6
+            "fatigue": 6,
         },
         "duration": {
             "headache": "2 days",
             "fever": "2 days",
-            "fatigue": "3 days"
-        }
+            "fatigue": "3 days",
+        },
     }
 
 
@@ -158,7 +150,7 @@ def sample_medical_history():
         "current_medications": "Lisinopril 10mg daily",
         "allergies": "Penicillin",
         "family_history": "Diabetes (father)",
-        "social_history": "Non-smoker, occasional alcohol"
+        "social_history": "Non-smoker, occasional alcohol",
     }
 
 
@@ -170,18 +162,18 @@ def sample_health_assessment_request():
         "symptom_assessment": {
             "symptoms": ["headache", "fever"],
             "severity": {"headache": 7, "fever": 8},
-            "duration": {"headache": "2 days", "fever": "2 days"}
+            "duration": {"headache": "2 days", "fever": "2 days"},
         },
         "patient_info": {
             "name": "John Doe",
             "age": 30,
-            "gender": "male"
+            "gender": "male",
         },
         "medical_history": {
-            "past_medical_conditions": "None",
-            "current_medications": "None",
-            "allergies": "None"
-        }
+            "past_medical_conditions": ["None"],
+            "current_medications": ["None"],
+            "allergies": ["None"],
+        },
     }
 
 
@@ -193,22 +185,13 @@ def mock_vector_search_results():
     return [
         {
             "content": "Headache can be caused by various factors including dehydration, stress, or infection.",
-            "metadata": {"topic": "headache", "confidence": 0.92}
+            "metadata": {"topic": "headache", "confidence": 0.92},
         },
         {
             "content": "Fever is often a sign of infection and should be monitored closely.",
-            "metadata": {"topic": "fever", "confidence": 0.89}
-        }
+            "metadata": {"topic": "fever", "confidence": 0.89},
+        },
     ]
-
-
-# Database Fixtures (for when database is set up)
-
-@pytest.fixture
-def mock_db_session():
-    """Mock database session"""
-    # TODO: Implement actual database test session when database is configured
-    return None
 
 
 # Environment Fixtures
@@ -222,13 +205,3 @@ def test_environment(monkeypatch):
     monkeypatch.setenv("DATABASE_URL", "sqlite:///./test.db")
     monkeypatch.setenv("REDIS_URL", "redis://localhost:6379/1")
     yield
-
-
-# Cleanup Fixtures
-
-@pytest.fixture(autouse=True)
-async def cleanup_after_test():
-    """Cleanup resources after each test"""
-    yield
-    # Add cleanup logic here
-    pass

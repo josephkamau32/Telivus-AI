@@ -1,0 +1,22 @@
+[
+    {
+        "question": "What are the common symptoms of a migraine?",
+        "ground_truth": "Common symptoms of a migraine include severe throbbing pain, usually on one side of the head, nausea, vomiting, and extreme sensitivity to light and sound."
+    },
+    {
+        "question": "How is high blood pressure treated?",
+        "ground_truth": "High blood pressure is treated with lifestyle changes such as a healthy diet (like DASH), regular exercise, weight loss, and medications like ACE inhibitors, calcium channel blockers, or diuretics."
+    },
+    {
+        "question": "What is the difference between Type 1 and Type 2 diabetes?",
+        "ground_truth": "Type 1 diabetes is an autoimmune condition where the body does not produce insulin. Type 2 diabetes is a condition where the body becomes resistant to insulin or doesn't make enough of it."
+    },
+    {
+        "question": "When should someone seek immediate help for chest pain?",
+        "ground_truth": "Seek immediate emergency medical help if chest pain is crushing, radiating to the arm, back, neck, or jaw, accompanied by shortness of breath, sweating, or nausea."
+    },
+    {
+        "question": "What are safe over-the-counter medications for a fever?",
+        "ground_truth": "Safe OTC medications for a fever include acetaminophen (Tylenol) and nonsteroidal anti-inflammatory drugs (NSAIDs) like ibuprofen (Advil, Motrin) or naproxen (Aleve)."
+    }
+]
