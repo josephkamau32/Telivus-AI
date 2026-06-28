@@ -254,3 +254,186 @@ async def initialize_vector_store() -> None:
     except Exception as e:
         logger.error(f"Failed to initialize vector store: {e}")
         raise
+
+
+# ---------------------------------------------------------------------------
+# Module-level convenience functions
+# These are used by tests and other modules that import from this module.
+# ---------------------------------------------------------------------------
+
+
+async def search_medical_knowledge(
+    query: str, top_k: int = 5
+) -> List[Dict[str, Any]]:
+    """
+    Search the medical knowledge base for relevant documents.
+
+    Args:
+        query: Search query string.
+        top_k: Maximum number of results to return.
+
+    Returns:
+        List of matching documents with content and metadata.
+    """
+    return await simple_vector_store.search_documents(query, top_k=top_k)
+
+
+async def similarity_search(
+    query: str, top_k: int = 5
+) -> List[Dict[str, Any]]:
+    """Alias for search_medical_knowledge for backward compatibility."""
+    return await search_medical_knowledge(query, top_k=top_k)
+
+
+async def generate_embedding(text: str) -> List[float]:
+    """
+    Generate a simple embedding vector for the given text.
+
+    In production this would call an embedding model (e.g. OpenAI text-embedding-3-small).
+    For the simple vector store we return a deterministic hash-based vector.
+
+    Args:
+        text: Input text to embed.
+
+    Returns:
+        A list of floats representing the embedding (dimension 384).
+    """
+    import hashlib
+    import struct
+
+    dimension = 384
+    # Deterministic pseudo-random vector derived from text hash
+    digest = hashlib.sha512(text.encode("utf-8")).digest()
+    # Expand digest to cover the full dimension
+    expanded = digest * ((dimension * 4 // len(digest)) + 1)
+    raw_floats = struct.unpack(f"<{dimension}f", expanded[: dimension * 4])
+    # Normalize to unit vector
+    magnitude = max(sum(x * x for x in raw_floats) ** 0.5, 1e-9)
+    return [x / magnitude for x in raw_floats]
+
+
+async def build_medical_context(symptoms: List[str]) -> str:
+    """
+    Build a medical context string by searching the knowledge base for each symptom.
+
+    Args:
+        symptoms: List of symptom strings.
+
+    Returns:
+        Combined context string from all search results.
+    """
+    all_context_parts: List[str] = []
+    for symptom in symptoms:
+        results = await search_medical_knowledge(symptom, top_k=3)
+        for result in results:
+            content = result.get("content", "")
+            if content and content not in all_context_parts:
+                all_context_parts.append(content)
+
+    return "\n\n".join(all_context_parts) if all_context_parts else ""
+
+
+def calculate_similarity(v1: List[float], v2: List[float]) -> float:
+    """
+    Calculate cosine similarity between two vectors.
+
+    Args:
+        v1: First vector.
+        v2: Second vector.
+
+    Returns:
+        Cosine similarity score between -1.0 and 1.0.
+    """
+    if len(v1) != len(v2):
+        raise ValueError("Vectors must have the same dimension")
+
+    dot_product = sum(a * b for a, b in zip(v1, v2))
+    magnitude_a = sum(a * a for a in v1) ** 0.5
+    magnitude_b = sum(b * b for b in v2) ** 0.5
+
+    if magnitude_a == 0 or magnitude_b == 0:
+        return 0.0
+
+    return dot_product / (magnitude_a * magnitude_b)
+
+
+async def get_available_topics() -> List[str]:
+    """
+    Return list of medical topics available in the knowledge base.
+
+    Returns:
+        List of topic strings.
+    """
+    stats = await simple_vector_store.get_stats()
+    topics_dict = stats.get("topics", {})
+    if topics_dict:
+        return list(topics_dict.keys())
+
+    # Fallback: scan documents for topic metadata
+    topics: List[str] = []
+    for doc in simple_vector_store.documents:
+        topic = doc.get("metadata", {}).get("topic", "")
+        if topic and topic not in topics:
+            topics.append(topic)
+
+    # If still empty, return default medical topics
+    if not topics:
+        topics = [
+            "fever", "headache", "cough", "fatigue",
+            "nausea", "pain", "infection", "diabetes",
+            "hypertension", "asthma",
+        ]
+    return topics
+
+
+def filter_relevant_results(
+    results: List[Dict[str, Any]], threshold: float = 0.5
+) -> List[Dict[str, Any]]:
+    """
+    Filter search results by confidence threshold.
+
+    Args:
+        results: List of result dicts with metadata.confidence or score.
+        threshold: Minimum confidence/score to keep.
+
+    Returns:
+        Filtered list of results.
+    """
+    filtered: List[Dict[str, Any]] = []
+    for result in results:
+        # Check metadata.confidence first, then top-level score
+        confidence = result.get("metadata", {}).get("confidence", None)
+        if confidence is None:
+            confidence = result.get("score", 0.0)
+        if confidence >= threshold:
+            filtered.append(result)
+    return filtered
+
+
+def chunk_text(
+    text: str, chunk_size: int = 500, overlap: int = 50
+) -> List[str]:
+    """
+    Split text into overlapping chunks for vector storage.
+
+    Args:
+        text: Input text to chunk.
+        chunk_size: Maximum characters per chunk.
+        overlap: Number of overlapping characters between chunks.
+
+    Returns:
+        List of text chunks.
+    """
+    if len(text) <= chunk_size:
+        return [text]
+
+    chunks: List[str] = []
+    start = 0
+    while start < len(text):
+        end = start + chunk_size
+        chunks.append(text[start:end])
+        start = end - overlap
+        if start >= len(text):
+            break
+
+    return chunks
