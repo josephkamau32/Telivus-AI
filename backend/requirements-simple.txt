@@ -6,7 +6,7 @@ pydantic-settings==2.1.0
 
 # Basic utilities
 aiofiles==23.2.1
-python-multipart==0.0.6
+python-multipart==0.0.32
 
 # Logging
 colorlog==6.8.0
