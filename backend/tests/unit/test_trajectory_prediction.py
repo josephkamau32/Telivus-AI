@@ -12,6 +12,19 @@ import pytest
 from unittest.mock import Mock, patch
 import numpy as np
 
+# Guard against missing ML dependencies
+try:
+    import optuna  # noqa: F401
+    HAS_OPTUNA = True
+except ImportError:
+    HAS_OPTUNA = False
+
+pytestmark = pytest.mark.skipif(
+    not HAS_OPTUNA,
+    reason="optuna not installed (optional ML dependency)",
+)
+
+
 
 class TestTrajectoryPrediction:
     """Test suite for health trajectory prediction"""

@@ -75,6 +75,11 @@ class Settings(BaseSettings):
     OPENAI_TEMPERATURE: float = 0.1
     OPENAI_MAX_TOKENS: int = 2000
 
+    # Observability Configuration
+    LANGFUSE_PUBLIC_KEY: str = ""
+    LANGFUSE_SECRET_KEY: str = ""
+    LANGFUSE_HOST: str = "https://cloud.langfuse.com"
+
     # Vector Database Configuration
     VECTOR_DB_TYPE: str = "chroma"  # "chroma" or "pinecone"
     CHROMA_PERSIST_DIR: str = "./data/chroma"

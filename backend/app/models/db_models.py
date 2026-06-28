@@ -112,7 +112,7 @@ class ChatMessage(Base):
 
     role = Column(String, nullable=False)  # user, assistant
     content = Column(Text, nullable=False)
-    metadata = Column(JSON)  # Additional message data
+    extra_metadata = Column("metadata", JSON)  # Additional message data
 
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
@@ -161,7 +161,7 @@ class VectorDocument(Base):
 
     id = Column(String, primary_key=True, index=True)
     content = Column(Text, nullable=False)
-    metadata = Column(JSON)
+    extra_metadata = Column("metadata", JSON)
     embedding = Column(JSON)  # Store embedding vector
 
     source = Column(String)  # medical_guidelines, research, etc.
