@@ -19,7 +19,7 @@ scipy==1.11.4
 
 # Deep Learning Frameworks
 torch==2.1.0
-torchvision==0.16.0
+torchvision==0.27.1
 torchaudio==2.1.0
 tensorflow==2.15.0
 keras==2.15.0
