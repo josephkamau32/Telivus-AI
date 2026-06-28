@@ -27,7 +27,7 @@ keras==2.15.0
 # Additional ML Libraries
 xgboost==2.0.0
 lightgbm==4.1.0
-catboost==1.2.2
+catboost==1.2.10
 optuna==3.4.0
 
 # Testing Framework (NEW - Priority 1)
