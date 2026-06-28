@@ -20,7 +20,7 @@ export function useAuth() {
             console.log('Invalid refresh token detected, clearing session');
             // Clear local storage
             localStorage.removeItem('supabase.auth.token');
-            localStorage.removeItem('sb-bakyhjddhqxxsvseygst-auth-token');
+            localStorage.removeItem('sb-lhrbmfpsjahwxgdylmar-auth-token');
             await supabase.auth.signOut({ scope: 'local' });
           }
         }
