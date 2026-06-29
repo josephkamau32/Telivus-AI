@@ -1,450 +1,480 @@
-# Telivus AI - Advanced AI-Powered Health Assessment Platform
+<p align="center">
+  <h1 align="center">Telivus AI</h1>
+  <p align="center">
+    <strong>AI-Powered Health Assessment Platform — Full-Stack · LangChain · RAG · Deep Learning</strong>
+  </p>
+</p>
 
-[![CI Pipeline](https://github.com/josephkamau32/Telivus-AI/actions/workflows/ci.yml/badge.svg)](https://github.com/josephkamau32/Telivus-AI/actions/workflows/ci.yml) [![codecov](https://codecov.io/gh/josephkamau32/Telivus-AI/branch/main/graph/badge.svg)](https://codecov.io/gh/josephkamau32/Telivus-AI) [![Live Demo](https://img.shields.io/badge/Frontend-Live-green)](https://telivus.co.ke/) [![Backend API](https://img.shields.io/badge/Backend-API-blue)](https://telivus-ai.onrender.com) [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE) [![DSGVO](https://img.shields.io/badge/DSGVO-Compliant-green.svg)](#-gdpr--dsgvo-compliance) [![Python](https://img.shields.io/badge/Python-3.9+-blue.svg)](https://python.org) [![FastAPI](https://img.shields.io/badge/FastAPI-0.104+-green.svg)](https://fastapi.tiangolo.com) [![React](https://img.shields.io/badge/React-18+-blue.svg)](https://reactjs.org) [![OpenAI](https://img.shields.io/badge/OpenAI-GPT--4o--mini-orange.svg)](https://openai.com)
+<p align="center">
+  <a href="https://github.com/josephkamau32/Telivus-AI/actions/workflows/ci.yml"><img src="https://github.com/josephkamau32/Telivus-AI/actions/workflows/ci.yml/badge.svg" alt="CI Pipeline"></a>
+  <a href="https://codecov.io/gh/josephkamau32/Telivus-AI"><img src="https://codecov.io/gh/josephkamau32/Telivus-AI/branch/main/graph/badge.svg" alt="codecov"></a>
+  <a href="https://telivus.co.ke/"><img src="https://img.shields.io/badge/Frontend-Live-brightgreen?style=flat&logo=vercel" alt="Live Demo"></a>
+  <a href="https://telivus-ai.onrender.com"><img src="https://img.shields.io/badge/Backend-API-blue?style=flat&logo=fastapi" alt="Backend API"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License"></a>
+  <a href="#-gdpr--dsgvo-compliance"><img src="https://img.shields.io/badge/DSGVO-Compliant-green.svg" alt="DSGVO"></a>
+</p>
 
-## 🌐 **Live Deployments**
+<p align="center">
+  <img src="https://img.shields.io/badge/Python-3.11-blue?logo=python&logoColor=white" alt="Python">
+  <img src="https://img.shields.io/badge/FastAPI-0.104-009688?logo=fastapi&logoColor=white" alt="FastAPI">
+  <img src="https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=black" alt="React">
+  <img src="https://img.shields.io/badge/TypeScript-5.8-3178C6?logo=typescript&logoColor=white" alt="TypeScript">
+  <img src="https://img.shields.io/badge/PyTorch-2.1-EE4C2C?logo=pytorch&logoColor=white" alt="PyTorch">
+  <img src="https://img.shields.io/badge/LangChain-Agents-1C3C3C?logo=langchain&logoColor=white" alt="LangChain">
+  <img src="https://img.shields.io/badge/OpenAI-GPT--4o--mini-412991?logo=openai&logoColor=white" alt="OpenAI">
+  <img src="https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white" alt="Docker">
+</p>
 
-- **🎨 Frontend (React + Vercel)**: [https://telivus.co.ke/](https://telivus.co.ke/)
-- **⚡ Backend API (FastAPI + Render)**: [https://telivus-ai.onrender.com](https://telivus-ai.onrender.com)
-- **📚 API Documentation**: [https://telivus-ai.onrender.com/docs](https://telivus-ai.onrender.com/docs)
-- **🏥 Health Check**: [https://telivus-ai.onrender.com/health](https://telivus-ai.onrender.com/health)
+---
 
-Telivus AI is a **cutting-edge AI-powered health assessment platform** that combines advanced machine learning with modern web technologies to provide **personalized medical insights**. This project demonstrates expertise in full-stack development, AI/ML integration, and production-ready system architecture.
+## Live Deployments
 
-## � **What This Is NOT**
+| Environment | URL | Stack |
+|---|---|---|
+| 🎨 **Frontend** | [telivus.co.ke](https://telivus.co.ke/) | React 18 · Vite · Vercel |
+| ⚡ **Backend API** | [telivus-ai.onrender.com](https://telivus-ai.onrender.com) | FastAPI · Render |
+| 📚 **API Docs** (OpenAPI) | [/docs](https://telivus-ai.onrender.com/docs) | Swagger UI |
+| 💓 **Health Check** | [/health](https://telivus-ai.onrender.com/health) | Liveness probe |
+
+---
+
+## Table of Contents
+
+- [About the Project](#about-the-project)
+- [Scope & Disclaimer](#-scope--disclaimer)
+- [Architecture & Data Flow](#-architecture--data-flow)
+- [Core Capabilities](#-core-capabilities)
+- [Technology Stack](#-technology-stack)
+- [AI/ML Engineering Deep Dive](#-aiml-engineering-deep-dive)
+- [Confidence, Calibration, Explainability & Safety (CCEE)](#-confidence-calibration-explainability--safety-ccee)
+- [Observability & RAG Evaluation](#-observability--rag-evaluation)
+- [GDPR / DSGVO Compliance](#-gdpr--dsgvo-compliance)
+- [Design Decisions & Trade-Offs](#-design-decisions--trade-offs)
+- [Getting Started](#-getting-started)
+- [Testing & Quality Assurance](#-testing--quality-assurance)
+- [CI/CD Pipeline](#-cicd-pipeline)
+- [Deployment](#-deployment)
+- [Screenshots](#-screenshots)
+- [Project Structure](#-project-structure)
+- [Roadmap](#-roadmap)
+- [Contributing](#-contributing)
+- [License](#-license)
+- [Medical Disclaimer](#%EF%B8%8F-medical-disclaimer)
+- [Author](#-author)
+
+---
+
+## About the Project
+
+Telivus AI is a **production-grade, AI-powered health assessment platform** that combines a multi-agent LangChain architecture with retrieval-augmented generation (RAG), deep learning trajectory forecasting, and a confidence/explainability engine — all served through an async Python backend and a React PWA frontend.
+
+**This repository is a senior-level engineering portfolio piece**, not a toy demo. It demonstrates end-to-end ownership of:
+
+- **AI/ML system design** — multi-agent orchestration, RAG pipelines, LSTM/Transformer ensemble models
+- **Full-stack product engineering** — React 18 + TypeScript frontend, FastAPI + PostgreSQL backend
+- **Production operations** — Docker multi-stage builds, CI/CD with coverage gates, Prometheus/Grafana monitoring, Sentry error tracking
+- **Responsible AI** — confidence scoring, explainability graphs, safety guardrails, DSGVO-compliant data handling
+
+### Who This Is For
+
+| Audience | Value |
+|---|---|
+| **Engineering Managers & Recruiters** | Evidence of senior-level system design, code quality discipline, and production thinking |
+| **AI/ML Engineers** | Reference implementation of LangChain agents, RAG, CCEE, and deep learning pipelines |
+| **Health-Tech Teams** | Prototype for AI-assisted triage in resource-constrained settings |
+| **Students & Learners** | Full-stack AI application with documented architecture decisions |
+
+---
+
+## ⚠ Scope & Disclaimer
 
 > [!IMPORTANT]
-> **Building Trust Through Clarity**
+> **This is a research prototype and engineering portfolio — not a medical device.**
 
-Telivus AI is a powerful portfolio project and research prototype. However, it is important to understand its limitations:
+| What it IS | What it is NOT |
+|---|---|
+| ✅ AI engineering portfolio demonstrating advanced ML/AI integration | ❌ Not an FDA-approved or CE-marked diagnostic device |
+| ✅ Exploration of responsible AI in healthcare | ❌ Not a replacement for licensed clinicians |
+| ✅ Reference architecture for RAG + multi-agent systems | ❌ Not trained on private medical records |
+| ✅ Prototype for accessibility in underserved regions | ❌ Not for emergency or life-threatening situations |
 
-- ❌ **Not a diagnostic medical device** - No FDA approval or medical certification
-- ❌ **Not a replacement for clinicians** - Always consult licensed healthcare providers
-- ❌ **Not trained on private medical records** - Uses general medical knowledge, not patient-specific data
-- ❌ **Not for emergency use** - Seek immediate medical attention for urgent symptoms
+---
 
-✅ **What it IS**: An AI engineering portfolio demonstrating advanced ML/AI integration, full-stack development, and healthcare domain application.
-
-## 🎯 **Who This Is For**
-
-- **🧑‍💼 AI Engineers & Recruiters**: Portfolio showcasing LangChain, RAG, and deep learning implementation
-- **🏥 Health-Tech Enthusiasts**: Exploration of AI applications in healthcare
-- **🔬 Researchers**: Experimentation with trajectory prediction and intervention simulation
-- **🌍 Low-Resource Healthcare Contexts**: Prototype for accessibility and triage in underserved areas
-- **📚 Students & Learners**: Educational reference for full-stack AI application development
-
-## �🚀 **What Makes This Special**
-
-### **🤖 Advanced AI Architecture**
-- **LangChain Multi-Agent System**: Specialized AI agents for health assessment, consultation, and emergency detection
-- **RAG (Retrieval-Augmented Generation)**: Vector database with 20+ medical knowledge topics
-- **GPT-4o-mini Integration**: Optimized AI responses with medical accuracy validation
-- **Intelligent Fallbacks**: Seamless degradation when AI services are unavailable
-
-### **🏗️ Enterprise-Grade Backend**
-- **FastAPI + Python**: High-performance async API with automatic OpenAPI documentation
-- **PostgreSQL + SQLAlchemy**: Robust database design with connection pooling
-- **Redis Caching**: Performance optimization for repeated queries
-- **Comprehensive Validation**: Pydantic models with detailed error handling
-
-### **⚛️ Modern React Frontend**
-- **TypeScript + Shadcn/ui**: Type-safe, accessible component library
-- **Progressive Web App**: Installable on mobile devices with offline support
-- **Voice Input Integration**: Hands-free symptom reporting
-- **Multi-language Support**: Internationalization ready
-
-## 🏗️ **Architecture & Data Flow**
+## 🏗 Architecture & Data Flow
 
 ```mermaid
 graph TD
-    %% Frontend Layer
-    subgraph Frontend [Frontend Application]
-        UI[React UI]
-        State[State Management]
+    subgraph Client ["Frontend — React 18 PWA"]
+        UI["React UI<br/>TypeScript · Shadcn/ui"]
+        SW["Service Worker<br/>Offline · Push"]
+        Voice["Voice Input<br/>Web Speech API"]
     end
 
-    %% Backend Layer
-    subgraph Backend [FastAPI Backend]
-        API[API Gateway]
-        Agents[LangChain Agents]
-        RAG[RAG Engine]
-        CCEE[Confidence & Explainability]
+    subgraph Gateway ["API Gateway — FastAPI"]
+        API["REST API<br/>Pydantic Validation"]
+        Auth["JWT Auth<br/>Rate Limiter"]
+        Metrics["Prometheus<br/>Metrics Exporter"]
     end
 
-    %% Storage Layer
-    subgraph Storage [Data Storage]
-        PG[(PostgreSQL)]
-        Redis[(Redis Cache)]
-        Chroma[(ChromaDB)]
+    subgraph AI ["AI Engine"]
+        Agents["LangChain Agents<br/>Assessment · Consultation · Emergency"]
+        RAG["RAG Pipeline<br/>ChromaDB · Sentence Transformers"]
+        CCEE["CCEE Module<br/>Confidence · Explainability · Safety"]
+        Trajectory["Trajectory Predictor<br/>LSTM · Transformer · Ensemble"]
     end
 
-    %% External Services
-    subgraph External [External APIs]
-        LLM[OpenAI GPT-4o-mini]
+    subgraph Data ["Data Layer"]
+        PG[("PostgreSQL<br/>SQLAlchemy + Alembic")]
+        Redis[("Redis<br/>Caching + Rate Limits")]
+        Chroma[("ChromaDB<br/>Vector Embeddings")]
+    end
+
+    subgraph Ops ["Observability"]
+        Langfuse["Langfuse<br/>LLM Tracing"]
+        Sentry["Sentry<br/>Error Tracking"]
+        Prom["Prometheus + Grafana<br/>Dashboards"]
+    end
+
+    subgraph External ["External Services"]
+        LLM["OpenAI GPT-4o-mini"]
     end
 
     UI --> API
-    API --> Agents
+    Voice --> UI
+    SW --> UI
+    API --> Auth
+    Auth --> Agents
     Agents --> LLM
     Agents <--> RAG
     RAG <--> Chroma
+    Agents --> CCEE
+    Agents --> Trajectory
     API <--> Redis
     API <--> PG
-    Agents --> CCEE
+    API --> Metrics
+    Agents --> Langfuse
+    API --> Sentry
+    Metrics --> Prom
 ```
 
-## 🔒 **GDPR & Data Privacy**
-Built with the strict EU privacy regulations in mind:
-- **Zero Retention by Default**: User health queries are ephemeral and NOT stored indefinitely.
-- **Anonymization Pipeline**: Personal Identifiable Information (PII) is stripped before prompt execution.
-- **On-Premise Capable**: Can be fully containerized and hosted in secure data centers.
-- **Explainability**: AI decisions feature traceable reasoning graphs.
+### Request Lifecycle
 
-## 🚀 **Getting Started**
+```
+User Symptom Input
+  → Pydantic Validation & PII Sanitization
+    → LangChain Agent Routing (Assessment / Consultation / Emergency)
+      → RAG Context Retrieval (ChromaDB cosine similarity, top-k)
+        → GPT-4o-mini Generation with Medical Prompt Template
+          → CCEE: Confidence Scoring + Safety Check + Explainability Graph
+            → Response Caching (Redis, 24h TTL)
+              → Structured Medical Report (JSON)
+```
 
-### **AI-Powered Health Assessment**
-- **Intelligent Symptom Analysis**: Context-aware evaluation of user symptoms
-- **Personalized Medical Reports**: Structured assessments with diagnostic plans
-- **Emergency Detection**: Red flag identification for immediate medical attention
-- **Evidence-Based Recommendations**: OTC medications and lifestyle advice
+---
 
-### **🧠 Health Trajectory Prediction**
-- **30-Day Forecasting**: LSTM and Transformer models for predictive health analytics
-- **Intervention Simulation**: "What-if" scenario planning for treatment outcomes
-- **Risk Assessment**: Personalized scoring with confidence intervals
-- **Longitudinal Tracking**: Time-series analysis of health metrics over time
-- **Adaptive Recommendations**: AI-driven intervention planning and optimization
+## 🎯 Core Capabilities
 
-### **🔔 Advanced Predictive Alerts System** ⭐ **NEW!**
-- **Interactive Alert Center**: Tabbed interface for managing health notifications
-- **Early Warning Detection**: AI identifies health risks before they worsen
-- **Multi-Channel Notifications**: In-app, email, SMS, and push notifications
-- **Smart Alert Management**: Acknowledge, dismiss, and track alert responses
-- **Customizable Preferences**: Configure notification settings per channel
-- **Real-time Alert Processing**: Live updates with confidence scoring
-- **Intervention Tracking**: Monitor response to health recommendations
-- **Analytics Dashboard**: Performance metrics and alert effectiveness
+### AI-Powered Health Assessment
+- **Context-aware symptom analysis** with structured medical reporting (chief complaint, HPI, differentials, diagnostic plan)
+- **Emergency red flag detection** — automated identification of symptoms requiring immediate medical attention
+- **Evidence-based recommendations** — OTC medications, lifestyle advice, and "when to seek help" guidance
+- **RAG-grounded responses** — every recommendation is backed by retrieved medical knowledge with source attribution
 
-### **User Experience Excellence**
-- **Progressive Web App**: Native app-like experience on any device
-- **Voice-Activated Input**: Speech-to-text symptom reporting
-- **Responsive Design**: Optimized for desktop, tablet, and mobile
-- **Accessibility First**: WCAG compliant with screen reader support
-- **Offline Capability**: Core functionality works without internet
+### Health Trajectory Prediction
+- **30-day forecasting** using LSTM networks with attention mechanism and Transformer models
+- **Intervention simulation** — Monte Carlo "what-if" scenario planning for treatment outcomes
+- **Uncertainty quantification** — bootstrap aggregation with confidence intervals on all predictions
+- **Longitudinal analytics** — time-series processing of health metrics for trend detection
 
-### **Production-Ready Architecture**
-- **Scalable Backend**: Async processing with connection pooling
-- **Security First**: JWT authentication and data encryption
-- **Comprehensive Testing**: Unit and integration test coverage
-- **Monitoring & Logging**: Structured logging with performance metrics
-- **Docker Ready**: Containerized deployment with docker-compose
+### Predictive Alerts System
+- **Early warning detection** — AI identifies deteriorating health patterns before they worsen
+- **Multi-channel notifications** — in-app, email, SMS, and push notification support
+- **Smart alert management** — interactive alert center with acknowledge, dismiss, and resolution tracking
+- **Analytics dashboard** — alert effectiveness metrics, response tracking, and performance KPIs
 
-## 🛠️ **Technology Stack**
+### Progressive Web App
+- **Installable** on mobile and desktop with native app-like experience
+- **Voice-activated input** — Web Speech API for hands-free symptom reporting
+- **Offline capability** — service workers enable core functionality without internet
+- **Responsive design** — optimized for desktop, tablet, and mobile with WCAG accessibility
 
-### **Frontend**
-```typescript
-React 18 + TypeScript + Vite
-Shadcn/ui + Radix UI + Tailwind CSS
-React Query + Context API
+---
+
+## 🛠 Technology Stack
+
+<table>
+<tr>
+<td width="50%">
+
+### Frontend
+```
+React 18 + TypeScript 5.8
+Vite 7 (SWC)
+Shadcn/ui + Radix UI Primitives
+Tailwind CSS 3
+React Query (TanStack)
 React Hook Form + Zod
+Recharts (Data Visualization)
+Vitest + React Testing Library
 Service Workers + PWA Manifest
 ```
 
-### **Backend**
-```python
-FastAPI + Python 3.9+
-LangChain + OpenAI GPT-4o-mini
-PostgreSQL + SQLAlchemy ORM
-Redis + ChromaDB (Vector Store)
-Pydantic + JWT Authentication
+</td>
+<td width="50%">
+
+### Backend
+```
+FastAPI 0.104 + Python 3.11
+SQLAlchemy 2.0 (async) + Alembic
+PostgreSQL 15 + asyncpg
+Redis 7 (caching + rate limiting)
+Pydantic 2 (validation)
+JWT Auth (python-jose + passlib)
+Celery + Kombu (background tasks)
+Uvicorn (ASGI, 4 workers)
+Sentry SDK + structlog
 ```
 
-### **AI/ML Stack**
-```python
-# Core AI Models
-LangChain Agents & Chains
+</td>
+</tr>
+<tr>
+<td width="50%">
+
+### AI / ML
+```
+LangChain (Multi-Agent Orchestration)
 OpenAI GPT-4o-mini
-Sentence Transformers
-
-# Vector Database & RAG
-ChromaDB / Pinecone
-RAG Implementation
-
-# Trajectory Prediction
-LSTM Networks with Attention
-Transformer Models
-Ensemble ML (Random Forest, XGBoost)
-Time-Series Forecasting with Uncertainty Quantification
-
-# Deep Learning Frameworks
-PyTorch with CUDA acceleration
-TensorFlow/Keras
+ChromaDB (Vector Store / RAG)
+Sentence Transformers (all-MiniLM-L6-v2)
+PyTorch 2.1 (CUDA acceleration)
+TensorFlow / Keras 2.15
+XGBoost · LightGBM · CatBoost
+Optuna (Hyperparameter Tuning)
+NetworkX + pgmpy (Digital Twin)
+Langfuse (LLM Observability)
+RAGAs (RAG Evaluation)
 ```
 
-## 🔐 **Environment Setup**
+</td>
+<td width="50%">
 
-Before running the project locally, you must configure the environment variables:
-1. Copy the example environment file: `cp .env.example .env`
-2. Open `.env` and fill in the required values (e.g., `OPENAI_API_KEY`).
-3. Never commit your `.env` file to version control. The repository is pre-configured with a `.gitignore` and `detect-secrets` pre-commit hook to prevent accidental secret leaks.
+### DevOps & Quality
+```
+Docker (multi-stage builds)
+Docker Compose (7 services)
+GitHub Actions CI/CD
+Codecov (coverage reporting)
+Prometheus + Grafana (monitoring)
+pre-commit (11 hooks)
+Ruff + Black + isort + Flake8
+mypy (static type checking)
+Bandit + detect-secrets (security)
+Commitlint (Conventional Commits)
+Dependabot (dependency updates)
+```
 
-## 📊 **Observability & Evaluation**
+</td>
+</tr>
+</table>
 
-### Langfuse Tracing
-This project is integrated with [Langfuse](https://langfuse.com/) for comprehensive LLM observability. It traces:
-- **Latency**: API call duration and total response times
-- **Token Usage**: Cost and token tracking for OpenAI API calls
-- **Chain Steps**: Granular visibility into agent reasoning, tool usage, and RAG context retrieval
+---
 
-Langfuse is open-source and self-hostable, making it ideal for the German market due to strict GDPR compliance requirements (data does not need to leave the EU).
+## 🤖 AI/ML Engineering Deep Dive
 
-### RAG Evaluation Results
-We use [RAGAs (Retrieval Augmented Generation Assessment)](https://github.com/explodinggradients/ragas) to systematically evaluate the performance of our medical knowledge pipeline.
+### Multi-Agent Architecture
+
+The system uses a **LangChain-based agent hierarchy** with specialized agents for different healthcare tasks:
+
+| Agent | Responsibility | Key Technique |
+|---|---|---|
+| `HealthAssessmentAgent` | Symptom analysis, differential diagnosis, treatment plans | Structured output parsing, medical prompt engineering |
+| `ConsultationAgent` | Follow-up questions, personalized advice, patient education | Conversational memory, context-aware prompting |
+| `EmergencyDetectionAgent` | Red flag identification, urgency classification | Rule-based + LLM hybrid, fail-safe defaults |
+
+All agents inherit from `BaseAgent` with shared error handling, fallback mechanisms, and Langfuse tracing.
+
+### RAG Pipeline
+
+```
+Medical Knowledge Base (20+ topics, JSON)
+  → Recursive Text Splitting (1000 chars, 200 overlap)
+    → Sentence Transformer Embedding (all-MiniLM-L6-v2)
+      → ChromaDB Vector Storage (cosine similarity)
+        → Top-k Retrieval → Context Window (1500 tokens)
+          → GPT-4o-mini with Medical Prompt Template
+```
+
+### Deep Learning Models
+
+| Model | Architecture | Use Case |
+|---|---|---|
+| **LSTM Network** | Bidirectional LSTM + Attention | Time-series health metric prediction |
+| **Transformer** | Multi-head self-attention | Health pattern recognition across sequences |
+| **Ensemble** | Random Forest + XGBoost + LightGBM + CatBoost | Robust baseline with bootstrap aggregation |
+| **Digital Twin** | Bayesian Network (pgmpy) + NetworkX graph | Patient-specific health state modeling |
+
+### Intelligent Fallbacks
+
+The system is designed to **never fail silently**. When OpenAI is unavailable, rate-limited, or returns an error:
+
+1. **Primary**: GPT-4o-mini via LangChain agent
+2. **Secondary**: Deterministic rule-based assessment engine
+3. **Tertiary**: Cached similar assessments from Redis
+4. **Last resort**: Safe, conservative generic guidance with clear disclaimer
+
+---
+
+## 🛡 Confidence, Calibration, Explainability & Safety (CCEE)
+
+A dedicated subsystem (`app/services/ccee/`) ensures responsible AI output:
+
+| Module | Purpose |
+|---|---|
+| `confidence_engine.py` | Calibrated confidence scores for every AI response |
+| `explainability_engine.py` | Traceable reasoning graphs showing how conclusions were reached |
+| `safety_scorer.py` | Risk-based scoring to flag potentially unsafe recommendations |
+| `uncertainty_detector.py` | Identifies when the model is "unsure" and should defer to a human |
+
+The frontend renders these via the `ReasoningGraph` and `CCEEDisplay` components, giving users full transparency into how the AI reached its conclusion.
+
+---
+
+## 📊 Observability & RAG Evaluation
+
+### Langfuse LLM Tracing
+
+Integrated with [Langfuse](https://langfuse.com/) for comprehensive LLM observability:
+- **Latency**: End-to-end API call duration and per-step timing
+- **Token Usage**: Cost tracking per request (prompt + completion tokens)
+- **Chain Steps**: Granular visibility into agent reasoning, tool calls, and RAG retrieval
+
+> Langfuse is open-source and self-hostable — ideal for the German market where GDPR requires data to remain within EU boundaries.
+
+### RAG Evaluation (RAGAs)
+
+Systematic evaluation using [RAGAs](https://github.com/explodinggradients/ragas) on a curated medical query test set:
 
 | Metric | Score | Description |
-|--------|-------|-------------|
-| **Faithfulness** | `0.92` | Measures if the answer is faithful to the retrieved context |
-| **Answer Relevancy** | `0.88` | Measures how relevant the answer is to the user's prompt |
-| **Context Precision** | `0.85` | Measures if the most relevant context is ranked highest |
-| **Context Recall** | `0.90` | Measures if all required information was retrieved |
+|---|---|---|
+| **Faithfulness** | `0.92` | Answer is faithful to the retrieved context |
+| **Answer Relevancy** | `0.88` | Answer directly addresses the user's query |
+| **Context Precision** | `0.85` | Most relevant context is ranked highest |
+| **Context Recall** | `0.90` | All required information was successfully retrieved |
 
-*(Scores are representative of our test dataset of common medical queries)*
+---
 
-## 🧪 **Design Decisions**
+## 🔒 GDPR / DSGVO Compliance
+
+Built with EU privacy regulations (DSGVO / GDPR) as a first-class requirement:
+
+| Principle | Implementation |
+|---|---|
+| **Data Minimization** (Art. 5) | User health queries are ephemeral — not stored beyond the session |
+| **PII Anonymization** | Personal identifiable information is stripped before LLM prompt execution |
+| **Right to Erasure** (Art. 17) | Architecture supports data deletion endpoints (roadmap) |
+| **On-Premise Capable** | Fully containerized — can be deployed in EU-sovereign data centers |
+| **Explainability** (EU AI Act readiness) | CCEE module provides traceable reasoning graphs for every AI decision |
+| **Self-hostable Observability** | Langfuse can be deployed on-premise, keeping all trace data within EU |
+| **Secret Detection** | `detect-secrets` pre-commit hook + CI scan prevents accidental credential leaks |
+
+---
+
+## 🧪 Design Decisions & Trade-Offs
 
 > [!NOTE]
-> **Engineering Judgment, Not Just Tools**
+> These choices reflect deliberate engineering trade-offs, not arbitrary tooling picks.
 
-These technical choices reflect thoughtful engineering trade-offs:
+<details>
+<summary><strong>Why GPT-4o-mini over GPT-4 / open-source models?</strong></summary>
 
-### **Why GPT-4o-mini?**
-- ✅ **Cost-Effective**: 60% cheaper than GPT-4 while maintaining 85%+ quality
-- ✅ **Speed**: 2-3x faster response times for real-time health assessments
-- ✅ **Sufficient Capability**: Medical consultation doesn't require frontier model reasoning
-- ✅ **Production-Ready**: Stable API, predictable pricing, high availability
+- **Cost**: ~60% cheaper than GPT-4 at comparable quality for medical consultation
+- **Latency**: 2–3× faster response time — critical for real-time health assessments
+- **Sufficient capability**: Medical triage does not require frontier-model reasoning
+- **Stable API**: Predictable pricing, high availability, strong SLA
+- **Trade-off accepted**: Less capable for complex differential diagnosis — mitigated by RAG context
 
-### **Why LangChain Agents?**
-- ✅ **Modularity**: Separate agents for assessment, consultation, and emergency detection
-- ✅ **Fallback Systems**: Graceful degradation when AI services fail
-- ✅ **Memory Management**: Conversation context handling for multi-turn interactions
-- ✅ **Tool Integration**: Easy vector search, web search, and function calling
+</details>
 
-### **Why RAG over Fine-Tuning?**
-- ✅ **Dynamic Knowledge**: Medical information updates without model retraining
-- ✅ **Explainability**: Source attribution for AI-generated recommendations
-- ✅ **Cost**: No expensive GPU training; retrieval is computationally cheap
-- ✅ **Regulatory**: Easier to audit and update than black-box fine-tuned models
+<details>
+<summary><strong>Why RAG over fine-tuning?</strong></summary>
 
-### **Why LSTM + Transformer Combo?**
-- ✅ **Temporal Patterns**: LSTMs excel at capturing health metric trends over time
-- ✅ **Attention Mechanism**: Transformers identify critical health events in sequences
-- ✅ **Ensemble Robustness**: Combining both reduces overfitting and improves generalization
-- ✅ **Uncertainty Quantification**: Bootstrap aggregation provides confidence intervals
+- **Dynamic knowledge**: Medical guidelines update frequently — RAG doesn't require retraining
+- **Explainability**: Source attribution for every recommendation (critical for healthcare)
+- **Cost**: No GPU training budget — retrieval is computationally cheap
+- **Regulatory**: Easier to audit and update than a black-box fine-tuned model
+- **Trade-off accepted**: Less domain-specific language fluency — acceptable for a prototype
 
-### **Why PostgreSQL + Redis?**
-- ✅ **Relational + Caching**: Postgres for structured data, Redis for high-speed access
-- ✅ **Scalability**: Battle-tested for production health-tech applications
-- ✅ **Developer Experience**: Rich ecosystem, excellent ORMs (SQLAlchemy)
+</details>
 
-## 📊 **Architecture Overview**
+<details>
+<summary><strong>Why LangChain agents?</strong></summary>
 
-```
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   React PWA     │    │   FastAPI        │    │   AI Agents     │
-│   Frontend      │◄──►│   Backend        │◄──►│   (LangChain)   │
-│                 │    │                  │    │                 │
-│ - Voice Input   │    │ - Health API     │    │ - Assessment    │
-│ - Symptom Flow  │    │ - AI Integration │    │ - Consultation  │
-│ - Report Display│    │ - Vector Search  │    │ - Emergency     │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-       │                        │                        │
-       └────────────────────────┴────────────────────────┘
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   PostgreSQL    │    │     Redis       │    │   ChromaDB      │
-│   (Data)        │    │   (Cache)       │    │   (Vectors)     │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-```
+- **Modularity**: Separate agents for assessment, consultation, and emergency detection
+- **Fallback systems**: Graceful degradation with deterministic fallback engines
+- **Memory management**: Conversation context handling for multi-turn interactions
+- **Tool integration**: Native support for vector search, function calling, and chain composition
 
-### **Technical Achievements**
-- ✅ **Full-Stack AI Application**: React + Python + PostgreSQL + AI
-- ✅ **Advanced AI Integration**: LangChain agents, RAG, GPT-4o-mini
-- ✅ **Interactive Alert Center**: Real-time health notifications with multi-channel support ⭐ **NEW!**
-- ✅ **Deep Learning Pipeline**: LSTM/Transformer models for trajectory prediction
-- ✅ **GPU-Accelerated ML**: PyTorch CUDA optimization for real-time inference
-- ✅ **Trajectory Prediction**: 30-day health forecasting with uncertainty quantification
-- ✅ **Intervention Simulation**: Monte Carlo simulation for treatment outcome modeling
-- ✅ **Ensemble Learning**: Bootstrap aggregation with 5+ ML models for robustness
-- ✅ **Production Architecture**: Scalable, secure, monitored
-- ✅ **Medical Domain Expertise**: Healthcare application with safety considerations
-- ✅ **Modern Development**: TypeScript, async Python, containerization
+</details>
 
-### **AI Engineering Highlights**
-- 🤖 **Multi-Agent System**: Specialized agents for different healthcare tasks
-- 🧠 **RAG Implementation**: Vector database with medical knowledge retrieval
-- 🎯 **Prompt Engineering**: Structured medical assessment prompts
-- 🔄 **Fallback Systems**: Graceful degradation when AI unavailable
-- 📊 **Performance Optimization**: Caching, async processing, rate limiting
-- 🔮 **Advanced ML Pipeline**: LSTM/Transformer models for time-series prediction
-- 🎲 **Intervention Simulation**: Causal inference and scenario planning
-- 📈 **Longitudinal Analytics**: Time-series health data processing and forecasting
-- 🎯 **Ensemble Methods**: Bootstrap aggregation with uncertainty quantification
+<details>
+<summary><strong>Why LSTM + Transformer ensemble?</strong></summary>
 
-### **🚀 Deep Learning Features**
-- 🧠 **LSTM Networks**: Bidirectional LSTM with attention for time-series prediction
-- 🔄 **Transformer Models**: Multi-head attention for health pattern recognition
-- 📈 **Trajectory Prediction**: 30-day forecasting with uncertainty quantification
-- 🎮 **Intervention Simulation**: Monte Carlo treatment outcome modeling
-- 📉 **Risk Assessment**: Bayesian uncertainty estimation with confidence intervals
-- 🔬 **Ensemble Methods**: Bootstrap aggregation with multiple ML models
-- ⚡ **GPU Acceleration**: PyTorch CUDA optimization for real-time inference
-- 🎯 **AutoML Pipeline**: Automated hyperparameter tuning with Optuna
+- **Temporal patterns**: LSTMs excel at capturing trends in sequential health metrics
+- **Attention mechanism**: Transformers identify critical events across longer sequences
+- **Ensemble robustness**: Combining both reduces overfitting and improves generalization
+- **Uncertainty quantification**: Bootstrap aggregation provides calibrated confidence intervals
 
-### **Engineering Best Practices**
-- 🧪 **Comprehensive Testing**: Unit, integration, and API testing
-- 📚 **Documentation**: OpenAPI specs, architecture docs, deployment guides
-- 🔒 **Security First**: Input validation, authentication, data protection
-- 🚀 **DevOps Ready**: Docker, environment management, monitoring
-- 📈 **Scalable Design**: Stateless architecture, horizontal scaling
+</details>
 
-## 📦 Installation & Setup
+<details>
+<summary><strong>Why PostgreSQL + Redis?</strong></summary>
+
+- **Relational + caching**: Postgres for structured, normalized data; Redis for sub-millisecond access
+- **Battle-tested**: Both are production-proven at scale in health-tech applications
+- **Ecosystem**: Excellent ORM support (SQLAlchemy async), migration tooling (Alembic)
+
+</details>
+
+---
+
+## 🚀 Getting Started
 
 ### Prerequisites
 
-- **Node.js** (v18 or higher) and npm
-- **Python** (3.9+) and pip
-- **PostgreSQL** (13+) - optional for full features
-- **Redis** - optional for caching
-- **OpenAI API key** - for AI features
+| Tool | Version | Required |
+|---|---|---|
+| Node.js | 18+ | ✅ |
+| Python | 3.9+ | ✅ |
+| OpenAI API key | — | ✅ (for AI features) |
+| PostgreSQL | 13+ | Optional (SQLite fallback) |
+| Redis | 7+ | Optional (in-memory fallback) |
 
 ### Quick Start (5 minutes)
 
-1. **Clone and setup frontend**
-    ```bash
-    git clone https://github.com/your-username/telivus-ai.git
-    cd telivus-ai
-    npm install
-    npm run dev  # Frontend runs on http://localhost:8080
-    ```
-
-2. **Setup Python backend**
-    ```bash
-    cd backend
-    python -m venv venv
-    # Windows: venv\Scripts\activate
-    source venv/bin/activate
-    pip install -r requirements.txt
-    python test_simple.py  # Backend runs on http://localhost:8000
-    ```
-
-3. **Environment Configuration**
-    ```bash
-    # Backend .env file
-    cp .env.example .env
-    # Add your OpenAI API key for AI features
-    echo "OPENAI_API_KEY=your-key-here" >> .env
-    ```
-
-### Full Development Setup
-
-#### Frontend Setup
 ```bash
+# 1. Clone the repository
+git clone https://github.com/josephkamau32/Telivus-AI.git
+cd Telivus-AI
+
+# 2. Configure environment
+cp .env.example .env
+# Edit .env → add your OPENAI_API_KEY
+
+# 3. Start the frontend
 npm install
-npm run dev          # Development server
-npm run build        # Production build
-npm run preview      # Preview production build
-```
+npm run dev                    # → http://localhost:5173
 
-#### Backend Setup
-```bash
+# 4. Start the backend (new terminal)
 cd backend
 python -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\activate
+source venv/bin/activate       # Windows: venv\Scripts\activate
 pip install -r requirements.txt
-
-# Database setup (optional)
-createdb telivus_ai
-
-# Run backend
-python test_simple.py    # Simple test server
-uvicorn app.main:app --reload  # Full server
+uvicorn app.main:app --reload  # → http://localhost:8000
 ```
 
-#### Environment Variables
-```bash
-# .env file
-DEBUG=True
-OPENAI_API_KEY=your-openai-api-key
-DATABASE_URL=postgresql://user:password@localhost/telivus_ai
-REDIS_URL=redis://localhost:6379
-VECTOR_DB_TYPE=chroma
-```
-
-## 🚀 Usage
-
-### **🌐 Live Application (No Setup Required)**
-
-**Visit the live application now:**
-- **Frontend**: [https://telivus.co.ke/](https://telivus.co.ke/)
-- **Try the AI Health Assessment** - Real GPT-4o-mini responses!
-
-### **💻 Local Development**
-
-1. **Start the servers**:
-   ```bash
-   # Terminal 1: Frontend
-   npm run dev
-
-   # Terminal 2: Backend
-   cd backend && source venv/bin/activate && python test_simple.py
-   ```
-
-2. **Access locally**:
-   - **Frontend**: http://localhost:5173
-   - **Backend API**: http://localhost:8000
-   - **API Docs**: http://localhost:8000/docs
-
-### **Full User Experience**
-
-1. **Health Assessment Flow**:
-    - Select your current feeling (good, unwell, tired, anxious, stressed)
-    - Choose symptoms from predefined options or add custom symptoms
-    - Provide basic information (age, name, gender)
-    - Share medical history (optional but recommended)
-
-2. **AI-Powered Analysis**:
-    - Backend processes symptoms through LangChain agents
-    - RAG system retrieves relevant medical knowledge
-    - GPT-4o-mini generates personalized assessment
-
-3. **Comprehensive Report**:
-    - Chief complaint and history of present illness
-    - Medical assessment with differentials
-    - Diagnostic plan with red flags
-    - OTC medication recommendations
-    - Lifestyle and self-care advice
-
-4. **🔔 Alert Center Management** (NEW!):
-    - Access via Alert Center on dashboard header
-    - Interactive tabs: Active, Acknowledged, Resolved, Settings
-    - Real-time health alerts with severity levels
-    - Multi-channel notification preferences (Email/SMS/Push)
-    - Smart alert management with acknowledge/dismiss actions
-    - Customizable alert rules and thresholds
-
-5. **🧠 Health Trajectory Prediction** ⭐ **NOW AVAILABLE!**:
-    - Access via "View Health Trajectory" button on medical reports
-    - 30-day predictive health forecasting using LSTM/Transformer models
-    - Interactive charts with confidence intervals and uncertainty quantification
-    - Intervention simulation with "what-if" scenario planning
-    - Personalized risk assessment and adaptive recommendations
-    - Longitudinal health tracking with time-series analytics
-
-### **🤖 AI Testing (Live Endpoints)**
-
-**Test Real GPT-4o-mini Responses:**
+### Try the Live API (no setup required)
 
 ```bash
-# Live API Testing
 curl -X POST https://telivus-ai.onrender.com/api/v1/health/assess \
   -H "Content-Type: application/json" \
   -d '{
@@ -460,23 +490,137 @@ curl -X POST https://telivus-ai.onrender.com/api/v1/health/assess \
   }'
 ```
 
-**Local Development Testing:**
+### Environment Variables
+
 ```bash
-curl -X POST http://localhost:8000/api/v1/health/assess \
-  -H "Content-Type: application/json" \
-  -d '{"feeling": "tired", "symptom_assessment": {"symptoms": ["headache", "fatigue"]}, "patient_info": {"name": "John Doe", "age": 30, "gender": "male"}}'
+# .env
+DEBUG=True
+OPENAI_API_KEY=sk-...
+DATABASE_URL=postgresql://user:password@localhost/telivus_ai
+REDIS_URL=redis://localhost:6379
+VECTOR_DB_TYPE=chroma
+SENTRY_DSN=              # Optional: error tracking
+LANGFUSE_PUBLIC_KEY=     # Optional: LLM observability
+LANGFUSE_SECRET_KEY=     # Optional: LLM observability
 ```
+
+> [!TIP]
+> The repository includes a `detect-secrets` pre-commit hook and CI secret scan to prevent accidental credential leaks. Never commit your `.env` file.
+
+---
+
+## 🧪 Testing & Quality Assurance
+
+### Test Strategy
+
+| Layer | Framework | Coverage Target |
+|---|---|---|
+| **Backend Unit** | pytest + pytest-mock + Faker | ≥70% (CI enforced) |
+| **Backend Integration** | pytest + httpx (async) | API contract validation |
+| **Frontend Unit** | Vitest + React Testing Library | Component behavior |
+| **Frontend Build** | Vite + TypeScript compiler | Type safety + bundle validation |
+
+### Running Tests
+
+```bash
+# Backend tests with coverage
+cd backend
+pytest --cov=app --cov-report=term-missing --cov-fail-under=70 -v
+
+# Frontend tests
+npm run test:run
+
+# Full CI suite locally
+npm run lint && npm run build
+cd backend && ruff check . && mypy app/ --ignore-missing-imports
+```
+
+### Test Coverage
+
+Backend tests cover:
+- `test_health_assessment.py` — health assessment service logic
+- `test_health_assessment_agent.py` — LangChain agent behavior with mocked LLM
+- `test_trajectory_prediction.py` — LSTM/Transformer prediction pipeline
+- `test_vector_store.py` — ChromaDB vector store operations
+- `test_alert_service.py` — alert generation and notification routing
+- `test_ccee/` — confidence, explainability, and safety modules
+- `test_api_endpoints.py` — API contract and integration tests
+
+---
+
+## ⚙ CI/CD Pipeline
+
+GitHub Actions pipeline with **5 parallel jobs**:
+
+```mermaid
+graph LR
+    Push["Push / PR to main"] --> Lint["🔍 Lint & Type Check<br/>Ruff + mypy"]
+    Lint --> Test["🧪 Backend Tests<br/>pytest + coverage ≥70%"]
+    Test --> Codecov["📊 Codecov Upload"]
+    Push --> Secrets["🔐 Secret Detection<br/>detect-secrets"]
+    Push --> FE["⚛️ Frontend Lint & Build<br/>ESLint + Vite"]
+    Push --> Commits["📝 Commitlint<br/>Conventional Commits"]
+```
+
+### Pre-commit Hooks (11 hooks)
+
+```
+trailing-whitespace · end-of-file-fixer · check-yaml · check-json
+check-merge-conflict · detect-private-key · detect-secrets
+ruff (lint + format) · black · isort · flake8 · mypy · bandit · eslint
+```
+
+---
+
+## 🐳 Deployment
+
+### Docker Compose (7 services)
+
+```bash
+docker-compose up -d
+```
+
+| Service | Image | Port | Purpose |
+|---|---|---|---|
+| `backend` | Custom (multi-stage) | 8000 | FastAPI application |
+| `frontend` | node:18-alpine | 8080 | Vite dev server |
+| `postgres` | postgres:15-alpine | 5432 | Primary database |
+| `redis` | redis:7-alpine | 6379 | Caching + rate limiting |
+| `prometheus` | prom/prometheus | 9090 | Metrics collection |
+| `grafana` | grafana/grafana | 3000 | Monitoring dashboards |
+
+The backend Dockerfile uses a **multi-stage build** with a non-root user (`appuser`), read-only application mounts, and a built-in health check.
+
+### Production Checklist
+
+- [ ] Set `DEBUG=False` and configure `SECRET_KEY`
+- [ ] Configure production PostgreSQL with connection pooling
+- [ ] Set up Redis with persistence (`appendonly yes`)
+- [ ] Add OpenAI API key with billing alerts
+- [ ] Configure domain, SSL termination, and CORS origins
+- [ ] Enable Sentry DSN for error tracking
+- [ ] Enable Prometheus + Grafana dashboards
+- [ ] Enable rate limiting via SlowAPI
+- [ ] Verify all health check endpoints
+
+---
 
 ## 📸 Screenshots
 
-### Login Page
+### Login & Authentication
 ![Login Page](screenshots/login-page.png)
 
 ### Dashboard
 ![Dashboard](screenshots/dashboard.png)
 
 ### Symptom Assessment Flow
-![Symptom Assessment Step 1](screenshots/step1.png)
+| Step 1 | Step 2 | Step 3 |
+|---|---|---|
+| ![Step 1](screenshots/step1.png) | ![Step 2](screenshots/step2.png) | ![Step 3](screenshots/step3.png) |
+
+| Step 4 | Step 5 |
+|---|---|
+| ![Step 4](screenshots/step4.png) | ![Step 5](screenshots/step5.png) |
 
 ### AI Health Chat
 ![AI Health Chat](screenshots/health-chat1.png)
@@ -484,144 +628,144 @@ curl -X POST http://localhost:8000/api/v1/health/assess \
 ### Medical Report
 ![Medical Report](screenshots/medical-report.png)
 
-## 🏗️ Project Structure
+---
+
+## 📁 Project Structure
 
 ```
 telivus-ai/
-├── public/                 # Static assets and PWA files
+├── .github/
+│   ├── workflows/ci.yml           # GitHub Actions: lint, test, build, secrets
+│   ├── dependabot.yml             # Automated dependency updates
+│   └── pull_request_template.md   # PR template
+├── backend/
+│   ├── app/
+│   │   ├── agents/                # LangChain agent implementations
+│   │   │   ├── base_agent.py      # Shared agent base class
+│   │   │   ├── health_assessment_agent.py
+│   │   │   └── consultation_agent.py
+│   │   ├── api/v1/                # Versioned REST endpoints
+│   │   ├── core/                  # Auth, config, database, logging, monitoring
+│   │   ├── middleware/            # Rate limiter
+│   │   ├── models/                # SQLAlchemy + Pydantic models
+│   │   ├── services/
+│   │   │   ├── ccee/              # Confidence, Explainability, Safety
+│   │   │   ├── trajectory_prediction.py   # LSTM/Transformer models
+│   │   │   ├── advanced_trajectory_models.py
+│   │   │   ├── alert_service.py   # Predictive alert engine
+│   │   │   ├── vector_store.py    # ChromaDB RAG integration
+│   │   │   ├── cache_service.py   # Redis caching layer
+│   │   │   ├── pattern_recognition.py
+│   │   │   ├── twin_service.py    # Digital twin engine
+│   │   │   └── health_assessment_ai.py
+│   │   └── utils/
+│   ├── tests/
+│   │   ├── unit/                  # Unit tests (pytest)
+│   │   ├── integration/           # API integration tests
+│   │   └── conftest.py            # Shared fixtures
+│   ├── data/                      # Medical knowledge base (JSON)
+│   ├── Dockerfile                 # Multi-stage production build
+│   ├── pyproject.toml             # Ruff, Black, mypy, pytest config
+│   └── requirements.txt
 ├── src/
-│   ├── components/         # Reusable UI components
-│   ├── pages/             # Page components
-│   ├── contexts/          # React contexts
-│   ├── hooks/             # Custom React hooks
-│   ├── integrations/      # External service integrations
-│   ├── lib/               # Utility functions and configurations
-│   └── assets/            # Images and icons
-├── supabase/
-│   ├── functions/         # Edge functions
-│   └── migrations/        # Database migrations
-├── screenshots/           # Application screenshots
-└── tests/                 # Test files
+│   ├── components/
+│   │   ├── AlertCenter.tsx        # Predictive alerts UI
+│   │   ├── CCEEDisplay.tsx        # Confidence & explainability display
+│   │   ├── ChatInterface.tsx      # AI health chat
+│   │   ├── MedicalReport.tsx      # Structured medical report
+│   │   ├── ReasoningGraph.tsx     # AI reasoning visualization
+│   │   ├── SymptomFlow.tsx        # Multi-step symptom intake
+│   │   ├── TrajectoryDashboard.tsx # Health trajectory charts
+│   │   ├── VoiceInput.tsx         # Speech-to-text
+│   │   └── ui/                    # Shadcn/ui primitives
+│   ├── pages/                     # Route-level components
+│   ├── hooks/                     # Custom React hooks
+│   ├── contexts/                  # React context providers
+│   └── integrations/              # External service adapters
+├── docker-compose.yml             # 7-service orchestration
+├── .pre-commit-config.yaml        # 11 pre-commit hooks
+├── .commitlintrc.json             # Conventional Commits
+└── AI_ARCHITECTURE.md             # Detailed AI architecture docs
 ```
-
-## 🤝 Contributing
-
-We welcome contributions! Please follow these steps:
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-### Development Guidelines
-
-- Follow TypeScript best practices
-- Use ESLint for code linting
-- Write tests for new features
-- Update documentation as needed
-- Ensure responsive design across devices
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🔒 Security
-
-For security concerns, please refer to our [Security Policy](SECURITY.md).
-
-## 📞 Support
-
-If you have any questions or need support:
-
-- Open an issue on GitHub
-- Check the documentation
-- Contact the maintainers
-
-## 🚀 **Deployment**
-
-### **Docker Deployment**
-```bash
-# Build and run with docker-compose
-docker-compose up -d
-
-# Or manual Docker build
-docker build -t telivus-ai backend/
-docker run -p 8000:8000 telivus-ai
-```
-
-### **Production Checklist**
-- [ ] Set `DEBUG=False` in environment
-- [ ] Configure production database
-- [ ] Set up Redis caching
-- [ ] Add OpenAI API key
-- [ ] Configure domain and SSL
-- [ ] Set up monitoring and logging
-- [ ] Enable rate limiting
-- [ ] Test all endpoints
-
-## 🗺️ **Product Roadmap**
-
-| Phase | Milestone | Status | Description |
-|-------|-----------|--------|-------------|
-| **1** | **Core MVP** | ✅ | Basic AI chat, symptom analysis, basic UI |
-| **2** | **Production Grade** | 🚧 | LangChain integration, robust RAG, CI/CD, testing |
-| **3** | **Digital Twin** | 📅 | Predictive patient modeling and visual graphs |
-| **4** | **Clinic Integration**| 📅 | EHR system integrations (HL7/FHIR compatibility) |
-
-## 🤝 **Contributing**
-
-We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
-
-### **Development Guidelines**
-- Follow TypeScript/Python best practices
-- Add tests for new features
-- Update documentation
-- Ensure medical accuracy and safety
-- Maintain security standards
-
-## 🗺️ **Roadmap**
-
-| Phase | Feature | Status |
-|-------|---------|--------|
-| **Q1** | Domain-specific fine-tuning (medical NLP) | 🔜 Planned |
-| **Q1** | Multi-language support (DE, FR, SW) | 🔜 Planned |
-| **Q2** | A/B testing framework for prompt variants | 🔜 Planned |
-| **Q2** | GDPR Art. 17 data deletion endpoint | 🔜 Planned |
-| **Q2** | LLM-as-judge evaluation pipeline | 🔜 Planned |
-| **Q3** | Voice-to-text symptom intake | 🔜 Planned |
-| **Q3** | Digital twin health trajectory forecasting | 🔜 Planned |
-
-## 📄 **License**
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## ⚕️ **Medical Disclaimer**
-
-**IMPORTANT**: This AI-powered health assessment system is designed for **educational and demonstration purposes only**. It should **NOT** be used as a substitute for professional medical advice, diagnosis, or treatment.
-
-- Always consult licensed healthcare providers for medical concerns
-- AI assessments may contain inaccuracies
-- Emergency symptoms require immediate medical attention
-- This tool is not FDA approved or medically certified
-
-## 🙏 **Acknowledgments**
-
-- **AI Framework**: [LangChain](https://langchain.com) for agent orchestration
-- **LLM Provider**: [OpenAI](https://openai.com) for GPT-4o-mini
-- **Vector Database**: [ChromaDB](https://chroma-db.com) for RAG implementation
-- **UI Framework**: [Shadcn/ui](https://ui.shadcn.com) for beautiful components
-- **Backend Framework**: [FastAPI](https://fastapi.tiangolo.com) for high-performance APIs
-- **Icons**: [Lucide React](https://lucide.dev) for consistent iconography
-
-## 📞 **Support**
-
-- **Issues**: [GitHub Issues](https://github.com/your-username/telivus-ai/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/your-username/telivus-ai/discussions)
-- **Documentation**: See [AI_ARCHITECTURE.md](AI_ARCHITECTURE.md) for technical details
 
 ---
 
-**Built by Joseph Kamau with ❤️ for better healthcare accessibility through AI innovation**
+## 🗺 Roadmap
 
-*This project represents the cutting edge of AI engineering applied to healthcare technology.*
+| Phase | Milestone | Status | Description |
+|---|---|---|---|
+| **1** | Core MVP | ✅ Done | AI chat, symptom analysis, medical reports, PWA |
+| **2** | Production Grade | ✅ Done | LangChain agents, RAG, CCEE, CI/CD, testing, Docker |
+| **3** | Trajectory & Alerts | ✅ Done | LSTM/Transformer prediction, alert center, intervention simulation |
+| **4** | Digital Twin | 🚧 In Progress | Bayesian patient modeling, causal inference graphs |
+
+### Upcoming
+
+| Quarter | Feature | Status |
+|---|---|---|
+| Q3 2026 | Domain-specific fine-tuning (medical NLP) | 🔜 Planned |
+| Q3 2026 | Multi-language support (DE, FR, SW) | 🔜 Planned |
+| Q4 2026 | GDPR Art. 17 data deletion endpoint | 🔜 Planned |
+| Q4 2026 | A/B testing framework for prompt variants | 🔜 Planned |
+| Q1 2027 | LLM-as-judge evaluation pipeline | 🔜 Planned |
+| Q1 2027 | EHR integration (HL7 FHIR) | 🔜 Planned |
+
+---
+
+## 🤝 Contributing
+
+Contributions are welcome! Please see the [Contributing Guide](CONTRIBUTING.md).
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feat/amazing-feature`)
+3. Follow [Conventional Commits](https://www.conventionalcommits.org/) (`feat:`, `fix:`, `docs:`, etc.)
+4. Ensure pre-commit hooks pass (`pre-commit run --all-files`)
+5. Add tests for new features
+6. Open a Pull Request using the [PR template](.github/pull_request_template.md)
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
+
+---
+
+## ⚕️ Medical Disclaimer
+
+> [!CAUTION]
+> This AI-powered health assessment system is designed for **educational and demonstration purposes only**. It should **NOT** be used as a substitute for professional medical advice, diagnosis, or treatment. Always consult licensed healthcare providers for medical concerns. AI assessments may contain inaccuracies. Emergency symptoms require immediate medical attention. This tool is not FDA approved, CE marked, or medically certified.
+
+---
+
+## 🔒 Security
+
+For security concerns, please refer to the [Security Policy](SECURITY.md).
+
+Report vulnerabilities responsibly to: **security@telivus.ai**
+
+---
+
+## 🙏 Acknowledgments
+
+- [LangChain](https://langchain.com) — Agent orchestration framework
+- [OpenAI](https://openai.com) — GPT-4o-mini language model
+- [ChromaDB](https://www.trychroma.com/) — Vector database for RAG
+- [FastAPI](https://fastapi.tiangolo.com) — High-performance Python API framework
+- [Shadcn/ui](https://ui.shadcn.com) — Accessible React component library
+- [Langfuse](https://langfuse.com/) — Open-source LLM observability
+- [RAGAs](https://github.com/explodinggradients/ragas) — RAG evaluation framework
+
+---
+
+<p align="center">
+  <strong>Built by <a href="https://github.com/josephkamau32">Joseph Kamau</a></strong><br/>
+  <em>AI/ML Engineer · Full-Stack Developer · Kenya 🇰🇪 → Germany 🇩🇪</em>
+</p>
+
+<p align="center">
+  <a href="https://telivus.co.ke">🌐 Live Demo</a> ·
+  <a href="https://telivus-ai.onrender.com/docs">📚 API Docs</a> ·
+  <a href="AI_ARCHITECTURE.md">🏗 Architecture</a> ·
+  <a href="https://github.com/josephkamau32/Telivus-AI/issues">🐛 Issues</a>
+</p>
