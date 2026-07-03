@@ -814,7 +814,7 @@ npm run dev
 ```
 
 **Q: How do I deploy to Render + Vercel?**
-A: See [DEPLOYMENT_PLAN.md](DEPLOYMENT_PLAN.md) for step-by-step instructions.
+A: See [DEPLOYMENT_PLAN.md](docs/deployment.md) for step-by-step instructions.
 
 **Q: Where are the API docs?**
 A: Local: `http://localhost:8000/docs` | Production: `https://telivus-ai.onrender.com/docs`
@@ -878,6 +878,6 @@ Report vulnerabilities responsibly to: **security@telivus.ai**
 <p align="center">
   <a href="https://telivus.co.ke">🌐 Live Demo</a> ·
   <a href="https://telivus-ai.onrender.com/docs">📚 API Docs</a> ·
-  <a href="AI_ARCHITECTURE.md">🏗 Architecture</a> ·
+  <a href="docs/architecture.md">🏗 Architecture</a> ·
   <a href="https://github.com/josephkamau32/Telivus-AI/issues">🐛 Issues</a>
 </p>
