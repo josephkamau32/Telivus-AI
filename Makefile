@@ -5,7 +5,7 @@ install:
 	cd src && npm install
 
 test:
-	cd backend && pytest --cov=app --cov-report=term-missing --cov-report=html
+	cd backend && pytest --cov=app --cov-report=term-missing --cov-report=html --cov-fail-under=70
 
 lint:
 	cd backend && ruff check .

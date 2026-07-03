@@ -18,5 +18,45 @@
     {
         "question": "What are safe over-the-counter medications for a fever?",
         "ground_truth": "Safe OTC medications for a fever include acetaminophen (Tylenol) and nonsteroidal anti-inflammatory drugs (NSAIDs) like ibuprofen (Advil, Motrin) or naproxen (Aleve)."
+    },
+    {
+        "question": "What are the warning signs of a stroke?",
+        "ground_truth": "Warning signs of a stroke include sudden numbness or weakness in the face, arm, or leg (especially on one side), confusion, trouble speaking, difficulty seeing, severe headache, and loss of balance. Remember FAST: Face drooping, Arm weakness, Speech difficulty, Time to call emergency services."
+    },
+    {
+        "question": "What causes seasonal allergies and how are they managed?",
+        "ground_truth": "Seasonal allergies are caused by the immune system overreacting to pollen from trees, grasses, and weeds. Management includes antihistamines (cetirizine, loratadine), nasal corticosteroid sprays, decongestants, and allergen avoidance strategies."
+    },
+    {
+        "question": "What are the symptoms and treatment of a urinary tract infection (UTI)?",
+        "ground_truth": "UTI symptoms include a strong persistent urge to urinate, burning sensation during urination, cloudy or strong-smelling urine, and pelvic pain in women. Treatment typically involves antibiotics prescribed by a doctor, increased fluid intake, and cranberry products for prevention."
+    },
+    {
+        "question": "How do you differentiate between a cold and the flu?",
+        "ground_truth": "A cold typically develops gradually with mild symptoms: runny nose, sneezing, sore throat, and mild body aches. The flu has a sudden onset with high fever (102-104°F), severe body aches, extreme fatigue, dry cough, and headache. The flu is more likely to lead to serious complications like pneumonia."
+    },
+    {
+        "question": "What are the signs and symptoms of iron deficiency anemia?",
+        "ground_truth": "Signs of iron deficiency anemia include fatigue, weakness, pale skin, shortness of breath, dizziness, cold hands and feet, brittle nails, unusual cravings for non-nutritive substances (pica), poor appetite, and an inflamed or sore tongue."
+    },
+    {
+        "question": "What is the recommended approach for managing chronic lower back pain?",
+        "ground_truth": "Chronic lower back pain management includes staying active with low-impact exercises (walking, swimming, yoga), physical therapy, OTC pain relievers (ibuprofen, acetaminophen), hot/cold therapy, ergonomic adjustments, stress management, and weight management. Surgery is rarely needed and reserved for severe structural issues."
+    },
+    {
+        "question": "What are the danger signs in a child with a fever?",
+        "ground_truth": "Seek immediate medical attention if a child has: a fever above 104°F (40°C), fever lasting more than 3 days, fever in an infant under 3 months, signs of dehydration, stiff neck, severe headache, skin rash, difficulty breathing, lethargy or unresponsiveness, or persistent crying."
+    },
+    {
+        "question": "What lifestyle changes can help manage gastroesophageal reflux disease (GERD)?",
+        "ground_truth": "Lifestyle changes for GERD include eating smaller meals, avoiding trigger foods (spicy, fatty, acidic foods, caffeine, chocolate), not lying down within 3 hours of eating, elevating the head of the bed, maintaining a healthy weight, quitting smoking, and wearing loose-fitting clothing."
+    },
+    {
+        "question": "What are the early warning signs of mental health conditions like depression?",
+        "ground_truth": "Early warning signs of depression include persistent sadness or emptiness, loss of interest in previously enjoyed activities, changes in appetite or weight, sleep disturbances (insomnia or hypersomnia), fatigue, feelings of worthlessness or excessive guilt, difficulty concentrating, and recurrent thoughts of death or suicide."
+    },
+    {
+        "question": "How should someone manage a mild asthma attack at home?",
+        "ground_truth": "For a mild asthma attack: use your quick-relief (rescue) inhaler (usually albuterol) with 2-4 puffs every 20 minutes for up to 1 hour, sit upright and stay calm, remove yourself from triggers, and practice pursed-lip breathing. Seek emergency care if symptoms don't improve after 3 rounds of inhaler use or if you have severe shortness of breath."
     }
 ]
