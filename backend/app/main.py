@@ -16,8 +16,12 @@ from fastapi.responses import JSONResponse
 import logging
 import time
 import uuid
+import json
 
 from prometheus_fastapi_instrumentator import Instrumentator
+
+# Import sanitizer for request sanitization middleware
+from app.utils.sanitizer import validate_and_sanitize_json, detect_sql_injection, detect_command_injection
 
 # Use simple versions for now to avoid complex dependencies
 from app.api.v1.endpoints.health import router as health_router
@@ -97,6 +101,113 @@ if not settings.DEBUG:
         TrustedHostMiddleware,
         allowed_hosts=settings.ALLOWED_HOSTS,
     )
+
+# Security Headers Middleware - CSP, HSTS, and other security headers
+@app.middleware("http")
+async def security_headers_middleware(request: Request, call_next):
+    """
+    Add security headers to all responses.
+    
+    Headers added:
+    - Content-Security-Policy: Restricts resource loading
+    - Strict-Transport-Security: Enforces HTTPS
+    - X-Content-Type-Options: Prevents MIME sniffing
+    - X-Frame-Options: Prevents clickjacking
+    - X-XSS-Protection: Legacy XSS protection
+    - Referrer-Policy: Controls referrer information
+    - Permissions-Policy: Controls browser features
+    """
+    response = await call_next(request)
+    
+    # Content Security Policy - restrictive but allows necessary resources
+    csp_policy = (
+        "default-src 'self'; "
+        "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://unpkg.com; "
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+        "font-src 'self' https://fonts.gstatic.com; "
+        "img-src 'self' data: https:; "
+        "connect-src 'self' https://telivus-ai.onrender.com https://api.openai.com wss://*.langfuse.com; "
+        "frame-ancestors 'none'; "
+        "base-uri 'self'; "
+        "form-action 'self'; "
+        "object-src 'none'"
+    )
+    response.headers["Content-Security-Policy"] = csp_policy
+    
+    # Strict Transport Security - enforce HTTPS for 1 year
+    if not settings.DEBUG:
+        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains; preload"
+    
+    # Prevent MIME type sniffing
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    
+    # Prevent clickjacking
+    response.headers["X-Frame-Options"] = "DENY"
+    
+    # Legacy XSS protection (still useful for older browsers)
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    
+    # Control referrer information
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    
+    # Control browser features
+    response.headers["Permissions-Policy"] = (
+        "accelerometer=(), camera=(), geolocation=(), gyroscope=(), "
+        "magnetometer=(), microphone=(), payment=(), usb=()"
+    )
+    
+    return response
+
+# Request Sanitization Middleware - sanitize incoming request bodies
+@app.middleware("http")
+async def request_sanitization_middleware(request: Request, call_next):
+    """
+    Sanitize incoming request bodies to prevent injection attacks.
+    
+    Applies to JSON request bodies for POST, PUT, PATCH requests.
+    """
+    # Only sanitize requests with JSON body
+    if request.method in ("POST", "PUT", "PATCH") and request.headers.get("content-type", "").startswith("application/json"):
+        try:
+            # Read the body
+            body = await request.body()
+            if body:
+                import json
+                try:
+                    json_data = json.loads(body)
+                    # Sanitize the JSON data
+                    sanitized_data = validate_and_sanitize_json(json_data)
+                    
+                    # Check for injection attempts
+                    body_str = json.dumps(sanitized_data)
+                    if detect_sql_injection(body_str):
+                        logger = logging.getLogger(__name__)
+                        logger.warning(f"Potential SQL injection attempt from {request.client.host if request.client else 'unknown'}")
+                    
+                    if detect_command_injection(body_str):
+                        logger = logging.getLogger(__name__)
+                        logger.warning(f"Potential command injection attempt from {request.client.host if request.client else 'unknown'}")
+                    
+                    # Replace request body with sanitized version
+                    # We need to create a new request with the sanitized body
+                    from starlette.datastructures import Headers
+                    from starlette.requests import Request as StarletteRequest
+                    
+                    # Create a new request with sanitized body
+                    async def receive():
+                        return {"type": "http.request", "body": json.dumps(sanitized_data).encode()}
+                    
+                    request._receive = receive
+                except json.JSONDecodeError:
+                    # Invalid JSON, let the normal error handling deal with it
+                    pass
+        except Exception:
+            # If sanitization fails, log and continue without sanitization
+            logger = logging.getLogger(__name__)
+            logger.warning("Request sanitization failed, continuing without sanitization")
+    
+    response = await call_next(request)
+    return response
 
 # Request logging middleware with CORS headers
 @app.middleware("http")
