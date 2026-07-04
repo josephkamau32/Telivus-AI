@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Render deployment entry point — imports and runs the FastAPI app from backend/app/main.py
 """
 Main entry point for Render deployment.
 This imports and runs the backend application.
