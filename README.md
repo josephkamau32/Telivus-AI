@@ -41,7 +41,7 @@
 
 ## Table of Contents
 
-- [About the Project](#about-the-project)
+- [Features](#features)
 - [Scope & Disclaimer](#-scope--disclaimer)
 - [Architecture & Data Flow](#-architecture--data-flow)
 - [Core Capabilities](#-core-capabilities)
@@ -65,25 +65,13 @@
 
 ---
 
-## About the Project
+## Features
 
-Telivus AI is a **production-grade, AI-powered health assessment platform** that combines a multi-agent LangChain architecture with retrieval-augmented generation (RAG), deep learning trajectory forecasting, and a confidence/explainability engine — all served through an async Python backend and a React PWA frontend.
-
-**This repository is a senior-level engineering portfolio piece**, not a toy demo. It demonstrates end-to-end ownership of:
-
-- **AI/ML system design** — multi-agent orchestration, RAG pipelines, LSTM/Transformer ensemble models
-- **Full-stack product engineering** — React 18 + TypeScript frontend, FastAPI + PostgreSQL backend
-- **Production operations** — Docker multi-stage builds, CI/CD with coverage gates, Prometheus/Grafana monitoring, Sentry error tracking
-- **Responsible AI** — confidence scoring, explainability graphs, safety guardrails, DSGVO-compliant data handling
-
-### Who This Is For
-
-| Audience | Value |
-|---|---|
-| **Engineering Managers & Recruiters** | Evidence of senior-level system design, code quality discipline, and production thinking |
-| **AI/ML Engineers** | Reference implementation of LangChain agents, RAG, CCEE, and deep learning pipelines |
-| **Health-Tech Teams** | Prototype for AI-assisted triage in resource-constrained settings |
-| **Students & Learners** | Full-stack AI application with documented architecture decisions |
+- AI Health Assessment — Conversational health intake powered by LangChain agents and RAG
+- Personalized Reports — Structured health reports generated from assessment sessions
+- Secure by Design — No PII stored in logs; environment-variable-based secret management
+- Containerized Deployment — Full Docker Compose setup for local and production environments
+- Observability — LLM call tracing and performance monitoring via Langfuse
 
 ---
 
