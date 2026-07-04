@@ -165,46 +165,52 @@ async def request_sanitization_middleware(request: Request, call_next):
     Sanitize incoming request bodies to prevent injection attacks.
     
     Applies to JSON request bodies for POST, PUT, PATCH requests.
+    Uses a receive wrapper to avoid consuming the body stream prematurely.
+    Properly handles multi-chunk request bodies.
     """
     # Only sanitize requests with JSON body
     if request.method in ("POST", "PUT", "PATCH") and request.headers.get("content-type", "").startswith("application/json"):
-        try:
-            # Read the body
-            body = await request.body()
-            if body:
-                import json
-                try:
-                    json_data = json.loads(body)
-                    # Sanitize the JSON data
-                    sanitized_data = validate_and_sanitize_json(json_data)
-                    
-                    # Check for injection attempts
-                    body_str = json.dumps(sanitized_data)
-                    if detect_sql_injection(body_str):
-                        logger = logging.getLogger(__name__)
-                        logger.warning(f"Potential SQL injection attempt from {request.client.host if request.client else 'unknown'}")
-                    
-                    if detect_command_injection(body_str):
-                        logger = logging.getLogger(__name__)
-                        logger.warning(f"Potential command injection attempt from {request.client.host if request.client else 'unknown'}")
-                    
-                    # Replace request body with sanitized version
-                    # We need to create a new request with the sanitized body
-                    from starlette.datastructures import Headers
-                    from starlette.requests import Request as StarletteRequest
-                    
-                    # Create a new request with sanitized body
-                    async def receive():
-                        return {"type": "http.request", "body": json.dumps(sanitized_data).encode()}
-                    
-                    request._receive = receive
-                except json.JSONDecodeError:
-                    # Invalid JSON, let the normal error handling deal with it
-                    pass
-        except Exception:
-            # If sanitization fails, log and continue without sanitization
-            logger = logging.getLogger(__name__)
-            logger.warning("Request sanitization failed, continuing without sanitization")
+        import json
+        import logging
+        
+        logger = logging.getLogger(__name__)
+        original_receive = request._receive
+        body_chunks = []
+        chunk_count = 0
+        
+        async def receive_wrapper():
+            nonlocal chunk_count
+            message = await original_receive()
+            if message["type"] == "http.request":
+                body_chunks.append(message.get("body", b""))
+                chunk_count += 1
+                # If this is the last chunk, sanitize the complete body
+                if not message.get("more_body", False):
+                    full_body = b"".join(body_chunks)
+                    if full_body:
+                        try:
+                            json_data = json.loads(full_body)
+                            sanitized_data = validate_and_sanitize_json(json_data)
+                            
+                            # Check for injection attempts
+                            body_str = json.dumps(sanitized_data)
+                            if detect_sql_injection(body_str):
+                                logger.warning(f"Potential SQL injection attempt from {request.client.host if request.client else 'unknown'}")
+                            
+                            if detect_command_injection(body_str):
+                                logger.warning(f"Potential command injection attempt from {request.client.host if request.client else 'unknown'}")
+                            
+                            # Replace body with sanitized version in the final chunk
+                            message["body"] = json.dumps(sanitized_data).encode()
+                        except json.JSONDecodeError:
+                            # Invalid JSON, let the normal error handling deal with it
+                            pass
+                else:
+                    # Intermediate chunk - send empty body, the full body will be in the last chunk
+                    message["body"] = b""
+            return message
+        
+        request._receive = receive_wrapper
     
     response = await call_next(request)
     return response

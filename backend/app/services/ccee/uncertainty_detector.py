@@ -59,7 +59,8 @@ class UncertaintyDetector:
     
     def suggest_additional_data(
         self,
-        request: HealthAssessmentRequest
+        request: HealthAssessmentRequest,
+        confidence_breakdown: Any = None
     ) -> List[str]:
         """
         Suggest specific additional data that would improve assessment.
