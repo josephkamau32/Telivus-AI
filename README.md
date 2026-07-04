@@ -7,6 +7,7 @@
 
 <p align="center">
   <a href="https://github.com/josephkamau32/Telivus-AI/actions/workflows/ci.yml"><img src="https://github.com/josephkamau32/Telivus-AI/actions/workflows/ci.yml/badge.svg" alt="CI Pipeline"></a>
+  <a href="https://github.com/josephkamau32/Telivus-AI/actions"><img src="https://img.shields.io/badge/tests-passing-brightgreen" alt="Tests"></a>
   <a href="https://codecov.io/gh/josephkamau32/Telivus-AI"><img src="https://codecov.io/gh/josephkamau32/Telivus-AI/branch/main/graph/badge.svg" alt="codecov"></a>
   <a href="https://telivus.co.ke/"><img src="https://img.shields.io/badge/Frontend-Live-brightgreen?style=flat&logo=vercel" alt="Live Demo"></a>
   <a href="https://telivus-ai.onrender.com"><img src="https://img.shields.io/badge/Backend-API-blue?style=flat&logo=fastapi" alt="Backend API"></a>
