@@ -66,6 +66,9 @@ pids
 # Optional npm cache directory
 .npm
 
+# Bun lockfile
+bun.lockb
+
 # Optional eslint cache
 .eslintcache
 
