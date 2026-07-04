@@ -45,9 +45,14 @@ async def async_client() -> AsyncGenerator:
             response = await async_client.get("/health")
             assert response.status_code == 200
     """
+    # Manually handle lifespan for httpx < 0.27
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as client:
+        # Manually trigger startup lifespan
+        await app.router.startup()
         yield client
+        # Manually trigger shutdown lifespan
+        await app.router.shutdown()
 
 
 # Mock AI Service Fixtures
