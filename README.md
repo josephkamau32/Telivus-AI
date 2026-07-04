@@ -182,7 +182,7 @@ User Symptom Input
 
 ### Health Trajectory Prediction
 - **30-day forecasting** using LSTM networks with attention mechanism and Transformer models
-- **Intervention simulation** — Monte Carlo "what-if" scenario planning for treatment outcomes
+- **Intervention simulation** — deterministic "what-if" scenario planning for treatment outcomes
 - **Uncertainty quantification** — bootstrap aggregation with confidence intervals on all predictions
 - **Longitudinal analytics** — time-series processing of health metrics for trend detection
 
@@ -248,9 +248,7 @@ ChromaDB (Vector Store / RAG)
 Sentence Transformers (all-MiniLM-L6-v2)
 PyTorch 2.1 (CUDA acceleration)
 TensorFlow / Keras 2.15
-XGBoost · LightGBM · CatBoost
 Optuna (Hyperparameter Tuning)
-NetworkX + pgmpy (Digital Twin)
 Langfuse (LLM Observability)
 RAGAs (RAG Evaluation)
 ```
@@ -310,8 +308,9 @@ Medical Knowledge Base (20+ topics, JSON)
 |---|---|---|
 | **LSTM Network** | Bidirectional LSTM + Attention | Time-series health metric prediction |
 | **Transformer** | Multi-head self-attention | Health pattern recognition across sequences |
-| **Ensemble** | Random Forest + XGBoost + LightGBM + CatBoost | Robust baseline with bootstrap aggregation |
-| **Digital Twin** | Bayesian Network (pgmpy) + NetworkX graph | Patient-specific health state modeling |
+| **Ensemble** | Random Forest + Gradient Boosting | Robust baseline with bootstrap aggregation |
+
+> **Note**: Bayesian Network Digital Twin (pgmpy + NetworkX), XGBoost/LightGBM/CatBoost ensemble, and Monte Carlo intervention simulation are planned for future releases. See [Roadmap](#-roadmap) for details.
 
 ### Intelligent Fallbacks
 
@@ -709,6 +708,17 @@ telivus-ai/
 | Q4 2026 | A/B testing framework for prompt variants | 🔜 Planned |
 | Q1 2027 | LLM-as-judge evaluation pipeline | 🔜 Planned |
 | Q1 2027 | EHR integration (HL7 FHIR) | 🔜 Planned |
+
+### Technical Debt & Research Items
+
+| Item | Description | Status |
+|---|---|---|
+| **Monte Carlo Intervention Simulation** | Replace deterministic intervention simulation with stochastic Monte Carlo sampling for probabilistic outcome distributions | 🔬 Research |
+| **XGBoost / LightGBM / CatBoost Ensemble** | Integrate gradient boosting libraries into ensemble for improved baseline performance | 🔬 Research |
+| **Bayesian Network Digital Twin (pgmpy + NetworkX)** | Implement patient-specific Bayesian Network with causal graph structure for digital twin | 🔬 Research |
+| **GPU-Accelerated Training** | Enable CUDA training loops for LSTM/Transformer models (currently CPU-only inference) | 🔬 Research |
+| **GPU Embeddings for RAG** | Move Sentence Transformers (all-MiniLM-L6-v2) from CPU to GPU for faster vector search | 🔬 Research |
+| **Production Model Training** | Extend training epochs beyond demo limits (currently capped at 50 epochs) with early stopping | 🔬 Research |
 
 ---
 
