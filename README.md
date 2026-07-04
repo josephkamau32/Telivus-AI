@@ -202,6 +202,10 @@ User Symptom Input
 
 ## 🛠 Technology Stack
 
+> **Note:** This project was initially built on Supabase edge functions + Gemini API.
+> The current production backend is FastAPI + OpenAI (in `/backend`).
+> The Supabase folder is retained as legacy reference only.
+
 <table>
 <tr>
 <td width="50%">
@@ -689,7 +693,44 @@ telivus-ai/
 
 ---
 
-## 🗺 Roadmap
+## � Legacy Supabase Architecture
+
+> [!WARNING]
+> **Legacy Architecture** — The following Supabase Edge Functions represent the **previous authentication and payment architecture** (Supabase Auth + Paystack). The current production system uses a **FastAPI backend with JWT authentication** (see [Architecture & Data Flow](#-architecture--data-flow) and [Backend](#backend) in the Technology Stack). These functions are retained for reference and potential migration scenarios but are **not deployed in the current production environment**.
+
+The legacy architecture used **4 Supabase Edge Functions** (Deno/TypeScript) deployed to Supabase's edge runtime:
+
+| Function | Purpose | Key Dependencies |
+|---|---|---|
+| `chat-with-ai` | AI health chat with caching, retry logic, and medical report generation | `@supabase/supabase-js`, OpenAI API, Deno crypto |
+| `generate-medical-report` | Structured medical report generation from symptom assessment | `@supabase/supabase-js`, OpenAI API, SHA-256 caching |
+| `initialize-payment` | Paystack payment initialization for chat subscriptions (pay-per-chat / unlimited) | `@supabase/supabase-js`, Paystack API, JWT auth |
+| `verify-payment` | Paystack payment verification and subscription activation | `@supabase/supabase-js`, Paystack API, JWT auth |
+
+### Key Characteristics
+
+| Aspect | Legacy (Supabase) | Current (FastAPI) |
+|---|---|---|
+| **Auth** | Supabase Auth (JWT) | Custom JWT (python-jose + passlib) |
+| **API Layer** | Edge Functions (Deno) | FastAPI (Python/async) |
+| **Payments** | Paystack (Kenya-focused) | Extensible payment abstraction |
+| **Database** | Supabase Postgres (direct) | SQLAlchemy 2.0 async + Alembic |
+| **AI/ML** | OpenAI only (edge-limited) | LangChain agents + local models (LSTM/Transformer) |
+| **Observability** | Supabase logs | Langfuse + Prometheus + Grafana + Sentry |
+
+### Migration Notes
+
+- **Authentication**: Migrated from Supabase Auth tokens to custom JWT with refresh token rotation
+- **Payments**: Paystack integration moved to backend service layer for better testability
+- **AI Processing**: Moved from edge-constrained functions to full FastAPI service with LangChain orchestration
+- **Database Access**: Direct Supabase client → SQLAlchemy ORM with connection pooling
+- **Deployment**: Supabase Edge Functions → Docker containers on Render/Railway/Fly.io
+
+The legacy functions remain in `supabase/functions/` for reference. See [Project Structure](#-project-structure) for the current architecture.
+
+---
+
+## �🗺 Roadmap
 
 | Phase | Milestone | Status | Description |
 |---|---|---|---|
