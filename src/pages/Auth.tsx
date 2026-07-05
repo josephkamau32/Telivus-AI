@@ -6,8 +6,9 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2 } from "lucide-react";
+import { CheckCircle2, Loader2, AlertCircle } from "lucide-react";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { useTranslation } from "@/contexts/LanguageContext";
@@ -22,6 +23,8 @@ export default function Auth() {
   const [password, setPassword] = useState("");
   const [username, setUsername] = useState("");
   const [currentUser, setCurrentUser] = useState<any>(null);
+  const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error' | 'info'; title: string; description: string } | null>(null);
+  const [activeTab, setActiveTab] = useState<'signin' | 'signup'>('signin');
 
   useEffect(() => {
     let mounted = true;
@@ -101,6 +104,11 @@ export default function Auth() {
     e.preventDefault();
     
     if (!email || !password) {
+      setStatusMessage({
+        type: 'error',
+        title: t.validationError,
+        description: t.pleaseFillAllFields,
+      });
       toast({
         title: t.validationError,
         description: t.pleaseFillAllFields,
@@ -110,6 +118,11 @@ export default function Auth() {
     }
 
     if (password.length < 6) {
+      setStatusMessage({
+        type: 'error',
+        title: t.validationError,
+        description: t.passwordMin6Chars,
+      });
       toast({
         title: t.validationError,
         description: t.passwordMin6Chars,
@@ -119,6 +132,7 @@ export default function Auth() {
     }
 
     setIsLoading(true);
+    setStatusMessage(null);
 
     const redirectUrl = `${window.location.origin}/auth`;
     
@@ -136,15 +150,27 @@ export default function Auth() {
     setIsLoading(false);
 
     if (error) {
+      setStatusMessage({
+        type: 'error',
+        title: 'Sign Up Failed',
+        description: error.message || 'We could not create your account right now. Please try again.',
+      });
       toast({
         title: "Sign Up Failed",
-        description: error.message,
+        description: error.message || 'We could not create your account right now. Please try again.',
         variant: "destructive",
       });
     } else {
+      setStatusMessage({
+        type: 'success',
+        title: t.success,
+        description: 'Your account was created successfully. You can sign in now.',
+      });
+      setActiveTab('signin');
+      setPassword('');
       toast({
         title: t.success,
-        description: t.checkEmailConfirm,
+        description: 'Your account was created successfully. You can sign in now.',
       });
     }
   };
@@ -174,6 +200,11 @@ export default function Auth() {
     e.preventDefault();
     
     if (!email || !password) {
+      setStatusMessage({
+        type: 'error',
+        title: t.validationError,
+        description: t.emailAndPasswordRequired,
+      });
       toast({
         title: t.validationError,
         description: t.emailAndPasswordRequired,
@@ -184,24 +215,42 @@ export default function Auth() {
 
     try {
       setIsLoading(true);
+      setStatusMessage(null);
       const { error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
       if (error) {
+        setStatusMessage({
+          type: 'error',
+          title: t.authenticationError,
+          description: error.message || 'We couldn\'t sign you in. Please double-check your email and password.',
+        });
         toast({
           title: t.authenticationError,
-          description: error.message,
+          description: error.message || 'We couldn\'t sign you in. Please double-check your email and password.',
           variant: "destructive",
+        });
+      } else {
+        setStatusMessage({
+          type: 'success',
+          title: 'Signed in successfully',
+          description: 'You are being redirected to your dashboard.',
         });
       }
       // Don't navigate here - let onAuthStateChange handle it
     } catch (error) {
       console.error('Sign-in error:', error);
+      const message = error instanceof Error ? error.message : t.unexpectedError;
+      setStatusMessage({
+        type: 'error',
+        title: t.signInFailed,
+        description: message,
+      });
       toast({
         title: t.signInFailed,
-        description: t.unexpectedError,
+        description: message,
         variant: "destructive",
       });
     } finally {
@@ -267,13 +316,21 @@ export default function Auth() {
                 </div>
               </div>
             ) : (
-            <Tabs defaultValue="signin" className="w-full">
+            <Tabs value={activeTab} onValueChange={(value) => { setActiveTab(value as 'signin' | 'signup'); setStatusMessage(null); }} className="w-full">
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="signin">{t.signIn}</TabsTrigger>
                 <TabsTrigger value="signup">{t.signUp}</TabsTrigger>
               </TabsList>
               
-              <TabsContent value="signin">
+              {statusMessage && (
+              <Alert className={`mb-4 ${statusMessage.type === 'error' ? 'border-destructive/40 bg-destructive/5' : statusMessage.type === 'success' ? 'border-emerald-500/40 bg-emerald-500/5' : 'border-primary/40 bg-primary/5'}`}>
+                {statusMessage.type === 'error' ? <AlertCircle className="h-4 w-4" /> : statusMessage.type === 'success' ? <CheckCircle2 className="h-4 w-4" /> : <Loader2 className="h-4 w-4 animate-spin" />}
+                <AlertTitle>{statusMessage.title}</AlertTitle>
+                <AlertDescription>{statusMessage.description}</AlertDescription>
+              </Alert>
+            )}
+
+            <TabsContent value="signin">
                 <form onSubmit={handleSignIn} className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="signin-email">{t.email}</Label>
