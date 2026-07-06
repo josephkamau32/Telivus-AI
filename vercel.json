@@ -1,4 +1,8 @@
 {
+  "version": 2,
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "installCommand": "npm install",
   "rewrites": [
     { "source": "/favicon.ico", "destination": "/favicon.svg" },
     { "source": "/(.*)", "destination": "/index.html" }
