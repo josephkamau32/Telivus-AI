@@ -49,15 +49,20 @@ async def lifespan(app: FastAPI):
     logger = logging.getLogger(__name__)
     logger.info("Starting Telivus AI Backend...")
 
-    # Initialize database
-    await create_tables()
-    logger.info("Database tables initialized")
+    try:
+        # Initialize database
+        await create_tables()
+        logger.info("Database tables initialized")
 
-    # Initialize vector store for RAG
-    await initialize_vector_store()
-    logger.info("Vector store initialized")
+        # Initialize vector store for RAG
+        await initialize_vector_store()
+        logger.info("Vector store initialized")
 
-    logger.info("Telivus AI Backend startup complete")
+        logger.info("Telivus AI Backend startup complete")
+    except Exception as e:
+        logger.error(f"Failed to start Telivus AI Backend: {e}")
+        logger.error("Full traceback:", exc_info=True)
+        raise
 
     yield
 
@@ -359,11 +364,14 @@ async def options_handler(path: str):
 
 if __name__ == "__main__":
     import uvicorn
+    import os
+
+    port = int(os.environ.get("PORT", 8000))
 
     uvicorn.run(
         "app.main:app",
         host="0.0.0.0",
-        port=8000,
+        port=port,
         reload=settings.DEBUG,
         log_level="info"
     )
