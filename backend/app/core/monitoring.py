@@ -15,21 +15,31 @@ logger = logging.getLogger(__name__)
 
 try:
     import sentry_sdk
-    from sentry_sdk.integrations.fastapi import FastApiIntegration
-    from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
-    from sentry_sdk.integrations.redis import RedisIntegration
-except ModuleNotFoundError:  # pragma: no cover - optional dependency in deployment
+except Exception:  # pragma: no cover
     sentry_sdk = None
-    FastApiIntegration = None
-    SqlalchemyIntegration = None
-    RedisIntegration = None
 
-# Check if SQLAlchemy is available for Sentry integration
-try:
-    import sqlalchemy  # noqa: F401
-    SQLALCHEMY_AVAILABLE = True
-except ModuleNotFoundError:
-    SQLALCHEMY_AVAILABLE = False
+# Import each Sentry integration individually so one missing optional
+# dependency (e.g. SQLAlchemy, Redis) doesn't prevent the others from loading.
+# sentry_sdk raises DidNotEnable (a plain Exception subclass) when the
+# underlying library is absent, so we must catch Exception – not just
+# ModuleNotFoundError.
+FastApiIntegration = None
+SqlalchemyIntegration = None
+RedisIntegration = None
+
+if sentry_sdk is not None:
+    try:
+        from sentry_sdk.integrations.fastapi import FastApiIntegration
+    except Exception:  # pragma: no cover
+        pass
+    try:
+        from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
+    except Exception:  # pragma: no cover
+        pass
+    try:
+        from sentry_sdk.integrations.redis import RedisIntegration
+    except Exception:  # pragma: no cover
+        pass
 
 
 def configure_metrics(app: Any) -> None:
@@ -75,7 +85,7 @@ def init_sentry(
         integrations = []
         if FastApiIntegration is not None:
             integrations.append(FastApiIntegration(transaction_style="endpoint"))
-        if SqlalchemyIntegration is not None and SQLALCHEMY_AVAILABLE:
+        if SqlalchemyIntegration is not None:
             integrations.append(SqlalchemyIntegration())
         if RedisIntegration is not None:
             integrations.append(RedisIntegration())
