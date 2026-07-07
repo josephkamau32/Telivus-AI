@@ -24,6 +24,13 @@ except ModuleNotFoundError:  # pragma: no cover - optional dependency in deploym
     SqlalchemyIntegration = None
     RedisIntegration = None
 
+# Check if SQLAlchemy is available for Sentry integration
+try:
+    import sqlalchemy  # noqa: F401
+    SQLALCHEMY_AVAILABLE = True
+except ModuleNotFoundError:
+    SQLALCHEMY_AVAILABLE = False
+
 
 def configure_metrics(app: Any) -> None:
     """Attach Prometheus metrics instrumentation when the dependency exists."""
@@ -68,7 +75,7 @@ def init_sentry(
         integrations = []
         if FastApiIntegration is not None:
             integrations.append(FastApiIntegration(transaction_style="endpoint"))
-        if SqlalchemyIntegration is not None:
+        if SqlalchemyIntegration is not None and SQLALCHEMY_AVAILABLE:
             integrations.append(SqlalchemyIntegration())
         if RedisIntegration is not None:
             integrations.append(RedisIntegration())
