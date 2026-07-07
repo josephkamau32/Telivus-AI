@@ -8,14 +8,37 @@ Comprehensive error monitoring with:
 - Custom tags and metadata
 """
 
-import sentry_sdk
-from sentry_sdk.integrations.fastapi import FastApiIntegration
-from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
-from sentry_sdk.integrations.redis import RedisIntegration
 import logging
-from typing import Optional
+from typing import Any, Optional
 
 logger = logging.getLogger(__name__)
+
+try:
+    import sentry_sdk
+    from sentry_sdk.integrations.fastapi import FastApiIntegration
+    from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
+    from sentry_sdk.integrations.redis import RedisIntegration
+except ModuleNotFoundError:  # pragma: no cover - optional dependency in deployment
+    sentry_sdk = None
+    FastApiIntegration = None
+    SqlalchemyIntegration = None
+    RedisIntegration = None
+
+
+def configure_metrics(app: Any) -> None:
+    """Attach Prometheus metrics instrumentation when the dependency exists."""
+    try:
+        from prometheus_fastapi_instrumentator import Instrumentator
+    except ModuleNotFoundError:
+        logger.warning(
+            "prometheus-fastapi-instrumentator is not installed; skipping metrics instrumentation"
+        )
+        return
+    except Exception as exc:  # pragma: no cover - defensive fallback
+        logger.warning("Failed to initialize metrics instrumentation: %s", exc)
+        return
+
+    Instrumentator().instrument(app).expose(app, include_in_schema=False, should_gzip=True)
 
 
 def init_sentry(
@@ -36,19 +59,27 @@ def init_sentry(
     if not dsn:
         logger.warning("Sentry DSN not provided. Error tracking disabled.")
         return
+
+    if sentry_sdk is None:
+        logger.warning("sentry-sdk is not installed. Error tracking disabled.")
+        return
     
     try:
+        integrations = []
+        if FastApiIntegration is not None:
+            integrations.append(FastApiIntegration(transaction_style="endpoint"))
+        if SqlalchemyIntegration is not None:
+            integrations.append(SqlalchemyIntegration())
+        if RedisIntegration is not None:
+            integrations.append(RedisIntegration())
+
         sentry_sdk.init(
             dsn=dsn,
             environment=environment,
             traces_sample_rate=traces_sample_rate if enable_tracing else 0.0,
             
             # Integrations
-            integrations=[
-                FastApiIntegration(transaction_style="endpoint"),
-                SqlalchemyIntegration(),
-                RedisIntegration(),
-            ],
+            integrations=integrations,
             
             # Error filtering
             before_send=before_send_filter,
@@ -110,6 +141,10 @@ def capture_exception(
         user_id: Optional user ID for context
         extra_context: Additional context data
     """
+    if sentry_sdk is None:
+        logger.warning("sentry-sdk is not installed; skipping exception capture")
+        return
+
     with sentry_sdk.push_scope() as scope:
         # Add user context
         if user_id:
@@ -137,6 +172,10 @@ def capture_message(
         level: Severity level (debug, info, warning, error, fatal)
         extra_context: Additional context
     """
+    if sentry_sdk is None:
+        logger.warning("sentry-sdk is not installed; skipping message capture")
+        return
+
     with sentry_sdk.push_scope() as scope:
         if extra_context:
             for key, value in extra_context.items():
@@ -153,6 +192,10 @@ def set_user_context(user_id: str, email: Optional[str] = None):
         user_id: User identifier
         email: User email
     """
+    if sentry_sdk is None:
+        logger.warning("sentry-sdk is not installed; skipping user context")
+        return
+
     sentry_sdk.set_user({
         "id": user_id,
         "email": email
@@ -167,6 +210,10 @@ def set_tag(key: str, value: str):
         key: Tag key
         value: Tag value
     """
+    if sentry_sdk is None:
+        logger.warning("sentry-sdk is not installed; skipping tag update")
+        return
+
     sentry_sdk.set_tag(key, value)
 
 
@@ -185,6 +232,10 @@ def add_breadcrumb(
         level: Severity level
         data: Additional data
     """
+    if sentry_sdk is None:
+        logger.warning("sentry-sdk is not installed; skipping breadcrumb")
+        return
+
     sentry_sdk.add_breadcrumb(
         category=category,
         message=message,
