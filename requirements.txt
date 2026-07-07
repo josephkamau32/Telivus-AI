@@ -6,3 +6,6 @@ pydantic-settings==2.7.1
 openai==1.54.3
 python-dotenv==1.0.0
 colorlog==6.8.0
+prometheus-fastapi-instrumentator==7.0.0
+sentry-sdk[fastapi]==1.39.1
+structlog==24.2.0

@@ -18,7 +18,7 @@ import time
 import uuid
 import json
 
-from prometheus_fastapi_instrumentator import Instrumentator
+from app.core.monitoring import configure_metrics
 
 # Import sanitizer for request sanitization middleware
 from app.utils.sanitizer import validate_and_sanitize_json, detect_sql_injection, detect_command_injection
@@ -75,8 +75,8 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# Expose metrics endpoint
-Instrumentator().instrument(app).expose(app, include_in_schema=False, should_gzip=True)
+# Expose metrics endpoint when the optional dependency is available
+configure_metrics(app)
 
 # Set up CORS with comprehensive configuration
 app.add_middleware(
