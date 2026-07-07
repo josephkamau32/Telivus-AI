@@ -53,7 +53,7 @@ sentry-sdk[fastapi]==1.39.1
 structlog==24.2.0
 prometheus-client==0.19.0
 prometheus-fastapi-instrumentator==7.0.0
-langfuse==2.53.8
+langfuse==4.13.0
 ragas==0.2.7
 
 # Code Quality (NEW - Priority 5)
