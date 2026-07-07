@@ -46,7 +46,7 @@ slowapi==0.1.9
 python-jose[cryptography]==3.3.0
 passlib[bcrypt]==1.7.4
 python-multipart==0.0.6
-bleach==6.1.0
+bleach==6.4.0
 
 # Monitoring & Observability (NEW - Priority 4)
 sentry-sdk[fastapi]==1.39.1
