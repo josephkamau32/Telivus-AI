@@ -16,9 +16,11 @@ interface Message {
 
 interface ChatInterfaceProps {
   onBack: () => void;
+  autoSendMessage?: string | null;
+  onAutoSendComplete?: () => void;
 }
 
-const ChatInterface = ({ onBack }: ChatInterfaceProps) => {
+const ChatInterface = ({ onBack, autoSendMessage, onAutoSendComplete }: ChatInterfaceProps) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -42,6 +44,14 @@ const ChatInterface = ({ onBack }: ChatInterfaceProps) => {
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, []);
+
+  // Auto-send the pending message after payment redirect + chat init
+  useEffect(() => {
+    if (autoSendMessage && sessionId && !isInitializing && !loading) {
+      onAutoSendComplete?.();
+      handleSendMessageDirect(autoSendMessage);
+    }
+  }, [autoSendMessage, sessionId, isInitializing]);
 
   const checkSubscription = async () => {
     try {
@@ -153,10 +163,10 @@ const ChatInterface = ({ onBack }: ChatInterfaceProps) => {
     }
   };
 
-  const handleSendMessage = async () => {
-    if (!input.trim() || !sessionId || loading) return;
+  const handleSendMessageDirect = async (messageText: string) => {
+    if (!messageText.trim() || !sessionId || loading) return;
 
-    const userMessage = input.trim();
+    const userMessage = messageText.trim();
     setInput('');
     setLoading(true);
 
@@ -182,9 +192,7 @@ const ChatInterface = ({ onBack }: ChatInterfaceProps) => {
       // Check if payment is required (402 status)
       if (response.error || response.data?.needsPayment) {
         setShowPayment(true);
-        // Store the pending message instead of removing it
         setPendingMessage(userMessage);
-        // Remove the temporary user message
         setMessages(prev => prev.filter(m => m.id !== tempUserMessage.id));
         return;
       }
@@ -211,12 +219,17 @@ const ChatInterface = ({ onBack }: ChatInterfaceProps) => {
         description: error.message || 'Failed to send message',
         variant: 'destructive',
       });
-      // Remove the temporary user message on error
       setMessages(prev => prev.filter(m => m.id !== tempUserMessage.id));
     } finally {
       setLoading(false);
     }
   };
+
+  const handleSendMessage = async () => {
+    if (!input.trim() || !sessionId || loading) return;
+    await handleSendMessageDirect(input.trim());
+  };
+
 
   const handlePaymentSuccess = async () => {
     setShowPayment(false);
@@ -399,6 +412,8 @@ const ChatInterface = ({ onBack }: ChatInterfaceProps) => {
         open={showPayment}
         onClose={() => setShowPayment(false)}
         onSuccess={handlePaymentSuccess}
+        pendingMessage={pendingMessage}
+        sessionId={sessionId}
       />
     </div>
   );
