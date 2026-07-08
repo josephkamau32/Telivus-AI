@@ -10,9 +10,11 @@ interface PaymentModalProps {
   open: boolean;
   onClose: () => void;
   onSuccess: () => void;
+  pendingMessage?: string | null;
+  sessionId?: string | null;
 }
 
-const PaymentModal = ({ open, onClose, onSuccess }: PaymentModalProps) => {
+const PaymentModal = ({ open, onClose, onSuccess, pendingMessage, sessionId }: PaymentModalProps) => {
   const [loading, setLoading] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<'pay_per_chat' | 'unlimited' | null>(null);
   const { toast } = useToast();
@@ -32,6 +34,14 @@ const PaymentModal = ({ open, onClose, onSuccess }: PaymentModalProps) => {
       });
 
       if (response.error) throw response.error;
+
+      // Persist pending chat context so it survives the full page redirect
+      if (pendingMessage) {
+        sessionStorage.setItem('pendingChatMessage', pendingMessage);
+      }
+      if (sessionId) {
+        sessionStorage.setItem('pendingChatSessionId', sessionId);
+      }
 
       // Redirect to Paystack payment page
       window.location.href = response.data.authorization_url;
@@ -129,6 +139,10 @@ const PaymentModal = ({ open, onClose, onSuccess }: PaymentModalProps) => {
                     className="w-full"
                     variant={plan.popular ? 'default' : 'outline'}
                     disabled={loading}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (!loading) handlePayment(plan.id);
+                    }}
                   >
                     {loading && selectedPlan === plan.id ? (
                       <>

@@ -8,6 +8,7 @@ import ChatInterface from '@/components/ChatInterface';
 const Chat = () => {
   const [loading, setLoading] = useState(true);
   const [verifying, setVerifying] = useState(false);
+  const [autoSendMessage, setAutoSendMessage] = useState<string | null>(null);
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -55,6 +56,14 @@ const Chat = () => {
           description: 'Your subscription is now active!',
         });
 
+        // Recover the pending message that was stored before the redirect
+        const storedMessage = sessionStorage.getItem('pendingChatMessage');
+        if (storedMessage) {
+          setAutoSendMessage(storedMessage);
+          sessionStorage.removeItem('pendingChatMessage');
+          sessionStorage.removeItem('pendingChatSessionId');
+        }
+
         // Remove query params from URL
         window.history.replaceState({}, '', '/chat');
       } catch (error: any) {
@@ -87,7 +96,13 @@ const Chat = () => {
     );
   }
 
-  return <ChatInterface onBack={handleBack} />;
+  return (
+    <ChatInterface
+      onBack={handleBack}
+      autoSendMessage={autoSendMessage}
+      onAutoSendComplete={() => setAutoSendMessage(null)}
+    />
+  );
 };
 
 export default Chat;
