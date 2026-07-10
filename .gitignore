@@ -118,11 +118,13 @@ temp/
 secrets.json
 credentials.json
 
-# Binaries
+# Binaries — never commit executables or archives
 *.exe
 *.tar.gz
 *.bin
 *.zip
+*.dmg
+*.pkg
 
 # Python
 __pycache__/
