@@ -171,7 +171,6 @@ User Symptom Input
 
 ### Health Trajectory Prediction
 - **30-day forecasting** using LSTM networks with attention mechanism and Transformer models
-- **Intervention simulation** — deterministic "what-if" scenario planning for treatment outcomes
 - **Uncertainty quantification** — bootstrap aggregation with confidence intervals on all predictions
 - **Longitudinal analytics** — time-series processing of health metrics for trend detection
 
@@ -674,6 +673,9 @@ telivus-ai/
 │   ├── hooks/                     # Custom React hooks
 │   ├── contexts/                  # React context providers
 │   └── integrations/              # External service adapters
+├── supabase/              # ⚠️ Legacy: original Supabase+Gemini stack (see supabase/LEGACY.md)
+│   ├── functions/         # Edge functions (deprecated)
+│   └── migrations/        # Database migrations
 ├── docker-compose.yml             # 7-service orchestration
 ├── .pre-commit-config.yaml        # 11 pre-commit hooks
 ├── .commitlintrc.json             # Conventional Commits
@@ -721,34 +723,17 @@ The legacy functions remain in `supabase/functions/` for reference. See [Project
 
 ## �🗺 Roadmap
 
-| Phase | Milestone | Status | Description |
-|---|---|---|---|
-| **1** | Core MVP | ✅ Done | AI chat, symptom analysis, medical reports, PWA |
-| **2** | Production Grade | ✅ Done | LangChain agents, RAG, CCEE, CI/CD, testing, Docker |
-| **3** | Trajectory & Alerts | ✅ Done | LSTM/Transformer prediction, alert center, intervention simulation |
-| **4** | Digital Twin | 🚧 In Progress | Bayesian patient modeling, causal inference graphs |
+The following capabilities are in active development or planned:
 
-### Upcoming
-
-| Quarter | Feature | Status |
-|---|---|---|
-| Q3 2026 | Domain-specific fine-tuning (medical NLP) | 🔜 Planned |
-| Q3 2026 | Multi-language support (DE, FR, SW) | 🔜 Planned |
-| Q4 2026 | GDPR Art. 17 data deletion endpoint | 🔜 Planned |
-| Q4 2026 | A/B testing framework for prompt variants | 🔜 Planned |
-| Q1 2027 | LLM-as-judge evaluation pipeline | 🔜 Planned |
-| Q1 2027 | EHR integration (HL7 FHIR) | 🔜 Planned |
-
-### Technical Debt & Research Items
-
-| Item | Description | Status |
-|---|---|---|
-| **Monte Carlo Intervention Simulation** | Replace deterministic intervention simulation with stochastic Monte Carlo sampling for probabilistic outcome distributions | 🔬 Research |
-| **XGBoost / LightGBM / CatBoost Ensemble** | Integrate gradient boosting libraries into ensemble for improved baseline performance | 🔬 Research |
-| **Bayesian Network Digital Twin (pgmpy + NetworkX)** | Implement patient-specific Bayesian Network with causal graph structure for digital twin | 🔬 Research |
-| **GPU-Accelerated Training** | Enable CUDA training loops for LSTM/Transformer models (currently CPU-only inference) | 🔬 Research |
-| **GPU Embeddings for RAG** | Move Sentence Transformers (all-MiniLM-L6-v2) from CPU to GPU for faster vector search | 🔬 Research |
-| **Production Model Training** | Extend training epochs beyond demo limits (currently capped at 50 epochs) with early stopping | 🔬 Research |
+- [ ] **LSTM + Transformer trajectory prediction** — 30-day health forecasting pipeline
+- [ ] **GPU-accelerated inference** — PyTorch CUDA optimization for real-time ML
+- [ ] **AutoML with Optuna** — Automated hyperparameter tuning pipeline
+- [ ] **Monte Carlo intervention simulation** — Treatment outcome scenario modelling
+- [ ] **Ensemble ML** — Bootstrap aggregation across 5+ models with uncertainty quantification
+- [ ] **RAGAs evaluation pipeline** — Automated benchmarking of RAG quality
+- [ ] **Multi-language support** — German / English / Swahili
+- [ ] **GDPR-compliant data deletion endpoint** — Right-to-erasure implementation
+- [ ] **LangSmith / Langfuse observability** — Full LLM call tracing and monitoring
 
 ---
 
