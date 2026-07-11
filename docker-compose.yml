@@ -1,4 +1,5 @@
-version: '3.8'
+# Telivus AI — Full-Stack Development Environment
+# Services: PostgreSQL, Redis, Backend API, Frontend, Prometheus, Grafana
 
 services:
   # PostgreSQL Database

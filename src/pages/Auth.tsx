@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
-import { CheckCircle2, Loader2, AlertCircle } from "lucide-react";
+import { CheckCircle2, Loader2, AlertCircle, Sparkles } from "lucide-react";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { useTranslation } from "@/contexts/LanguageContext";
@@ -329,6 +329,32 @@ export default function Auth() {
                 <AlertDescription>{statusMessage.description}</AlertDescription>
               </Alert>
             )}
+
+              {/* Demo access for portfolio reviewers */}
+              <div className="mb-4 p-3 rounded-lg bg-gradient-to-r from-primary/5 to-secondary/5 border border-primary/20">
+                <p className="text-xs text-muted-foreground text-center mb-2">
+                  👋 Reviewing this portfolio? Try the demo instantly:
+                </p>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full border-primary/30 hover:border-primary/60 text-sm font-medium"
+                  disabled={isLoading}
+                  onClick={() => {
+                    setEmail('demo@telivus.co.ke');
+                    setPassword('demo123456');
+                    setActiveTab('signin');
+                    setStatusMessage({
+                      type: 'info',
+                      title: 'Demo credentials loaded',
+                      description: 'Click "Sign In" to access the demo.',
+                    });
+                  }}
+                >
+                  <Sparkles className="w-4 h-4 mr-2" />
+                  Try Demo
+                </Button>
+              </div>
 
             <TabsContent value="signin">
                 <form onSubmit={handleSignIn} className="space-y-4">

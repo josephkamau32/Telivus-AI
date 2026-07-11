@@ -10,9 +10,33 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Planned
 - LSTM + Transformer health trajectory prediction pipeline
 - RAGAs-based RAG evaluation and benchmarking
-- Langfuse LLM observability integration
 - Multi-language support (German / English / Swahili)
 - GDPR-compliant data deletion endpoint
+
+---
+
+## [1.2.0] — 2026-07
+
+### Added
+- **"Try Demo" button** on Auth page for instant portfolio review access
+- **EU AI Act compliance documentation** (`docs/eu-ai-act-compliance.md`)
+- **Impact & Demo Metrics** section in README with concrete performance numbers
+- **German market readiness** section with DSGVO/on-prem deployment notes
+- **Troubleshooting & FAQ** moved to dedicated `docs/troubleshooting.md`
+
+### Changed
+- **README.md restructured** for 10-second recruiter scan: hero section, metrics, optimized flow
+- **Backend status UX**: "Limited AI features" warning replaced with friendly "Waking up backend server…" spinner for Render free-tier cold starts
+- **API client**: Health check timeout increased from 5s → 20s with 3-retry exponential backoff
+- **SECURITY.md**: Complete rewrite — removed legacy Supabase references, aligned with current FastAPI + JWT architecture
+- **`.env.example`**: Cleaned legacy configs (Supabase, Flutterwave, Stripe), reorganized into logical groups
+- **`package.json`**: Renamed from `vite_react_shadcn_ts` → `telivus-ai`, version bumped to `1.2.0`
+- **`docker-compose.yml`**: Removed deprecated `version: '3.8'` key
+- Fixed `process.env.NODE_ENV` → `import.meta.env.MODE` throughout frontend (Vite compatibility)
+
+### Removed
+- Legacy Supabase architecture section from README (preserved in `supabase/LEGACY.md`)
+- Unused Supabase/Flutterwave/Stripe environment variables from `.env.example`
 
 ---
 
