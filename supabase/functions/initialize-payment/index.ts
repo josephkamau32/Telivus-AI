@@ -47,7 +47,7 @@ serve(async (req) => {
       .eq('id', user.id)
       .single();
 
-    const email = user.email || `${profile?.username}@medisense.ai`;
+    const email = user.email || `${profile?.username}@telivus.ai`;
     const amount = planType === 'pay_per_chat' ? 5000 : 30000; // In kobo (50 KES and 300 KES)
 
     // Initialize Paystack transaction
@@ -64,7 +64,7 @@ serve(async (req) => {
           user_id: user.id,
           plan_type: planType,
         },
-        callback_url: `${req.headers.get('origin') || 'https://medisense.app'}/chat?payment=success`,
+        callback_url: `${req.headers.get('origin') || 'https://telivus.ai'}/chat?payment=success`,
       }),
     });
 

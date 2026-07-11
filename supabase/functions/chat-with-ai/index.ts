@@ -78,9 +78,13 @@ serve(async (req) => {
     }
 
     if (!hasAccess) {
+      // Return 200 with needsPayment flag instead of 402.
+      // Supabase functions.invoke() treats non-2xx as errors, putting the body
+      // in error.context and setting response.data to null — which prevents the
+      // front-end from reading the needsPayment flag.
       return new Response(
-        JSON.stringify({ error: 'Payment required', needsPayment: true }),
-        { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ needsPayment: true, message: 'Payment required to continue chatting.' }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
