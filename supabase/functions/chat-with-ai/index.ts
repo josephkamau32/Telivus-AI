@@ -42,14 +42,18 @@ serve(async (req) => {
     }
 
     // Check if user has access (either active subscription or remaining chats)
-    const { data: subscription } = await supabaseAdmin
+    const { data: subscription, error: subError } = await supabaseAdmin
       .from('chat_subscriptions')
       .select('*')
       .eq('user_id', user.id)
       .eq('status', 'active')
       .order('created_at', { ascending: false })
       .limit(1)
-      .single();
+      .maybeSingle();
+
+    if (subError) {
+      console.error('Subscription lookup error:', subError);
+    }
 
     let hasAccess = false;
     let needsPayment = false;
