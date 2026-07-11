@@ -55,8 +55,16 @@ const Chat = () => {
           title: 'Payment Successful',
           description: 'Your subscription is now active!',
         });
-
-        // Recover the pending message that was stored before the redirect
+      } catch (error: any) {
+        console.error('Payment verification error:', error);
+        toast({
+          title: 'Verification Error',
+          description: error.message || 'Failed to verify payment',
+          variant: 'destructive',
+        });
+      } finally {
+        // Always recover the pending message — even if verification had issues,
+        // the Paystack redirect means payment likely succeeded.
         const storedMessage = sessionStorage.getItem('pendingChatMessage');
         if (storedMessage) {
           setAutoSendMessage(storedMessage);
@@ -66,14 +74,6 @@ const Chat = () => {
 
         // Remove query params from URL
         window.history.replaceState({}, '', '/chat');
-      } catch (error: any) {
-        console.error('Payment verification error:', error);
-        toast({
-          title: 'Verification Error',
-          description: error.message || 'Failed to verify payment',
-          variant: 'destructive',
-        });
-      } finally {
         setVerifying(false);
       }
     }

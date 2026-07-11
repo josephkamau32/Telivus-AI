@@ -51,7 +51,7 @@ const ChatInterface = ({ onBack, autoSendMessage, onAutoSendComplete }: ChatInte
       onAutoSendComplete?.();
       handleSendMessageDirect(autoSendMessage);
     }
-  }, [autoSendMessage, sessionId, isInitializing]);
+  }, [autoSendMessage, sessionId, isInitializing, loading]);
 
   const checkSubscription = async () => {
     try {
@@ -217,10 +217,11 @@ const ChatInterface = ({ onBack, autoSendMessage, onAutoSendComplete }: ChatInte
       console.error('Error sending message:', error);
       toast({
         title: 'Error',
-        description: error.message || 'Failed to send message',
+        description: error.message || 'Failed to send message. Please try again.',
         variant: 'destructive',
       });
-      setMessages(prev => prev.filter(m => m.id !== tempUserMessage.id));
+      // Keep the user's message visible — it was likely saved to DB already.
+      // Only the payment-required path removes it (since it was never sent).
     } finally {
       setLoading(false);
     }
