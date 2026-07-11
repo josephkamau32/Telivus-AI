@@ -35,6 +35,11 @@ const PaymentModal = ({ open, onClose, onSuccess, pendingMessage, sessionId }: P
 
       if (response.error) throw response.error;
 
+      const authorizationUrl = response.data?.authorization_url;
+      if (!authorizationUrl) {
+        throw new Error('No payment URL received. Please try again.');
+      }
+
       // Persist pending chat context so it survives the full page redirect
       if (pendingMessage) {
         sessionStorage.setItem('pendingChatMessage', pendingMessage);
@@ -44,7 +49,7 @@ const PaymentModal = ({ open, onClose, onSuccess, pendingMessage, sessionId }: P
       }
 
       // Redirect to Paystack payment page
-      window.location.href = response.data.authorization_url;
+      window.location.href = authorizationUrl;
     } catch (error: any) {
       console.error('Payment initialization error:', error);
       toast({
@@ -94,7 +99,7 @@ const PaymentModal = ({ open, onClose, onSuccess, pendingMessage, sessionId }: P
             Choose Your Plan
           </DialogTitle>
           <DialogDescription className="text-center">
-            Select a payment option to continue chatting with MediSense AI
+            Select a payment option to continue chatting with Telivus AI
           </DialogDescription>
         </DialogHeader>
 

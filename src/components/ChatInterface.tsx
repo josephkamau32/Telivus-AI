@@ -189,16 +189,17 @@ const ChatInterface = ({ onBack, autoSendMessage, onAutoSendComplete }: ChatInte
         },
       });
 
-      // Check if payment is required (402 status)
-      if (response.error || response.data?.needsPayment) {
+      // Real errors (network failure, 500, etc.) — surface them
+      if (response.error) {
+        throw response.error;
+      }
+
+      // Check if payment is required (the edge function returns 200 with needsPayment flag)
+      if (response.data?.needsPayment) {
         setShowPayment(true);
         setPendingMessage(userMessage);
         setMessages(prev => prev.filter(m => m.id !== tempUserMessage.id));
         return;
-      }
-
-      if (response.error) {
-        throw response.error;
       }
 
       // Add AI response to UI
