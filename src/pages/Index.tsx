@@ -867,7 +867,7 @@ const Index = () => {
   const [currentReport, setCurrentReport] = useState<any>(null);
   const [reportTimestamp, setReportTimestamp] = useState<string>('');
   const [assessmentData, setAssessmentData] = useState<PatientData | null>(null);
-  const [backendStatus, setBackendStatus] = useState<'checking' | 'available' | 'unavailable'>('checking');
+  const [backendStatus, setBackendStatus] = useState<'checking' | 'available' | 'unavailable' | 'waking'>('checking');
   const [isNavigating, setIsNavigating] = useState(false);
   const { toast } = useToast();
 
@@ -882,27 +882,36 @@ const Index = () => {
   }, [user, isLoading, isNavigating]);
 
 
-  // Check backend availability (less aggressive checking)
+  // Check backend availability (graceful handling for Render free-tier cold starts)
   useEffect(() => {
+    let retryCount = 0;
+    const MAX_STATUS_RETRIES = 2;
+
     const checkBackendStatus = async () => {
       try {
+        setBackendStatus(retryCount > 0 ? 'waking' : 'checking');
         const status = await apiClient.isServiceAvailable();
         setBackendStatus(status.available ? 'available' : 'unavailable');
 
-        if (!status.available && process.env.NODE_ENV === 'production') {
-          console.warn('Backend service unavailable:', status.error);
+        if (!status.available && retryCount < MAX_STATUS_RETRIES) {
+          retryCount++;
+          // Retry after a delay — Render cold starts can take 30-60s
+          setTimeout(checkBackendStatus, 10000);
         }
       } catch (error) {
-        // Don't set to unavailable on check failures - be more tolerant
+        // Don't set to unavailable on check failures — be more tolerant
         console.warn('Backend status check failed, assuming available:', error);
-        setBackendStatus('available'); // Assume available unless proven otherwise
+        setBackendStatus('available');
       }
     };
 
     checkBackendStatus();
 
-    // Check every 5 minutes instead of 30 seconds to be less intrusive
-    const interval = setInterval(checkBackendStatus, 300000);
+    // Check every 5 minutes to keep Render instance warm
+    const interval = setInterval(() => {
+      retryCount = 0;
+      checkBackendStatus();
+    }, 300000);
     return () => clearInterval(interval);
   }, []);
 
@@ -1296,11 +1305,19 @@ const Index = () => {
 
   return (
     <div className="relative">
-      {/* Backend status indicator - only show when there are actual issues */}
-      {backendStatus === 'unavailable' && process.env.NODE_ENV === 'production' && (
-        <div className="fixed top-4 right-4 z-50">
-          <div className="px-3 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 border border-yellow-200 shadow-sm">
-            ⚠️ Limited AI features - using fallback mode
+      {/* Backend status indicator — friendly "waking up" message for Render free-tier cold starts */}
+      {(backendStatus === 'waking' || backendStatus === 'checking') && (
+        <div className="fixed top-4 right-4 z-50 animate-in fade-in slide-in-from-top-2 duration-300">
+          <div className="flex items-center gap-2 px-4 py-2 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200 shadow-sm dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800">
+            <div className="w-3 h-3 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+            Waking up backend server…
+          </div>
+        </div>
+      )}
+      {backendStatus === 'unavailable' && (
+        <div className="fixed top-4 right-4 z-50 animate-in fade-in slide-in-from-top-2 duration-300">
+          <div className="flex items-center gap-2 px-4 py-2 rounded-full text-xs font-medium bg-slate-50 text-slate-600 border border-slate-200 shadow-sm dark:bg-slate-950/40 dark:text-slate-400 dark:border-slate-800">
+            Running in offline demo mode
           </div>
         </div>
       )}

@@ -8,7 +8,7 @@
 import { classifyError, withErrorRecovery, AppError } from './errorHandling';
 import logger from './logger';
 
-const API_BASE_URL = process.env.NODE_ENV === 'production'
+const API_BASE_URL = import.meta.env.MODE === 'production'
   ? (import.meta.env.VITE_API_BASE_URL || 'https://telivus-ai.onrender.com')
   : 'http://127.0.0.1:8000';  // Local development
 
@@ -198,7 +198,7 @@ class ApiClient {
         logger.error('API request failed after retries:', classifiedError);
 
         // In production, send to error reporting
-        if (process.env.NODE_ENV === 'production') {
+        if (import.meta.env.MODE === 'production') {
           // Could integrate with error reporting service here
         }
       }
@@ -307,42 +307,60 @@ class ApiClient {
   }
 
   /**
-   * Check if the service is available (with timeout)
+   * Check if the service is available (with timeout and retries).
+   * Uses longer timeouts and retries to handle Render free-tier cold starts
+   * (which can take 30-60 seconds on first request after inactivity).
    */
-  async isServiceAvailable(): Promise<{ available: boolean; responseTime?: number; error?: string }> {
+  async isServiceAvailable(): Promise<{ available: boolean; responseTime?: number; error?: string; coldStart?: boolean }> {
+    const MAX_RETRIES = 3;
+    const INITIAL_TIMEOUT = 20000; // 20 seconds — Render cold starts can take 30-60s
     const startTime = Date.now();
 
-    try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+    for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+      try {
+        const controller = new AbortController();
+        const timeoutMs = INITIAL_TIMEOUT + (attempt * 5000); // Add 5s per retry
+        const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
-      const response = await fetch(`${this.baseUrl}/health`, {
-        method: 'GET',
-        signal: controller.signal,
-      });
+        const response = await fetch(`${this.baseUrl}/health`, {
+          method: 'GET',
+          signal: controller.signal,
+        });
 
-      clearTimeout(timeoutId);
-      const responseTime = Date.now() - startTime;
+        clearTimeout(timeoutId);
+        const responseTime = Date.now() - startTime;
 
-      if (response.ok) {
-        return { available: true, responseTime };
-      } else {
+        if (response.ok) {
+          return {
+            available: true,
+            responseTime,
+            coldStart: responseTime > 5000, // Flag if it took >5s (likely a cold start)
+          };
+        }
+      } catch (error) {
+        // If not the last attempt, wait before retrying
+        if (attempt < MAX_RETRIES - 1) {
+          const backoffMs = 2000 * (attempt + 1); // 2s, 4s
+          await new Promise(resolve => setTimeout(resolve, backoffMs));
+          continue;
+        }
+
+        const responseTime = Date.now() - startTime;
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+
         return {
           available: false,
           responseTime,
-          error: `HTTP ${response.status}: ${response.statusText}`
+          error: errorMessage
         };
       }
-    } catch (error) {
-      const responseTime = Date.now() - startTime;
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-
-      return {
-        available: false,
-        responseTime,
-        error: errorMessage
-      };
     }
+
+    return {
+      available: false,
+      responseTime: Date.now() - startTime,
+      error: 'Service unavailable after retries'
+    };
   }
 }
 
@@ -356,7 +374,7 @@ if (typeof window !== 'undefined') {
     logger.error('Unhandled promise rejection:', event.reason);
 
     // In production, you might want to send this to an error reporting service
-    if (process.env.NODE_ENV === 'production') {
+    if (import.meta.env.MODE === 'production') {
       // reportError({
       //   type: 'unhandledrejection',
       //   reason: event.reason,
@@ -377,7 +395,7 @@ if (typeof window !== 'undefined') {
     });
 
     // In production, you might want to send this to an error reporting service
-    if (process.env.NODE_ENV === 'production') {
+    if (import.meta.env.MODE === 'production') {
       // reportError({
       //   type: 'global_error',
       //   message: event.message,
