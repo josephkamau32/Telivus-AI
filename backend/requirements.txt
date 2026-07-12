@@ -10,7 +10,7 @@ openai>=1.0.0
 
 # Utilities
 colorlog==6.8.0
-python-json-logger==2.0.7
+python-json-logger==4.1.0
 
 # Data Processing & ML
 pandas==2.1.4
