@@ -60,6 +60,49 @@ All responses include hardened security headers via middleware:
 
 ---
 
+## 🛡️ Security Incident Log
+
+### 2026-08-15 — RLS policies missing `TO service_role` + payment-bypass INSERT policy (Critical)
+
+**Found:** Two RLS policies in `supabase/migrations/20251006112249_...sql` were created
+without a `TO` clause, causing them to apply to `PUBLIC` (i.e. all roles including anonymous
+and authenticated) instead of only `service_role`:
+
+- `"Service role can update subscriptions"` on `chat_subscriptions` (FOR UPDATE, USING (true))
+- `"Service role can insert messages"` on `chat_messages` (FOR INSERT, WITH CHECK (true))
+
+Additionally, the `"Users can insert their own subscriptions"` policy on `chat_subscriptions`
+only checked ownership (`auth.uid() = user_id`) but placed no restrictions on the values of
+`status`, `subscription_type`, `expires_at`, or `chats_remaining`. Any authenticated user
+could insert a fully active, unlimited subscription row for themselves directly from the
+browser console, bypassing Paystack payment verification entirely. A full codebase grep
+confirmed no legitimate code path uses client-side INSERT on this table — all subscription
+writes go through edge functions using the service_role key.
+
+Similarly, the `"Users can insert their own messages"` policy on `chat_messages` checked
+`auth.uid() = user_id` but did not verify that the `session_id` belongs to a session owned
+by the same user. A user could inject messages (including fake `role = 'assistant'` responses)
+into another user's chat session, which would then be fed to OpenAI as conversation context.
+No other table has this FK-into-parent gap pattern.
+
+**Impact:** Any authenticated user could:
+1. Update any subscription row (e.g. grant themselves unlimited access)
+2. Insert messages into any chat session (tamper with another user's history)
+3. Create a fake "paid" subscription for themselves without completing payment
+4. Inject fake messages (including forged AI responses) into another user's chat context
+
+**Fix:**
+- Migration `20260815122500_fix_rls_public_policies.sql` drops and recreates the two
+  service-role policies scoped `TO service_role`.
+- Migration `20260815123800_remove_client_subscription_insert.sql` drops the client-side
+  INSERT policy on `chat_subscriptions` entirely (no legitimate code depends on it).
+- Migration `20260815124600_fix_chat_messages_session_ownership.sql` tightens the
+  client-side INSERT policy on `chat_messages` to also verify session ownership via
+  EXISTS subquery and restrict `role` to `'user'` only (`'assistant'` inserts are
+  service-role-only via the `chat-with-ai` edge function).
+
+---
+
 ## 📞 Reporting Vulnerabilities
 
 > **Do not open public issues for security vulnerabilities.**
