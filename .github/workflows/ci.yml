@@ -156,6 +156,6 @@ jobs:
           SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
         run: |
           supabase link --project-ref ${{ secrets.SUPABASE_PROJECT_ID }}
-          supabase functions deploy chat-with-ai --no-verify-jwt
-          supabase functions deploy verify-payment --no-verify-jwt
-          supabase functions deploy initialize-payment --no-verify-jwt
+          supabase functions deploy chat-with-ai
+          supabase functions deploy verify-payment
+          supabase functions deploy initialize-payment
