@@ -55,17 +55,28 @@ serve(async (req) => {
       console.error('Subscription lookup error:', subError);
     }
 
+    // Invariant: exactly one active, non-expired, non-exhausted subscription
+    // per user at any time. verify-payment enforces this on activation, but
+    // we also check defensively here in case a row was left in a bad state
+    // (e.g. expires_at passed or chats_remaining hit 0 without a status update).
     let hasAccess = false;
     let needsPayment = false;
 
     if (subscription) {
       if (subscription.subscription_type === 'unlimited') {
-        // Check if subscription hasn't expired
+        // Defense in depth: verify expires_at even though status says 'active'
         if (!subscription.expires_at || new Date(subscription.expires_at) > new Date()) {
           hasAccess = true;
+        } else {
+          // Subscription expired — mark it so future lookups skip it
+          await supabaseAdmin
+            .from('chat_subscriptions')
+            .update({ status: 'expired' })
+            .eq('id', subscription.id);
+          needsPayment = true;
         }
       } else if (subscription.subscription_type === 'pay_per_chat') {
-        // Check if user has remaining chats
+        // Defense in depth: verify chats_remaining even though status says 'active'
         if (subscription.chats_remaining > 0) {
           hasAccess = true;
           // Decrement remaining chats
@@ -74,6 +85,11 @@ serve(async (req) => {
             .update({ chats_remaining: subscription.chats_remaining - 1 })
             .eq('id', subscription.id);
         } else {
+          // No chats left — mark as expired so future lookups skip it
+          await supabaseAdmin
+            .from('chat_subscriptions')
+            .update({ status: 'expired' })
+            .eq('id', subscription.id);
           needsPayment = true;
         }
       }

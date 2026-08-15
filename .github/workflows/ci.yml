@@ -134,3 +134,28 @@ jobs:
 
       - name: Validate PR commits
         run: commitlint --from ${{ github.event.pull_request.base.sha }} --to ${{ github.event.pull_request.head.sha }} --verbose
+
+  deploy-edge-functions:
+    name: Deploy Supabase Edge Functions
+    runs-on: ubuntu-latest
+    needs: [test-frontend, test-backend]
+    # Only deploy on push to main, not on PRs
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Deploy Edge Functions
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        run: |
+          supabase link --project-ref ${{ secrets.SUPABASE_PROJECT_ID }}
+          supabase functions deploy chat-with-ai --no-verify-jwt
+          supabase functions deploy verify-payment --no-verify-jwt
+          supabase functions deploy initialize-payment --no-verify-jwt

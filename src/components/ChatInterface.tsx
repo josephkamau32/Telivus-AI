@@ -4,7 +4,7 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Card } from './ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Send, ArrowLeft, Sparkles } from 'lucide-react';
+import { Loader2, Send, ArrowLeft, Sparkles, RefreshCw } from 'lucide-react';
 import PaymentModal from './PaymentModal';
 
 interface Message {
@@ -29,6 +29,7 @@ const ChatInterface = ({ onBack, autoSendMessage, onAutoSendComplete }: ChatInte
   const [subscriptionInfo, setSubscriptionInfo] = useState<any>(null);
   const [pendingMessage, setPendingMessage] = useState<string | null>(null);
   const [isInitializing, setIsInitializing] = useState(true);
+  const [initFailed, setInitFailed] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
@@ -76,11 +77,13 @@ const ChatInterface = ({ onBack, autoSendMessage, onAutoSendComplete }: ChatInte
   const initializeChat = async () => {
     try {
       setIsInitializing(true);
+      setInitFailed(false);
       console.log('Initializing chat...');
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         console.log('No user found, cannot initialize chat');
         setIsInitializing(false);
+        setInitFailed(true);
         return;
       }
       console.log('User found:', user.id);
@@ -155,9 +158,10 @@ const ChatInterface = ({ onBack, autoSendMessage, onAutoSendComplete }: ChatInte
     } catch (error: any) {
       console.error('Error initializing chat:', error);
       setIsInitializing(false);
+      setInitFailed(true);
       toast({
         title: 'Error',
-        description: 'Failed to initialize chat session',
+        description: 'Failed to initialize chat session. Use the Retry button to try again.',
         variant: 'destructive',
       });
     }
@@ -228,7 +232,20 @@ const ChatInterface = ({ onBack, autoSendMessage, onAutoSendComplete }: ChatInte
   };
 
   const handleSendMessage = async () => {
-    if (!input.trim() || !sessionId || loading) return;
+    if (!input.trim() || loading) return;
+
+    // If sessionId is null (init failed or never completed), show a visible
+    // error and auto-retry initialization once instead of silently no-oping.
+    if (!sessionId) {
+      toast({
+        title: 'Chat session not ready',
+        description: 'Your chat session didn\'t load properly — retrying now…',
+        variant: 'destructive',
+      });
+      await initializeChat();
+      return;
+    }
+
     await handleSendMessageDirect(input.trim());
   };
 
@@ -317,11 +334,20 @@ const ChatInterface = ({ onBack, autoSendMessage, onAutoSendComplete }: ChatInte
             <Sparkles className="h-4 w-4 text-primary" />
             {subscriptionInfo ? (
               subscriptionInfo.subscription_type === 'unlimited' ? (
-                <span className="text-primary font-medium">Unlimited Plan Active</span>
+                // Check expires_at to avoid showing "Active" for an expired unlimited plan
+                !subscriptionInfo.expires_at || new Date(subscriptionInfo.expires_at) > new Date() ? (
+                  <span className="text-primary font-medium">Unlimited Plan Active</span>
+                ) : (
+                  <span className="text-destructive font-medium">Plan Expired — renew to continue</span>
+                )
               ) : (
-                <span className="text-primary font-medium">
-                  {subscriptionInfo.chats_remaining} chat{subscriptionInfo.chats_remaining !== 1 ? 's' : ''} remaining
-                </span>
+                subscriptionInfo.chats_remaining > 0 ? (
+                  <span className="text-primary font-medium">
+                    {subscriptionInfo.chats_remaining} chat{subscriptionInfo.chats_remaining !== 1 ? 's' : ''} remaining
+                  </span>
+                ) : (
+                  <span className="text-destructive font-medium">No chats remaining — purchase more</span>
+                )
               )
             ) : (
               <span>No active plan</span>
@@ -337,6 +363,17 @@ const ChatInterface = ({ onBack, autoSendMessage, onAutoSendComplete }: ChatInte
                 <div className="text-center">
                   <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto mb-4" />
                   <p className="text-muted-foreground">Loading your chat session...</p>
+                </div>
+              </div>
+            ) : initFailed ? (
+              <div className="flex items-center justify-center h-full">
+                <div className="text-center">
+                  <p className="text-destructive font-medium mb-2">Failed to load chat session</p>
+                  <p className="text-muted-foreground text-sm mb-4">Something went wrong while setting up your chat. Please try again.</p>
+                  <Button onClick={initializeChat} variant="outline" className="gap-2">
+                    <RefreshCw className="h-4 w-4" />
+                    Retry
+                  </Button>
                 </div>
               </div>
             ) : (

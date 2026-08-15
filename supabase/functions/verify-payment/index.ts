@@ -63,7 +63,7 @@ serve(async (req) => {
       throw new Error('Payment was not successful');
     }
 
-    // Update subscription status
+    // Look up the subscription by payment reference
     const { data: subscription } = await supabaseAdmin
       .from('chat_subscriptions')
       .select('*')
@@ -73,6 +73,17 @@ serve(async (req) => {
     if (!subscription) {
       throw new Error('Subscription not found');
     }
+
+    // Invariant: exactly one active, non-expired, non-exhausted subscription
+    // per user at any time. Before activating this subscription, expire all
+    // other active rows for the same user so that chat-with-ai never picks
+    // a stale row via `ORDER BY created_at DESC LIMIT 1`.
+    await supabaseAdmin
+      .from('chat_subscriptions')
+      .update({ status: 'expired' })
+      .eq('user_id', subscription.user_id)
+      .eq('status', 'active')
+      .neq('id', subscription.id);
 
     const updateData: any = {
       status: 'active',
