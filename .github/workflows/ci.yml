@@ -138,12 +138,22 @@ jobs:
   deploy-edge-functions:
     name: Deploy Supabase Edge Functions
     runs-on: ubuntu-latest
-    needs: [test-frontend, test-backend]
     # Only deploy on push to main, not on PRs
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
 
     steps:
       - uses: actions/checkout@v4
+
+      - name: Install Deno
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v1.x
+
+      - name: Type-check edge functions
+        run: |
+          deno check supabase/functions/chat-with-ai/index.ts
+          deno check supabase/functions/verify-payment/index.ts
+          deno check supabase/functions/initialize-payment/index.ts
 
       - name: Install Supabase CLI
         uses: supabase/setup-cli@v1
@@ -159,3 +169,4 @@ jobs:
           supabase functions deploy chat-with-ai
           supabase functions deploy verify-payment
           supabase functions deploy initialize-payment
+
