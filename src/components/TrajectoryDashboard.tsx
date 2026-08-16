@@ -443,9 +443,9 @@ export const TrajectoryDashboard: React.FC<TrajectoryDashboardProps> = ({
       {/* Main Content */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="predictions">Predictions</TabsTrigger>
-          <TabsTrigger value="interventions">Interventions</TabsTrigger>
+          <TabsTrigger value="overview" className="text-xs sm:text-sm">Overview</TabsTrigger>
+          <TabsTrigger value="predictions" className="text-xs sm:text-sm">Predictions</TabsTrigger>
+          <TabsTrigger value="interventions" className="text-xs sm:text-sm">Interventions</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-6">

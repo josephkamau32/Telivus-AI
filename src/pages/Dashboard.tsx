@@ -1063,7 +1063,7 @@ const Dashboard = () => {
 
         {/* Charts and Analytics */}
         <Tabs defaultValue="trends" className="space-y-4 sm:space-y-6">
-          <TabsList className="grid w-full grid-cols-5 h-auto p-1">
+          <TabsList className="flex w-full overflow-x-auto sm:grid sm:grid-cols-5 h-auto p-1">
             <TabsTrigger value="trends" className="text-xs sm:text-sm px-2 sm:px-3 py-2 sm:py-2.5">
               <span className="hidden sm:inline">{t.healthTrends}</span>
               <span className="sm:hidden">Trends</span>

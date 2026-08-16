@@ -356,7 +356,7 @@ const ChatInterface = ({ onBack, autoSendMessage, onAutoSendComplete }: ChatInte
         </div>
 
         {/* Chat Messages */}
-        <Card className="h-[calc(100vh-200px)] flex flex-col overflow-hidden shadow-glow border-primary/20">
+        <Card className="h-[calc(100dvh-200px)] flex flex-col overflow-hidden shadow-glow border-primary/20">
           <div className="flex-1 overflow-y-auto p-6 space-y-4">
             {isInitializing ? (
               <div className="flex items-center justify-center h-full">

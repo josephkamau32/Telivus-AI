@@ -449,17 +449,17 @@ export const AlertCenter: React.FC<AlertCenterProps> = ({
 
       {/* Alert Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="active" className="flex items-center gap-2">
-            <Bell className="w-4 h-4" />
+        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4">
+          <TabsTrigger value="active" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
+            <Bell className="w-4 h-4 hidden sm:block" />
             Active ({activeAlerts.length})
           </TabsTrigger>
-          <TabsTrigger value="acknowledged" className="flex items-center gap-2">
-            <Eye className="w-4 h-4" />
-            Acknowledged ({acknowledgedAlerts.length})
+          <TabsTrigger value="acknowledged" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
+            <Eye className="w-4 h-4 hidden sm:block" />
+            <span className="hidden sm:inline">Acknowledged</span><span className="sm:hidden">Ack'd</span> ({acknowledgedAlerts.length})
           </TabsTrigger>
-          <TabsTrigger value="resolved">Resolved</TabsTrigger>
-          <TabsTrigger value="settings">Settings</TabsTrigger>
+          <TabsTrigger value="resolved" className="text-xs sm:text-sm">Resolved</TabsTrigger>
+          <TabsTrigger value="settings" className="text-xs sm:text-sm">Settings</TabsTrigger>
         </TabsList>
 
         <TabsContent value="active" className="space-y-4">

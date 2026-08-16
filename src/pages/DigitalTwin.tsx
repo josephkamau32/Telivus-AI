@@ -275,21 +275,21 @@ const DigitalTwinDashboard = () => {
 
             {/* Main Content Tabs */}
             <Tabs defaultValue="insights" className="space-y-6">
-                <TabsList className="grid w-full grid-cols-4">
-                    <TabsTrigger value="insights" className="gap-2">
-                        <Zap className="w-4 h-4" />
+                <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4">
+                    <TabsTrigger value="insights" className="gap-1 sm:gap-2 text-xs sm:text-sm">
+                        <Zap className="w-4 h-4 hidden sm:block" />
                         Insights
                     </TabsTrigger>
-                    <TabsTrigger value="alerts" className="gap-2">
-                        <AlertTriangle className="w-4 h-4" />
+                    <TabsTrigger value="alerts" className="gap-1 sm:gap-2 text-xs sm:text-sm">
+                        <AlertTriangle className="w-4 h-4 hidden sm:block" />
                         Alerts ({alerts?.length || 0})
                     </TabsTrigger>
-                    <TabsTrigger value="patterns" className="gap-2">
-                        <Target className="w-4 h-4" />
+                    <TabsTrigger value="patterns" className="gap-1 sm:gap-2 text-xs sm:text-sm">
+                        <Target className="w-4 h-4 hidden sm:block" />
                         Patterns
                     </TabsTrigger>
-                    <TabsTrigger value="timeline" className="gap-2">
-                        <Activity className="w-4 h-4" />
+                    <TabsTrigger value="timeline" className="gap-1 sm:gap-2 text-xs sm:text-sm">
+                        <Activity className="w-4 h-4 hidden sm:block" />
                         Timeline
                     </TabsTrigger>
                 </TabsList>
