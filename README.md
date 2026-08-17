@@ -34,9 +34,11 @@
 
 ## 🩺 Overview
 
-**Telivus AI** is a production-grade AI health platform combining conversational symptom assessment, differential triage, personalized care guidance, and payment-verified clinical health chat. 
+**Telivus AI** is a health platform combining conversational AI consultation, longitudinal health tracking, and automated clinical reporting.
 
-The application pairs a **React / TypeScript frontend** with a **FastAPI AI engine** (LangChain multi-agent routing, ChromaDB RAG, and deep learning trajectory forecasting) alongside a **Supabase PostgreSQL & Edge Function backend** with hardened Row-Level Security (RLS) and Paystack payment processing.
+The application operates a **two-tier backend architecture** with a clear division of responsibilities:
+- 💬 **Live Health Chat & Payments (Supabase)**: Real-time, payment-verified consultation chat powered by Supabase Edge Functions (Deno / TypeScript) communicating directly with OpenAI's API, backed by PostgreSQL with Row-Level Security (RLS) and Paystack payment gateway integration.
+- 🧠 **Health Assessment & Digital Twin (FastAPI)**: Symptom assessment report generation, CCEE explainability graphs, longitudinal health pattern learning, and trajectory forecasting powered by a separate FastAPI Python backend (`/backend`), featuring OpenAI GPT-4o-mini integration, CCEE confidence/safety scoring, modular LangChain multi-agent routing, ChromaDB RAG retrieval, and PyTorch time-series models.
 
 > [!NOTE]
 > **Live Demo & Environment Status**:
@@ -171,13 +173,13 @@ User Symptom Input
 
 ## 🛠 Technology Stack
 
-The platform operates a high-performance **hybrid architecture**: a Python FastAPI AI engine for agent orchestration and deep learning, paired with a hardened Supabase backend for real-time authentication, PostgreSQL with Row-Level Security, and Deno edge functions for payment-verified workflows.
+The platform operates a modular architecture that pairs Supabase's real-time auth and edge infrastructure for consultation chat and payment processing with a specialized Python FastAPI service for clinical assessment, explainability scoring, and longitudinal health analysis:
 
 <table>
 <tr>
 <td width="50%">
 
-### Frontend
+### Frontend (Client Layer)
 ```
 React 18 + TypeScript 5.8
 Vite 7 (SWC)
@@ -193,16 +195,14 @@ Service Workers + PWA Manifest
 </td>
 <td width="50%">
 
-### Backend & Cloud Infrastructure
+### Supabase Layer (Chat, Auth & Payments)
 ```
-FastAPI 0.104 + Python 3.11
-Supabase (PostgreSQL 15 + RLS Policies)
+PostgreSQL 15 + Row-Level Security (RLS)
 Supabase Edge Functions (Deno / TypeScript)
-SQLAlchemy 2.0 (async) + Alembic
-Redis 7 (caching + rate limiting)
+Direct OpenAI API Integration (Chat)
+Supabase Auth (JWT & Session Management)
 Paystack Payment Gateway Integration
-JWT Auth (python-jose + Supabase Auth)
-Uvicorn (ASGI) + structlog
+Real-time Message & Subscription Storage
 ```
 
 </td>
@@ -210,17 +210,16 @@ Uvicorn (ASGI) + structlog
 <tr>
 <td width="50%">
 
-### AI / ML
+### Python AI Engine (Assessments & Digital Twin)
 ```
-LangChain (Multi-Agent Orchestration)
-OpenAI GPT-4o-mini
-ChromaDB (Vector Store / RAG)
-Sentence Transformers (all-MiniLM-L6-v2)
-PyTorch 2.1 (CUDA acceleration)
-TensorFlow / Keras 2.15
-Optuna (Hyperparameter Tuning)
-Langfuse (LLM Observability)
-RAGAs (RAG Evaluation)
+FastAPI 0.104 + Python 3.11
+OpenAI GPT-4o-mini Integration
+CCEE Subsystem (Explainability & Safety)
+Digital Twin Pattern Learning & Alerts
+LangChain Multi-Agent Reference Pipeline
+ChromaDB Vector Store (RAG Knowledge Base)
+PyTorch / LSTM Trajectory Models
+Redis 7 (Caching & Rate Limiting)
 ```
 
 </td>
@@ -228,17 +227,14 @@ RAGAs (RAG Evaluation)
 
 ### DevOps & Quality
 ```
-Docker (multi-stage builds)
-Docker Compose (6 services)
-GitHub Actions CI/CD
-Codecov (coverage reporting)
-Prometheus + Grafana (monitoring)
-pre-commit (11 hooks)
-Ruff + Black + isort + Flake8
-mypy (static type checking)
-Bandit + detect-secrets (security)
-Commitlint (Conventional Commits)
-Dependabot (dependency updates)
+Docker (Multi-stage builds)
+Docker Compose (Full-stack orchestration)
+GitHub Actions CI/CD Pipeline
+Codecov (Coverage tracking)
+Prometheus + Grafana (Monitoring)
+pre-commit (11 security & lint hooks)
+Ruff + Black + isort + mypy
+Vitest + pytest (Backend & Frontend suites)
 ```
 
 </td>
