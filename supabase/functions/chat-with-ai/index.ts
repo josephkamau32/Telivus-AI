@@ -157,31 +157,62 @@ Guidelines:
 IMPORTANT: You are NOT a replacement for professional medical advice. Always remind users to consult with healthcare providers for diagnosis and treatment.`;
 
     // Call OpenAI API with optimized parameters
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${OPENAI_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          ...conversationHistory.map(m => ({
-            role: m.role,
-            content: m.content
-          })),
-          { role: 'user', content: message }
-        ],
-        max_tokens: 800, // Reduced for faster response
-        temperature: 0.6 // Slightly reduced for more consistent responses
-      })
-    });
+    let response: Response;
+    try {
+      response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${OPENAI_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'gpt-4o-mini',
+          messages: [
+            { role: 'system', content: systemPrompt },
+            ...conversationHistory.map(m => ({
+              role: m.role,
+              content: m.content
+            })),
+            { role: 'user', content: message }
+          ],
+          max_tokens: 800, // Reduced for faster response
+          temperature: 0.6 // Slightly reduced for more consistent responses
+        })
+      });
+    } catch (fetchError) {
+      // Network-level failure (DNS, connection refused, etc.) — not an OpenAI
+      // API error, so let it bubble up as a genuine 500.
+      console.error('OpenAI fetch failed (network error):', fetchError);
+      throw new Error('Failed to connect to AI service');
+    }
 
     if (!response.ok) {
-      const errorData = await response.text();
-      console.error('OpenAI API error:', errorData);
-      throw new Error('Failed to get response from AI');
+      const errorBody = await response.text();
+      console.error(`OpenAI API error (${response.status}):`, errorBody);
+
+      // Detect known, expected "AI provider unavailable" cases:
+      //   401 — invalid or revoked API key
+      //   429 — rate limited or quota exceeded
+      //   insufficient_quota in body — billing/quota exhausted (can appear with 429)
+      const isAuthError = response.status === 401;
+      const isQuotaError = response.status === 429 || errorBody.includes('insufficient_quota');
+
+      if (isAuthError || isQuotaError) {
+        // Return a clean flag the frontend can handle gracefully, same pattern
+        // as needsPayment. The user's message was already saved to chat_messages
+        // above (line 112), so their input is not lost.
+        return new Response(
+          JSON.stringify({
+            aiUnavailable: true,
+            message: 'The AI assistant is temporarily unavailable. Your message has been saved and will be visible in your chat history.'
+          }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Any other OpenAI error (500, 503, unexpected 4xx) is genuinely unexpected
+      // — let it surface as a real error so it's visible and debuggable.
+      throw new Error(`OpenAI API error (${response.status})`);
     }
 
     const data = await response.json();

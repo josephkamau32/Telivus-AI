@@ -4,7 +4,7 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Card } from './ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Send, ArrowLeft, Sparkles, RefreshCw } from 'lucide-react';
+import { Loader2, Send, ArrowLeft, Sparkles, RefreshCw, AlertTriangle } from 'lucide-react';
 import PaymentModal from './PaymentModal';
 
 interface Message {
@@ -30,6 +30,7 @@ const ChatInterface = ({ onBack, autoSendMessage, onAutoSendComplete }: ChatInte
   const [pendingMessage, setPendingMessage] = useState<string | null>(null);
   const [isInitializing, setIsInitializing] = useState(true);
   const [initFailed, setInitFailed] = useState(false);
+  const [aiUnavailable, setAiUnavailable] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
@@ -206,6 +207,17 @@ const ChatInterface = ({ onBack, autoSendMessage, onAutoSendComplete }: ChatInte
         return;
       }
 
+      // Check if AI provider is unavailable (auth/quota/billing error on OpenAI)
+      if (response.data?.aiUnavailable) {
+        setAiUnavailable(true);
+        // User's message was saved server-side; keep it visible in the UI.
+        // Don't show an error toast — the inline banner handles this state.
+        return;
+      }
+
+      // AI responded successfully — clear any previous unavailable state
+      if (aiUnavailable) setAiUnavailable(false);
+
       // Add AI response to UI
       const aiMessage: Message = {
         id: `ai-${Date.now()}`,
@@ -282,6 +294,14 @@ const ChatInterface = ({ onBack, autoSendMessage, onAutoSendComplete }: ChatInte
         if (response.error) {
           throw response.error;
         }
+
+        // Check if AI provider is unavailable after payment
+        if (response.data?.aiUnavailable) {
+          setAiUnavailable(true);
+          return;
+        }
+
+        if (aiUnavailable) setAiUnavailable(false);
 
         // Add AI response to UI
         const aiMessage: Message = {
@@ -406,6 +426,36 @@ const ChatInterface = ({ onBack, autoSendMessage, onAutoSendComplete }: ChatInte
                         </div>
                       </div>
                       <p className="text-xs text-muted-foreground mt-1">Telivus AI is thinking...</p>
+                    </div>
+                  </div>
+                )}
+                {aiUnavailable && (
+                  <div className="flex justify-start animate-fade-in">
+                    <div className="max-w-[90%] rounded-2xl px-5 py-4 bg-amber-500/10 border border-amber-500/30 text-foreground">
+                      <div className="flex items-start gap-3">
+                        <AlertTriangle className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
+                        <div>
+                          <p className="text-sm font-medium mb-1">AI assistant temporarily unavailable</p>
+                          <p className="text-sm text-muted-foreground leading-relaxed">
+                            This is a demo environment — the AI provider is not currently responding to requests.
+                            Your message has been saved. The assistant will resume automatically when the provider
+                            connection is restored; no action is needed on your end.
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-2">
+                            This project demonstrates production security practices (RLS, payment verification, authorization).
+                            See the{' '}
+                            <a
+                              href="https://github.com/josephkamau32/Telivus-AI/blob/main/SECURITY.md"
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-primary underline underline-offset-2 hover:text-primary/80"
+                            >
+                              security case study
+                            </a>
+                            {' '}for details.
+                          </p>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 )}
