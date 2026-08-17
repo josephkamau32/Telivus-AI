@@ -127,7 +127,7 @@ class MedicalContentValidator {
       !allText.toLowerCase().includes(disclaimer.toLowerCase())
     );
 
-    if (missingDisclaimers.length === REQUIRED_DISCLAIMERS.length && !this.content.whenToSeekHelp) {
+    if (missingDisclaimers.length > 0) {
       this.addWarning({
         type: 'caution',
         message: `Missing important disclaimers: ${missingDisclaimers.join(', ')}`,
