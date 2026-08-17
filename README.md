@@ -32,16 +32,29 @@
 
 ---
 
-> **Portfolio Demonstration** — This project showcases production-grade AI engineering: multi-agent orchestration, RAG pipelines, explainable AI, GDPR-compliant architecture, and full-stack TypeScript/Python development. [Read the disclaimer →](#%EF%B8%8F-medical-disclaimer)
+## 🩺 Overview
 
-| Environment | URL | Stack |
-|---|---|---|
-| 🎨 **Frontend** | [telivus.co.ke](https://telivus.co.ke/) | React 18 · Vite · Vercel |
-| ⚡ **Backend API** | [telivus-ai.onrender.com](https://telivus-ai.onrender.com) | FastAPI · Render |
-| 📚 **API Docs** | [Swagger UI](https://telivus-ai.onrender.com/docs) | OpenAPI 3.0 |
-| 💓 **Health Check** | [/health](https://telivus-ai.onrender.com/health) | Liveness probe |
+**Telivus AI** is a production-grade AI health platform combining conversational symptom assessment, differential triage, personalized care guidance, and payment-verified clinical health chat. 
 
-> 💡 **Tip**: Use the **"Try Demo"** button on the login page to instantly access the platform with demo credentials.
+The application pairs a **React / TypeScript frontend** with a **FastAPI AI engine** (LangChain multi-agent routing, ChromaDB RAG, and deep learning trajectory forecasting) alongside a **Supabase PostgreSQL & Edge Function backend** with hardened Row-Level Security (RLS) and Paystack payment processing.
+
+> [!NOTE]
+> **Live Demo & Environment Status**:
+> - 🌐 **Web App**: [telivus.co.ke](https://telivus.co.ke/)
+> - ⚡ **Backend API**: [telivus-ai.onrender.com](https://telivus-ai.onrender.com) · [API Documentation (Swagger)](https://telivus-ai.onrender.com/docs)
+> - 🛡️ **AI Availability State**: During demo periods with unmetered keys, the chat interface features **honest, zero-crash graceful degradation**: user inputs are securely preserved to the database while displaying a clear demo banner rather than generic 500 error toasts.
+
+---
+
+## 🔒 Security & Architecture Case Study
+
+> [!IMPORTANT]
+> **Production RLS Authorization Audit & Vulnerability Remediation**
+> 
+> During an audit of all 25 Row-Level Security (RLS) policies across the project's live Supabase migrations, we identified and remediated critical authorization flaws — including an unconstrained `WITH CHECK` clause that permitted direct client payment bypass and a foreign-key omission that allowed cross-session message injection.
+>
+> 📖 **Read the full engineering write-up**: [Finding and Fixing a Payment-Bypass Vulnerability in a Production Supabase Project](docs/security-case-study.md)  
+> 🛡️ **Security policy & incident log**: [SECURITY.md](SECURITY.md)
 
 ---
 
@@ -158,9 +171,7 @@ User Symptom Input
 
 ## 🛠 Technology Stack
 
-> **Note:** This project was initially built on Supabase edge functions + Gemini API.
-> The current production backend is FastAPI + OpenAI (in `/backend`).
-> The Supabase folder is retained as legacy reference only — see `supabase/LEGACY.md`.
+The platform operates a high-performance **hybrid architecture**: a Python FastAPI AI engine for agent orchestration and deep learning, paired with a hardened Supabase backend for real-time authentication, PostgreSQL with Row-Level Security, and Deno edge functions for payment-verified workflows.
 
 <table>
 <tr>
@@ -182,17 +193,16 @@ Service Workers + PWA Manifest
 </td>
 <td width="50%">
 
-### Backend
+### Backend & Cloud Infrastructure
 ```
 FastAPI 0.104 + Python 3.11
+Supabase (PostgreSQL 15 + RLS Policies)
+Supabase Edge Functions (Deno / TypeScript)
 SQLAlchemy 2.0 (async) + Alembic
-PostgreSQL 15 + asyncpg
 Redis 7 (caching + rate limiting)
-Pydantic 2 (validation)
-JWT Auth (python-jose + passlib)
-Celery + Kombu (background tasks)
-Uvicorn (ASGI, 4 workers)
-Sentry SDK + structlog
+Paystack Payment Gateway Integration
+JWT Auth (python-jose + Supabase Auth)
+Uvicorn (ASGI) + structlog
 ```
 
 </td>
@@ -627,7 +637,9 @@ This project is licensed under the MIT License — see the [LICENSE](LICENSE) fi
 
 ## 🔒 Security
 
-For security concerns, please refer to the [Security Policy](SECURITY.md).
+For security architecture, vulnerability reporting guidelines, and incident logs, please refer to:
+- 🛡️ [Security Policy](SECURITY.md)
+- 📖 [RLS Security Case Study](docs/security-case-study.md)
 
 Report vulnerabilities responsibly to: **security@telivus.ai**
 
