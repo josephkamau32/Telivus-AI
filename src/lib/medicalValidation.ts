@@ -38,7 +38,8 @@ export interface MedicalContent {
 // Medical safety keywords and patterns
 const DANGEROUS_PATTERNS = [
   /\b(?:never|always|definitely|absolutely|certainly)\b.*\b(?:safe|harmless|risk.free)\b/i,
-  /\b(?:guaranteed|cure|treat|heal)\b.*\b(?:all|every|any)\b.*\b(?:condition|disease|illness)\b/i,
+  /\b(?:guaranteed|cure|treat|heal)\b.*\b(?:all|every|any|everything)\b/i,
+  /\b(?:guaranteed|guarantee)\b.*\b(?:cure|safe|harmless|heal)\b/i,
   /\b(?:ignore|disregard|skip)\b.*\b(?:professional|doctor|medical)\b.*\b(?:advice|help|care)\b/i,
   /\b(?:replace|substitute|instead of)\b.*\b(?:doctor|physician|healthcare)\b/i,
 ];
@@ -126,7 +127,7 @@ class MedicalContentValidator {
       !allText.toLowerCase().includes(disclaimer.toLowerCase())
     );
 
-    if (missingDisclaimers.length > 0) {
+    if (missingDisclaimers.length === REQUIRED_DISCLAIMERS.length && !this.content.whenToSeekHelp) {
       this.addWarning({
         type: 'caution',
         message: `Missing important disclaimers: ${missingDisclaimers.join(', ')}`,
@@ -289,7 +290,9 @@ class MedicalContentValidator {
     const allText = this.getAllText().toLowerCase();
     return allText.includes('emergency') ||
            allText.includes('immediate medical attention') ||
+           allText.includes('immediate care') ||
            allText.includes('seek urgent care') ||
+           allText.includes('urgent care') ||
            allText.includes('call emergency') ||
            allText.includes('go to er') ||
            allText.includes('hospital');

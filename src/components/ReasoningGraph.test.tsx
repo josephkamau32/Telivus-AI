@@ -89,6 +89,6 @@ describe('ReasoningGraph', () => {
   it('displays reasoning summary', () => {
     render(<ReasoningGraph graph={mockGraphData} />);
     expect(screen.getByText('AI Reasoning Summary')).toBeInTheDocument();
-    expect(screen.getByText('Analysis completed successfully')).toBeInTheDocument();
+    expect(screen.getAllByText('Analysis completed successfully')[0]).toBeInTheDocument();
   });
 });

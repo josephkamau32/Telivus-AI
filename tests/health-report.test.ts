@@ -81,6 +81,25 @@ const testCases: TestCase[] = [
   }
 ];
 
+import { describe, it, expect } from 'vitest';
+
+describe('Health Report Test Cases Schema', () => {
+  it('defines valid test cases with required fields', () => {
+    expect(testCases.length).toBeGreaterThan(0);
+    testCases.forEach(tc => {
+      expect(tc.name).toBeDefined();
+      expect(tc.input).toBeDefined();
+      expect(['success', 'failure']).toContain(tc.expectedResult);
+    });
+  });
+
+  // Skipped: E2E test requires a running backend / edge function runtime
+  it.skip('executes live API health report requests (requires running edge function server)', async () => {
+    const results = await runHealthReportTests();
+    expect(results.failed).toBe(0);
+  });
+});
+
 // Mock test runner function
 export async function runHealthReportTests() {
   console.log('🧪 Running Health Report Tests...\n');

@@ -179,8 +179,11 @@ export const withErrorRecovery = async <T>(
       lastError = classifyError(error);
 
       // Don't retry if error is not retryable
-      if (!lastError.retryable && attempt > 0) {
-        break;
+      if (!lastError.retryable) {
+        if (onFailure) {
+          onFailure(lastError);
+        }
+        throw lastError;
       }
 
       // If this was the last attempt, throw the error
@@ -201,7 +204,9 @@ export const withErrorRecovery = async <T>(
       }
 
       // Wait before retrying
-      await new Promise(resolve => setTimeout(resolve, delay));
+      if (delay > 0) {
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
     }
   }
 

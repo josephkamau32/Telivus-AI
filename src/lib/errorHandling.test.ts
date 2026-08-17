@@ -59,15 +59,6 @@ describe('Error Handling System', () => {
   });
 
   describe('withErrorRecovery', () => {
-    beforeEach(() => {
-      vi.useFakeTimers();
-    });
-
-    afterEach(() => {
-      vi.restoreAllMocks();
-      vi.useRealTimers();
-    });
-
     it('should return successful result', async () => {
       const operation = vi.fn().mockResolvedValue('success');
 
@@ -84,7 +75,7 @@ describe('Error Handling System', () => {
 
       const result = await withErrorRecovery(operation, {
         maxRetries: 2,
-        retryDelay: 100
+        retryDelay: 0
       });
 
       expect(result).toBe('success');
@@ -97,7 +88,7 @@ describe('Error Handling System', () => {
 
       const operation = vi.fn().mockRejectedValue(error);
 
-      await expect(withErrorRecovery(operation)).rejects.toThrow();
+      await expect(withErrorRecovery(operation, { retryDelay: 0 })).rejects.toThrow();
       expect(operation).toHaveBeenCalledTimes(1);
     });
 
@@ -109,6 +100,7 @@ describe('Error Handling System', () => {
 
       await withErrorRecovery(operation, {
         maxRetries: 1,
+        retryDelay: 0,
         onRetry
       });
 
@@ -121,6 +113,7 @@ describe('Error Handling System', () => {
 
       await expect(withErrorRecovery(operation, {
         maxRetries: 1,
+        retryDelay: 0,
         onFailure
       })).rejects.toThrow();
 
@@ -128,19 +121,27 @@ describe('Error Handling System', () => {
     });
 
     it('should implement exponential backoff', async () => {
-      const operation = vi.fn().mockRejectedValue(new Error('Network error'));
+      vi.useFakeTimers();
+      try {
+        const operation = vi.fn().mockRejectedValue(new Error('Network error'));
 
-      const retryPromise = withErrorRecovery(operation, {
-        maxRetries: 2,
-        retryDelay: 100,
-        exponentialBackoff: true
-      });
+        const retryPromise = withErrorRecovery(operation, {
+          maxRetries: 2,
+          retryDelay: 100,
+          exponentialBackoff: true
+        });
 
-      // Fast-forward timers
-      await vi.advanceTimersByTimeAsync(100); // First retry delay
-      await vi.advanceTimersByTimeAsync(200); // Second retry delay (exponential)
+        // Attach expectation handler before advancing timers to avoid unhandled rejection warning
+        const assertionPromise = expect(retryPromise).rejects.toThrow();
 
-      await expect(retryPromise).rejects.toThrow();
+        // Fast-forward timers for both retries
+        await vi.advanceTimersByTimeAsync(100); // First retry delay
+        await vi.advanceTimersByTimeAsync(200); // Second retry delay (exponential)
+
+        await assertionPromise;
+      } finally {
+        vi.useRealTimers();
+      }
     });
   });
 

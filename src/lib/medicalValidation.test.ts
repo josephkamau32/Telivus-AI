@@ -91,7 +91,7 @@ describe('Medical Content Validation', () => {
 
       const result = validateMedicalContent(content);
 
-      expect(result.issues.some(issue => issue.message.includes('aspirin') && issue.message.includes('18'))).toBe(true);
+      expect(result.issues.some(issue => issue.message.toLowerCase().includes('aspirin') && issue.message.includes('18'))).toBe(true);
     });
   });
 
