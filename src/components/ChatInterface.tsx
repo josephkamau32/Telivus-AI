@@ -445,7 +445,7 @@ const ChatInterface = ({ onBack, autoSendMessage, onAutoSendComplete }: ChatInte
                             This project demonstrates production security practices (RLS, payment verification, authorization).
                             See the{' '}
                             <a
-                              href="https://github.com/josephkamau32/Telivus-AI/blob/main/SECURITY.md"
+                              href="https://github.com/josephkamau32/Telivus-AI/blob/main/docs/security-case-study.md"
                               target="_blank"
                               rel="noopener noreferrer"
                               className="text-primary underline underline-offset-2 hover:text-primary/80"
