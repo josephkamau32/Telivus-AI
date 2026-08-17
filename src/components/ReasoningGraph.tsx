@@ -37,8 +37,81 @@ interface ReasoningGraphProps {
 }
 
 const ReasoningGraph = memo(({ graph }: ReasoningGraphProps) => {
-  // Data validation
-  if (!graph || !Array.isArray(graph.nodes) || !Array.isArray(graph.edges)) {
+  const isValidGraph = Boolean(graph && Array.isArray(graph.nodes) && Array.isArray(graph.edges));
+
+  const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set());
+  const [viewStartTime] = useState(Date.now());
+
+  // Analytics: Track component view
+  useEffect(() => {
+    if (!isValidGraph) return;
+
+    // Track reasoning graph view
+    if (typeof window !== 'undefined' && (window as any).gtag) {
+      (window as any).gtag('event', 'reasoning_graph_view', {
+        event_category: 'feature_interaction',
+        event_label: 'reasoning_graph',
+        triage_level: graph?.triage_level,
+        node_count: graph?.nodes?.length || 0,
+        edge_count: graph?.edges?.length || 0
+      });
+    }
+
+    // Track view duration on unmount
+    return () => {
+      const viewDuration = Date.now() - viewStartTime;
+      if (typeof window !== 'undefined' && (window as any).gtag) {
+        (window as any).gtag('event', 'reasoning_graph_view_duration', {
+          event_category: 'feature_interaction',
+          event_label: 'reasoning_graph',
+          value: viewDuration
+        });
+      }
+    };
+  }, [isValidGraph, graph?.triage_level, graph?.nodes?.length, graph?.edges?.length, viewStartTime]);
+
+  const toggleNode = useCallback((nodeId: string) => {
+    if (!isValidGraph) return;
+    setExpandedNodes(prev => {
+      const newSet = new Set(prev);
+      const wasExpanded = newSet.has(nodeId);
+
+      if (wasExpanded) {
+        newSet.delete(nodeId);
+      } else {
+        newSet.add(nodeId);
+      }
+
+      // Analytics: Track node expansion
+      if (typeof window !== 'undefined' && (window as any).gtag) {
+        (window as any).gtag('event', wasExpanded ? 'reasoning_graph_node_collapse' : 'reasoning_graph_node_expand', {
+          event_category: 'feature_interaction',
+          event_label: nodeId,
+          node_type: graph?.nodes?.find(n => n.id === nodeId)?.type || 'unknown'
+        });
+      }
+
+      return newSet;
+    });
+  }, [isValidGraph, graph?.nodes]);
+
+  const groupedNodes = useMemo(() => {
+    if (!isValidGraph) return {};
+    const groups: Record<string, ReasoningNode[]> = {};
+    (graph.nodes || []).forEach(node => {
+      if (!groups[node.type]) {
+        groups[node.type] = [];
+      }
+      groups[node.type].push(node);
+    });
+    Object.keys(groups).forEach(type => {
+      groups[type].sort((a, b) => (b.confidence_score || 0) - (a.confidence_score || 0));
+    });
+    return groups;
+  }, [isValidGraph, graph?.nodes]);
+
+  // Data validation render
+  if (!isValidGraph) {
     return (
       <Card className="w-full border-destructive/50">
         <CardContent className="p-6">
@@ -55,73 +128,6 @@ const ReasoningGraph = memo(({ graph }: ReasoningGraphProps) => {
       </Card>
     );
   }
-
-  const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set());
-  const [viewStartTime] = useState(Date.now());
-
-  // Analytics: Track component view
-  useEffect(() => {
-    // Track reasoning graph view
-    if (typeof window !== 'undefined' && (window as any).gtag) {
-      (window as any).gtag('event', 'reasoning_graph_view', {
-        event_category: 'feature_interaction',
-        event_label: 'reasoning_graph',
-        triage_level: graph.triage_level,
-        node_count: graph.nodes.length,
-        edge_count: graph.edges.length
-      });
-    }
-
-    // Track view duration on unmount
-    return () => {
-      const viewDuration = Date.now() - viewStartTime;
-      if (typeof window !== 'undefined' && (window as any).gtag) {
-        (window as any).gtag('event', 'reasoning_graph_view_duration', {
-          event_category: 'feature_interaction',
-          event_label: 'reasoning_graph',
-          value: viewDuration
-        });
-      }
-    };
-  }, [graph.triage_level, graph.nodes.length, graph.edges.length, viewStartTime]);
-
-  const toggleNode = useCallback((nodeId: string) => {
-    setExpandedNodes(prev => {
-      const newSet = new Set(prev);
-      const wasExpanded = newSet.has(nodeId);
-
-      if (wasExpanded) {
-        newSet.delete(nodeId);
-      } else {
-        newSet.add(nodeId);
-      }
-
-      // Analytics: Track node expansion
-      if (typeof window !== 'undefined' && (window as any).gtag) {
-        (window as any).gtag('event', wasExpanded ? 'reasoning_graph_node_collapse' : 'reasoning_graph_node_expand', {
-          event_category: 'feature_interaction',
-          event_label: nodeId,
-          node_type: graph.nodes.find(n => n.id === nodeId)?.type || 'unknown'
-        });
-      }
-
-      return newSet;
-    });
-  }, [graph.nodes]);
-
-  const groupedNodes = useMemo(() => {
-    const groups: Record<string, ReasoningNode[]> = {};
-    graph.nodes.forEach(node => {
-      if (!groups[node.type]) {
-        groups[node.type] = [];
-      }
-      groups[node.type].push(node);
-    });
-    Object.keys(groups).forEach(type => {
-      groups[type].sort((a, b) => (b.confidence_score || 0) - (a.confidence_score || 0));
-    });
-    return groups;
-  }, [graph.nodes]);
 
   // Get triage icon
   const getTriageIcon = (level: string) => {

@@ -52,7 +52,7 @@ export const VoiceInput = ({
 
   const initializeSpeechRecognition = useCallback(() => {
     // Check for browser support with multiple prefixes
-    let SpeechRecognition = window.SpeechRecognition ||
+    const SpeechRecognition = window.SpeechRecognition ||
                            window.webkitSpeechRecognition ||
                            window.mozSpeechRecognition ||
                            window.msSpeechRecognition;

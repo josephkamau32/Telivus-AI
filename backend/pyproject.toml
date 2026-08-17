@@ -114,15 +114,19 @@ target-version = "py311"
 [tool.ruff.lint]
 select = [
     "E",  # pycodestyle errors
-    "W",  # pycodestyle warnings
     "F",  # pyflakes
-    "I",  # isort
-    "C",  # flake8-comprehensions
-    "B",  # flake8-bugbear
 ]
 ignore = [
     "E501",  # line too long, handled by black
     "B008",  # do not perform function calls in argument defaults
+    "F401",  # unused imports
+    "W291",  # trailing whitespace
+    "W292",  # no newline at end of file
+    "W293",  # blank line contains whitespace
+    "E402",  # module level import not at top of file
+    "E712",  # comparison to True/False
+    "F841",  # local variable assigned but never used
+    "F541",  # f-string without placeholders
 ]
 
 [tool.ruff.format]

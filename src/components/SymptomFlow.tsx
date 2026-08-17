@@ -71,7 +71,7 @@ export const SymptomFlow = ({ onComplete, onBack }: SymptomFlowProps) => {
   const handleAddCustomSymptom = () => {
     if (customSymptom.trim() && customSymptom.length <= 100) {
       // Basic sanitization: remove special characters that could be used for XSS
-      const sanitized = customSymptom.trim().replace(/[<>\"']/g, '');
+      const sanitized = customSymptom.trim().replace(/[<>"']/g, '');
       if (sanitized && !symptoms.includes(sanitized)) {
         setSymptoms(prev => [...prev, sanitized]);
         setCustomSymptom('');
@@ -119,7 +119,7 @@ export const SymptomFlow = ({ onComplete, onBack }: SymptomFlowProps) => {
       });
     } else {
       // If no specific symptoms found, add the transcript as a custom symptom
-      const sanitized = transcript.trim().replace(/[<>\"']/g, '');
+      const sanitized = transcript.trim().replace(/[<>"']/g, '');
       if (sanitized && !symptoms.includes(sanitized)) {
         setSymptoms(prev => [...prev, sanitized]);
       }
