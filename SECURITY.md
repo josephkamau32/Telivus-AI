@@ -101,6 +101,48 @@ No other table has this FK-into-parent gap pattern.
   EXISTS subquery and restrict `role` to `'user'` only (`'assistant'` inserts are
   service-role-only via the `chat-with-ai` edge function).
 
+### 2026-08-17 — `health_reports` INSERT policy allowing arbitrary report injection (Medium)
+
+**Found:** Follow-up audit identified the same vulnerability class as the `chat_subscriptions`
+INSERT fix from 2026-08-15: the `"Users can insert their own health reports"` policy on
+`health_reports` checked ownership (`auth.uid() = user_id`) but placed no restrictions on the
+values of `report_data` (JSONB) or other columns. Any authenticated user could insert arbitrary
+health report content for themselves, bypassing the `generate-medical-report` edge function.
+
+Full grep of `src/` confirmed no legitimate client-side code path inserts into `health_reports`
+— the only reference is the auto-generated `types.ts` type definition. All writes go through
+the edge function using `SUPABASE_SERVICE_ROLE_KEY`.
+
+**Note:** `health_reports` has no SELECT policy in any migration file. With RLS enabled and no
+SELECT policy, client-side reads of this table are denied by default. This is currently correct
+since all report reads go through the edge function (service_role). A client-side SELECT policy
+should only be added after an explicit decision about direct frontend access.
+
+**Impact:** Any authenticated user could insert fabricated health reports under their own user_id
+with arbitrary report_data content.
+
+**Fix:** Migration `20260817101300_remove_client_health_reports_insert.sql` drops the client-side
+INSERT policy entirely, matching the pattern from the `chat_subscriptions` fix.
+
+### 2026-08-17 — SECURITY DEFINER functions with overly broad search_path (Low)
+
+**Found:** Two `SECURITY DEFINER` functions used `SET search_path = public` instead of
+the recommended `SET search_path = ''`:
+- `handle_new_user()` (auth trigger for profile creation)
+- `handle_updated_at()` (timestamp trigger for chat tables)
+
+While `search_path = public` is less dangerous than omitting the clause entirely, Supabase
+best practices recommend an empty string to prevent search_path injection if a malicious
+schema is placed earlier in the default path. Two other functions in the schema
+(`update_updated_at_column()`, `cleanup_expired_cache()`) already used the correct pattern.
+
+**Impact:** Low. Exploiting this would require the ability to create schemas in the database,
+which authenticated users cannot do. Hardened as defense-in-depth.
+
+**Fix:** Migration `20260817101400_harden_security_definer_search_path.sql` recreates both
+functions with `SET search_path = ''`. All table references in function bodies were verified
+to be already schema-qualified (`public.profiles`) before the change.
+
 ---
 
 ## 📞 Reporting Vulnerabilities

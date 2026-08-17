@@ -1,0 +1,24 @@
+-- Remove the client-side INSERT policy on health_reports that allows any
+-- authenticated user to insert a health report row with arbitrary content,
+-- bypassing the intended flow through the generate-medical-report edge function.
+--
+-- This is the same class of vulnerability as the chat_subscriptions INSERT
+-- policy fixed in 20260815123800_remove_client_subscription_insert.sql:
+-- the policy checks ownership (auth.uid() = user_id) but does not constrain
+-- the values of report_data or any other column.
+--
+-- Full grep of src/ confirms no client-side code inserts into health_reports:
+--   - src/integrations/supabase/types.ts: type definition only (auto-generated)
+--   - No .from('health_reports').insert( anywhere in src/
+--
+-- All health_reports writes go through the generate-medical-report edge function
+-- using SUPABASE_SERVICE_ROLE_KEY, which bypasses RLS entirely.
+--
+-- NOTE: health_reports has no SELECT policy in any migration file. Since RLS
+-- defaults to deny-all, no client-side read of this table is currently possible.
+-- This is intentional for now — all report reads in the frontend go through
+-- the edge function (service_role). A client-side SELECT policy should only be
+-- added after an explicit decision about whether the frontend should ever query
+-- health_reports directly.
+
+DROP POLICY IF EXISTS "Users can insert their own health reports" ON public.health_reports;
