@@ -55,7 +55,7 @@ structlog==24.2.0
 prometheus-client==0.19.0
 prometheus-fastapi-instrumentator==6.1.0
 langfuse==2.53.8
-ragas==0.2.7
+# ragas==0.2.7 # REMOVED: requires pydantic>=2.7.0, conflicting with pydantic==2.5.0; only used in standalone scripts/evaluate_rag.py
 
 # Code Quality (NEW - Priority 5)
 black==23.11.0

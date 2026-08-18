@@ -445,6 +445,7 @@ CRITICAL: Use ONLY stated symptoms. No hallucinations. FDA-approved OTC only. Re
       const errorBody = await req.clone().json();
       errorUserId = errorBody.userId || null;
     } catch {
+      // Ignore JSON parsing errors for error extraction
     }
 
     if (healthReportId) {
