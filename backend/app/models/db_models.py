@@ -5,11 +5,10 @@ These models define the database schema for storing health reports,
 chat sessions, user data, and other application data.
 """
 
-from sqlalchemy import Column, Integer, String, Text, DateTime, Boolean, Float, JSON, ForeignKey, ARRAY
+from sqlalchemy import JSON, Boolean, Column, DateTime, Float, ForeignKey, Integer, String, Text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
-from sqlalchemy.dialects.postgresql import TIMESTAMP
 
 Base = declarative_base()
 

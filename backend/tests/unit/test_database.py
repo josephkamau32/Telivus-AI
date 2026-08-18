@@ -7,8 +7,9 @@ Tests database utilities with mocked engine/session:
 - Table creation retry logic
 """
 
+from unittest.mock import MagicMock, patch
+
 import pytest
-from unittest.mock import patch, AsyncMock, MagicMock
 
 
 class TestDatabaseBase:

@@ -6,7 +6,7 @@ Combines all API endpoints into a single router.
 
 from fastapi import APIRouter
 
-from app.api.v1.endpoints import health, chat, reports, voice, image, trajectory, alerts
+from app.api.v1.endpoints import alerts, chat, health, image, reports, trajectory, voice
 
 # Create main API router
 api_router = APIRouter()

@@ -6,20 +6,15 @@ complex AI dependencies. In production, this would be replaced with
 the full AI-powered service.
 """
 
-from typing import Dict, List, Any, Optional
 import uuid
-import logging
-from datetime import datetime
+from typing import Any, Dict, List, Optional
 
+from app.core.logging import get_logger
 from app.models.health import (
     HealthAssessmentRequest,
     HealthReport,
-    PatientInfo,
     MedicalAssessment,
-    OTCRecommendation,
-    DiagnosticPlan
 )
-from app.core.logging import get_logger
 
 # Get logger
 logger = get_logger(__name__)

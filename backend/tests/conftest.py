@@ -7,11 +7,12 @@ This module provides shared fixtures for testing including:
 - Sample data
 """
 
-import pytest
-from typing import AsyncGenerator, Generator
-from fastapi.testclient import TestClient
-from httpx import AsyncClient, ASGITransport
 import os
+from typing import AsyncGenerator, Generator
+
+import pytest
+from fastapi.testclient import TestClient
+from httpx import ASGITransport, AsyncClient
 
 # Set test environment before importing app
 os.environ["TESTING"] = "1"

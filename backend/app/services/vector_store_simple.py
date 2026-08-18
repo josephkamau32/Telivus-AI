@@ -6,10 +6,8 @@ In production, this would be replaced with Chroma or Pinecone.
 """
 
 import json
-import os
-from typing import List, Dict, Any, Optional
 from pathlib import Path
-import logging
+from typing import Any, Dict, List, Optional
 
 from app.core.logging import get_logger
 
@@ -347,7 +345,7 @@ def calculate_similarity(v1: List[float], v2: List[float]) -> float:
     if len(v1) != len(v2):
         raise ValueError("Vectors must have the same dimension")
 
-    dot_product = sum(a * b for a, b in zip(v1, v2))
+    dot_product = sum(a * b for a, b in zip(v1, v2, strict=False))
     magnitude_a = sum(a * a for a in v1) ** 0.5
     magnitude_b = sum(b * b for b in v2) ** 0.5
 

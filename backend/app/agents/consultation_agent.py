@@ -4,15 +4,13 @@ Consultation Agent for real-time health advice and chat.
 Provides conversational AI health consultations with memory and context awareness.
 """
 
-from typing import Dict, List, Any, Optional
-import logging
+from typing import Any, Dict, List
 
 from langchain.tools import BaseTool
-from langchain.memory import ConversationBufferWindowMemory
 
 from app.agents.base_agent import BaseHealthAgent
-from app.services.vector_store import vector_store_service
 from app.core.logging import get_logger
+from app.services.vector_store import vector_store_service
 
 # Get logger
 logger = get_logger(__name__)

@@ -6,22 +6,19 @@ including LSTM networks, transformer architectures, and ensemble methods for
 superior prediction accuracy and uncertainty quantification.
 """
 
+import logging
+import warnings
+from dataclasses import dataclass
+from datetime import datetime
+from typing import Any, Dict, List
+
 import numpy as np
 import pandas as pd
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from torch.utils.data import Dataset, DataLoader
-from sklearn.preprocessing import StandardScaler, RobustScaler
-from sklearn.model_selection import TimeSeriesSplit
-from sklearn.metrics import mean_absolute_error, mean_squared_error
-from typing import List, Dict, Any, Optional, Tuple
-import logging
-import warnings
-import optuna
-from dataclasses import dataclass
-import json
-from datetime import datetime, timedelta
+from sklearn.preprocessing import RobustScaler, StandardScaler
+from torch.utils.data import DataLoader, Dataset
 
 warnings.filterwarnings('ignore')
 
@@ -123,7 +120,7 @@ class LSTMTrajectoryPredictor(nn.Module):
 
         # Use the last hidden state from forward and backward LSTMs
         # Shape: (batch, seq_len, hidden_size * 2)
-        context = torch.cat([h_n[-2:], h_n[-1:]], dim=0).transpose(0, 1)  # (batch, 2, hidden_size)
+        torch.cat([h_n[-2:], h_n[-1:]], dim=0).transpose(0, 1)  # (batch, 2, hidden_size)
 
         # Attention mechanism
         attn_output, attn_weights = self.attention(
@@ -224,7 +221,7 @@ class UncertaintyEstimator:
 
     def fit(self, X_train, y_train, model_class, **model_kwargs):
         """Train ensemble of models for uncertainty estimation."""
-        for i in range(self.n_models):
+        for _i in range(self.n_models):
             # Bootstrap sampling
             indices = np.random.choice(len(X_train), len(X_train), replace=True)
             X_boot = X_train[indices]
@@ -245,7 +242,7 @@ class UncertaintyEstimator:
         """Predict with uncertainty estimation."""
         predictions = []
 
-        for model, scaler in zip(self.models, self.scalers):
+        for model, scaler in zip(self.models, self.scalers, strict=False):
             X_scaled = scaler.transform(X)
             pred = model.predict(X_scaled)
             predictions.append(pred)
@@ -488,8 +485,7 @@ class AdvancedTrajectoryPredictor:
     def _train_ensemble_models(self, X: np.ndarray, y: np.ndarray):
         """Train ensemble models for uncertainty estimation."""
         try:
-            from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
-            from sklearn.linear_model import LinearRegression
+            from sklearn.ensemble import RandomForestRegressor
 
             # Use simple ensemble for uncertainty
             self.ensemble_estimator.fit(

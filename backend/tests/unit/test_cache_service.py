@@ -10,15 +10,15 @@ Tests Redis caching functionality with mocked Redis client:
 - Convenience functions
 """
 
-import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
 import json
+from unittest.mock import AsyncMock, patch
+
+import pytest
 
 from app.services.cache_service import (
     CacheService,
-    cache_service,
-    get_cached_assessment,
     cache_assessment,
+    get_cached_assessment,
     initialize_cache,
     shutdown_cache,
 )

@@ -66,7 +66,7 @@ def init_sentry(
 ):
     """
     Initialize Sentry SDK for error tracking and performance monitoring.
-    
+
     Args:
         dsn: Sentry DSN (Data Source Name)
         environment: Environment name (production, staging, development)
@@ -80,7 +80,7 @@ def init_sentry(
     if sentry_sdk is None:
         logger.warning("sentry-sdk is not installed. Error tracking disabled.")
         return
-    
+
     try:
         integrations = []
         if FastApiIntegration is not None:
@@ -94,25 +94,25 @@ def init_sentry(
             dsn=dsn,
             environment=environment,
             traces_sample_rate=traces_sample_rate if enable_tracing else 0.0,
-            
+
             # Integrations
             integrations=integrations,
-            
+
             # Error filtering
             before_send=before_send_filter,
-            
+
             # Release tracking (use git commit hash in production)
             release="telivus-ai@1.0.0",
-            
+
             # Additional options
             attach_stacktrace=True,
             send_default_pii=False,  # Don't send personally identifiable info
             max_breadcrumbs=50,
             debug=False,
         )
-        
+
         logger.info(f"✅ Sentry initialized for environment: {environment}")
-    
+
     except Exception as e:
         logger.error(f"❌ Failed to initialize Sentry: {e}")
 
@@ -120,28 +120,28 @@ def init_sentry(
 def before_send_filter(event, hint):
     """
     Filter events before sending to Sentry.
-    
+
     Args:
         event: Sentry event dict
         hint: Event hint with exception info
-        
+
     Returns:
         Modified event or None to drop event
     """
     # Don't send events for known, expected exceptions
     if "exc_info" in hint:
         exc_type, exc_value, tb = hint["exc_info"]
-        
+
         # Ignore certain HTTP exceptions
         if hasattr(exc_value, "status_code"):
             # Don't track 404s or 401s
             if exc_value.status_code in [404, 401]:
                 return None
-    
+
     # Add custom tags
     event.setdefault("tags", {})
     event["tags"]["component"] = "telivus-ai-backend"
-    
+
     return event
 
 
@@ -152,7 +152,7 @@ def capture_exception(
 ):
     """
     Manually capture an exception with context.
-    
+
     Args:
         exception: Exception to capture
         user_id: Optional user ID for context
@@ -166,12 +166,12 @@ def capture_exception(
         # Add user context
         if user_id:
             scope.set_user({"id": user_id})
-        
+
         # Add extra context
         if extra_context:
             for key, value in extra_context.items():
                 scope.set_context(key, value)
-        
+
         # Capture exception
         sentry_sdk.capture_exception(exception)
 
@@ -183,7 +183,7 @@ def capture_message(
 ):
     """
     Capture a message (not an exception).
-    
+
     Args:
         message: Message to capture
         level: Severity level (debug, info, warning, error, fatal)
@@ -197,14 +197,14 @@ def capture_message(
         if extra_context:
             for key, value in extra_context.items():
                 scope.set_context(key, value)
-        
+
         sentry_sdk.capture_message(message, level=level)
 
 
 def set_user_context(user_id: str, email: Optional[str] = None):
     """
     Set user context for all subsequent events.
-    
+
     Args:
         user_id: User identifier
         email: User email
@@ -222,7 +222,7 @@ def set_user_context(user_id: str, email: Optional[str] = None):
 def set_tag(key: str, value: str):
     """
     Set a tag for all subsequent events.
-    
+
     Args:
         key: Tag key
         value: Tag value
@@ -242,7 +242,7 @@ def add_breadcrumb(
 ):
     """
     Add a breadcrumb to track user actions.
-    
+
     Args:
         category: Breadcrumb category
         message: Breadcrumb message

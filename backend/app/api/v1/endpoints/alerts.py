@@ -6,22 +6,21 @@ and notification preferences.
 """
 
 from typing import Any, Dict, List
-from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks
+
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from app.models.health import (
-    AlertRequest,
-    AlertRuleRequest,
-    AlertAcknowledgeRequest,
-    PredictiveAlert,
-    AlertRule,
-    AlertType,
-    AlertSeverity,
-    AlertStatus
-)
-from app.services.alert_service import alert_service
 from app.core.database import get_db
 from app.core.logging import get_logger
+from app.models.health import (
+    AlertAcknowledgeRequest,
+    AlertRequest,
+    AlertRuleRequest,
+    AlertSeverity,
+    AlertStatus,
+    AlertType,
+)
+from app.services.alert_service import alert_service
 
 # Create router
 router = APIRouter()

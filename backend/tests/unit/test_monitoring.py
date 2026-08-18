@@ -4,8 +4,9 @@ Unit Tests for Monitoring Module (Sentry Integration)
 Tests the Sentry initialization and error tracking setup.
 """
 
+from unittest.mock import MagicMock, patch
+
 import pytest
-from unittest.mock import patch, MagicMock
 
 
 class TestSentryInitialization:

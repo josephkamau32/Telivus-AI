@@ -10,16 +10,17 @@ Tests all sanitization functions for security:
 """
 
 import pytest
+
 from app.utils.sanitizer import (
+    detect_command_injection,
+    detect_sql_injection,
+    sanitize_email,
+    sanitize_filename,
     sanitize_html,
     sanitize_medical_input,
-    sanitize_email,
     sanitize_name,
-    validate_and_sanitize_json,
-    detect_sql_injection,
-    detect_command_injection,
-    sanitize_filename,
     validate_age,
+    validate_and_sanitize_json,
     validate_symptom_severity,
 )
 

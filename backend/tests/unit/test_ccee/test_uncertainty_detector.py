@@ -5,13 +5,14 @@ Tests detection of missing data, vague symptoms, and confidence-reducing factors
 """
 
 import pytest
+
 from app.models.health import (
-    HealthAssessmentRequest,
-    PatientInfo,
-    SymptomAssessment,
-    MedicalHistory,
     Feeling,
     Gender,
+    HealthAssessmentRequest,
+    MedicalHistory,
+    PatientInfo,
+    SymptomAssessment,
 )
 from app.services.ccee.uncertainty_detector import UncertaintyDetector, UncertaintyFactor
 

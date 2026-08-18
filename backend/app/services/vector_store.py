@@ -4,15 +4,14 @@ Vector store service for RAG (Retrieval-Augmented Generation).
 Provides medical knowledge base with vector embeddings for enhanced AI responses.
 """
 
-import os
 import asyncio
-from typing import List, Dict, Any, Optional
-import logging
+import os
+from typing import Any, Dict, List, Optional
 
-from langchain_community.vectorstores import Chroma
-from langchain_community.embeddings import HuggingFaceEmbeddings
-from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.schema import Document
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_community.embeddings import HuggingFaceEmbeddings
+from langchain_community.vectorstores import Chroma
 
 from app.core.config import settings
 from app.core.logging import get_logger

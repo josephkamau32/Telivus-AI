@@ -5,17 +5,16 @@ Provides endpoints for health assessment, symptom analysis, and medical report g
 """
 
 from typing import Any, Dict
-from fastapi import APIRouter, HTTPException, BackgroundTasks
+
+from fastapi import APIRouter, BackgroundTasks, HTTPException
+
+from app.core.logging import get_logger
 from app.models.health import (
     HealthAssessmentRequest,
     HealthReport,
-    Feeling,
     SymptomAssessment,
-    PatientInfo,
-    MedicalHistory
 )
 from app.services.health_assessment import HealthAssessmentService
-from app.core.logging import get_logger
 
 # Create router
 router = APIRouter()

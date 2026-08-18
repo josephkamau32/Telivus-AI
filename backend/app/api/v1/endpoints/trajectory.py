@@ -6,17 +6,14 @@ and outcome simulation using advanced ML models.
 """
 
 from typing import Any, Dict, List
-from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks
+
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from app.models.health import (
-    TrajectoryRequest,
-    HealthTrajectoryResponse,
-    InterventionTrackingRequest
-)
-from app.services.trajectory_service import trajectory_service_instance
 from app.core.database import get_db
 from app.core.logging import get_logger
+from app.models.health import HealthTrajectoryResponse, InterventionTrackingRequest, TrajectoryRequest
+from app.services.trajectory_service import trajectory_service_instance
 
 # Create router
 router = APIRouter()

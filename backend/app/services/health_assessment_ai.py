@@ -6,35 +6,29 @@ Optimized for speed and reliability.
 """
 
 import json
-import logging
-from typing import Dict, List, Any, Optional
-import openai
 import os
+from typing import Any, Dict, List, Optional
+
+import openai
 from dotenv import load_dotenv
 
+from app.core.logging import get_logger
 from app.models.health import (
-    HealthAssessmentRequest,
-    HealthReport,
-    PatientInfo,
-    MedicalAssessment,
-    OTCRecommendation,
-    DiagnosticPlan,
-    SymptomAssessment,
-    MedicalHistory,
     ConfidenceAndExplainability,
     ConfidenceBreakdown,
-    EvidenceItem,
-    UncertaintyFactor,
-    SafetyResult,
-    SafetyLevel
+    HealthAssessmentRequest,
+    HealthReport,
+    MedicalAssessment,
+    MedicalHistory,
+    PatientInfo,
+    SymptomAssessment,
 )
-from app.core.logging import get_logger
 
 # Import CCEE modules
 from app.services.ccee.confidence_engine import ConfidenceEngine
 from app.services.ccee.explainability_engine import ExplainabilityEngine
-from app.services.ccee.uncertainty_detector import UncertaintyDetector
 from app.services.ccee.safety_scorer import SafetyScorer
+from app.services.ccee.uncertainty_detector import UncertaintyDetector
 
 # Load environment variables
 load_dotenv()
@@ -64,13 +58,13 @@ class AIHealthAssessmentService:
 
         # Medical knowledge base (simplified)
         self.medical_knowledge = self._load_medical_knowledge()
-        
+
         # Initialize CCEE engines
         self.confidence_engine = ConfidenceEngine()
         self.explainability_engine = ExplainabilityEngine()
         self.uncertainty_detector = UncertaintyDetector()
         self.safety_scorer = SafetyScorer()
-        
+
         # Store last RAG results for CCEE
         self._last_rag_results: List[Dict[str, Any]] = []
 
@@ -118,7 +112,7 @@ class AIHealthAssessmentService:
 
             # Create medical assessment
             medical_assessment = MedicalAssessment(**assessment_data)
-            
+
             # Generate CCEE data (confidence, explainability, safety)
             ccee_data = await self._generate_ccee(request, assessment_data, self._last_rag_results)
 
@@ -148,7 +142,7 @@ class AIHealthAssessmentService:
             logger.error(f"Failed to generate AI assessment: {e}")
             # Fallback to basic assessment
             return await self._generate_fallback_assessment(request)
-    
+
     async def _generate_ccee(
         self,
         request: HealthAssessmentRequest,
@@ -157,12 +151,12 @@ class AIHealthAssessmentService:
     ) -> Optional[ConfidenceAndExplainability]:
         """
         Generate CCEE (Clinical Confidence & Explainability Engine) data.
-        
+
         Args:
             request: Original health assessment request
             assessment_data: Generated assessment data from AI
             rag_results: RAG retrieval results (if any)
-            
+
         Returns:
             ConfidenceAndExplainability object or None if generation fails
         """
@@ -174,37 +168,37 @@ class AIHealthAssessmentService:
                 rag_results=rag_results,
                 emergency_check=None  # Could add emergency check if available
             )
-            
+
             # 2. Generate evidence mapping
             evidence = self.explainability_engine.generate_evidence_map(
                 symptoms=request.symptom_assessment.symptoms,
                 rag_results=rag_results,
                 assessment=assessment_data.get("assessment", "")
             )
-            
+
             # 3. Generate explanation summary
             explanation = self.explainability_engine.generate_explanation_summary(
                 evidence=evidence,
                 confidence=confidence_result.overall_score,
                 data_completeness=confidence_result.data_completeness
             )
-            
+
             # 4. Detect uncertainty factors
             uncertainty_factors = self.uncertainty_detector.detect_uncertainty_factors(
                 request=request,
                 confidence_breakdown=confidence_result
             )
-            
+
             # 5. Get data improvement suggestions
             suggestions = self.uncertainty_detector.suggest_additional_data(request)
-            
+
             # 6. Calculate safety score
             red_flags = []
             if "diagnostic_plan" in assessment_data:
                 diagnostic_plan = assessment_data["diagnostic_plan"]
                 if isinstance(diagnostic_plan, dict):
                     red_flags = diagnostic_plan.get("red_flags", [])
-            
+
             safety_result = self.safety_scorer.calculate_safety_score(
                 symptoms=request.symptom_assessment.symptoms,
                 assessment=assessment_data.get("assessment", ""),
@@ -212,7 +206,7 @@ class AIHealthAssessmentService:
                 age=request.patient_info.age,
                 red_flags=red_flags
             )
-            
+
             # 7. Combine into CCEE response
             ccee = ConfidenceAndExplainability(
                 confidence_score=int(confidence_result.overall_score * 100),
@@ -230,7 +224,7 @@ class AIHealthAssessmentService:
                 suggested_data_improvements=suggestions,
                 safety=safety_result
             )
-            
+
             logger.info(
                 "CCEE data generated successfully",
                 extra={
@@ -239,9 +233,9 @@ class AIHealthAssessmentService:
                     "uncertainty_count": len(uncertainty_factors)
                 }
             )
-            
+
             return ccee
-            
+
         except Exception as e:
             logger.error(f"Failed to generate CCEE data: {e}", exc_info=True)
             # Return None - report will still be generated without CCEE

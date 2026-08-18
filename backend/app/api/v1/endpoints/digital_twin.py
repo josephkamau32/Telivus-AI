@@ -4,16 +4,16 @@ Digital Twin API Endpoints
 RESTful API for managing and interacting with digital health twins.
 """
 
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.ext.asyncio import AsyncSession
-from typing import List, Optional
-from pydantic import BaseModel, Field
+import logging
 from datetime import datetime
+from typing import List, Optional
+
+from fastapi import APIRouter, Depends, HTTPException, status
+from pydantic import BaseModel, Field
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.services.twin_service import DigitalTwinService
-from app.services.pattern_recognition import PatternRecognitionEngine
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +33,7 @@ class TwinResponse(BaseModel):
     confidence_level: float
     twin_age_days: Optional[int] = None
     last_updated: Optional[str] = None
-    
+
     class Config:
         from_attributes = True
 
@@ -75,7 +75,7 @@ class HealthEventResponse(BaseModel):
     symptoms: Optional[dict] = None
     severity: Optional[int] = None
     feeling_state: Optional[str] = None
-    
+
     class Config:
         from_attributes = True
 
@@ -90,7 +90,7 @@ class LearnedPatternResponse(BaseModel):
     evidence_count: int
     effect_direction: Optional[str] = None
     discovered_at: datetime
-    
+
     class Config:
         from_attributes = True
 
@@ -108,7 +108,7 @@ class ProactiveAlertResponse(BaseModel):
     recommended_actions: Optional[list] = None
     status: str
     triggered_at: datetime
-    
+
     class Config:
         from_attributes = True
 
@@ -125,7 +125,7 @@ class TwinInsightResponse(BaseModel):
     is_actionable: bool
     suggested_actions: Optional[list] = None
     priority: int
-    
+
     class Config:
         from_attributes = True
 
@@ -144,16 +144,16 @@ async def get_my_twin(
 ):
     """
     Get or create the current user's digital twin.
-    
+
     If the twin doesn't exist, it will be created automatically.
     """
     try:
         service = DigitalTwinService(db)
         twin = await service.get_or_create_twin(user_id)
-        
+
         # Calculate twin age
         twin_age = (datetime.utcnow() - twin.created_at).days
-        
+
         return TwinResponse(
             id=twin.id,
             user_id=twin.user_id,
@@ -166,7 +166,7 @@ async def get_my_twin(
             twin_age_days=twin_age,
             last_updated=twin.last_learning_update.isoformat() if twin.last_learning_update else None
         )
-        
+
     except Exception as e:
         logger.warning(f"Database unavailable, returning mock twin: {e}")
         # Return mock data when database is not available
@@ -194,9 +194,9 @@ async def get_twin_stats(
         service = DigitalTwinService(db)
         twin = await service.get_or_create_twin(user_id)
         stats = await service.get_twin_stats(twin.id)
-        
+
         return TwinStatsResponse(**stats)
-        
+
     except Exception as e:
         logger.warning(f"Database unavailable, returning mock twin stats: {e}")
         # Return mock data when database is not available
@@ -226,23 +226,23 @@ async def update_twin(
     try:
         service = DigitalTwinService(db)
         twin = await service.get_or_create_twin(user_id)
-        
+
         updates = {}
         if request.twin_name:
             updates["twin_name"] = request.twin_name
         if request.settings:
             updates["settings"] = request.settings
-        
+
         updated_twin = await service.update_twin(twin.id, **updates)
-        
+
         if not updated_twin:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Twin not found"
             )
-        
+
         twin_age = (datetime.utcnow() - updated_twin.created_at).days
-        
+
         return TwinResponse(
             id=updated_twin.id,
             user_id=updated_twin.user_id,
@@ -255,7 +255,7 @@ async def update_twin(
             twin_age_days=twin_age,
             last_updated=updated_twin.last_learning_update.isoformat() if updated_twin.last_learning_update else None
         )
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -276,7 +276,7 @@ async def record_health_event(
     try:
         service = DigitalTwinService(db)
         twin = await service.get_or_create_twin(user_id)
-        
+
         event_data = {
             "category": event.category,
             "symptoms": event.symptoms,
@@ -287,19 +287,19 @@ async def record_health_event(
             "feeling_state": event.feeling_state,
             "source": event.source
         }
-        
+
         created_event = await service.record_health_event(
             twin.id,
             event.event_type,
             event_data
         )
-        
+
         if not created_event:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Failed to create health event"
             )
-        
+
         return HealthEventResponse(
             id=created_event.id,
             event_type=created_event.event_type,
@@ -308,7 +308,7 @@ async def record_health_event(
             severity=created_event.severity,
             feeling_state=created_event.feeling_state
         )
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -331,7 +331,7 @@ async def get_timeline(
         service = DigitalTwinService(db)
         twin = await service.get_or_create_twin(user_id)
         events = await service.get_timeline(twin.id, limit, offset)
-        
+
         return [
             HealthEventResponse(
                 id=event.id,
@@ -343,7 +343,7 @@ async def get_timeline(
             )
             for event in events
         ]
-        
+
     except Exception as e:
         logger.warning(f"Database unavailable, returning empty timeline: {e}")
         return []  # Return empty list when database is not available
@@ -360,7 +360,7 @@ async def get_learned_patterns(
         service = DigitalTwinService(db)
         twin = await service.get_or_create_twin(user_id)
         patterns = await service.get_learned_patterns(twin.id, min_confidence)
-        
+
         return [
             LearnedPatternResponse(
                 id=pattern.id,
@@ -374,7 +374,7 @@ async def get_learned_patterns(
             )
             for pattern in patterns
         ]
-        
+
     except Exception as e:
         logger.warning(f"Database unavailable, returning empty patterns: {e}")
         return []  # Return empty list when database is not available
@@ -391,7 +391,7 @@ async def get_proactive_alerts(
         service = DigitalTwinService(db)
         twin = await service.get_or_create_twin(user_id)
         alerts = await service.get_active_alerts(twin.id, severity)
-        
+
         return [
             ProactiveAlertResponse(
                 id=alert.id,
@@ -408,7 +408,7 @@ async def get_proactive_alerts(
             )
             for alert in alerts
         ]
-        
+
     except Exception as e:
         logger.warning(f"Database unavailable, returning empty alerts: {e}")
         return []  # Return empty list when database is not available
@@ -423,15 +423,15 @@ async def acknowledge_alert(
     try:
         service = DigitalTwinService(db)
         success = await service.acknowledge_alert(alert_id)
-        
+
         if not success:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Alert not found"
             )
-        
+
         return {"message": "Alert acknowledged successfully"}
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -452,10 +452,10 @@ async def get_insights(
     try:
         service = DigitalTwinService(db)
         twin = await service.get_or_create_twin(user_id)
-        
+
         is_highlighted = True if highlighted_only else None
         insights = await service.get_insights(twin.id, is_highlighted)
-        
+
         return [
             TwinInsightResponse(
                 id=insight.id,
@@ -471,7 +471,7 @@ async def get_insights(
             )
             for insight in insights
         ]
-        
+
     except Exception as e:
         logger.warning(f"Database unavailable, returning empty insights: {e}")
         return []  # Return empty list when database is not available
@@ -484,7 +484,7 @@ async def sync_historical_data(
 ):
     """
     Sync all historical health data to the digital twin.
-    
+
     This endpoint automatically:
     - Syncs all past health assessments
     - Syncs all health data points
@@ -493,22 +493,22 @@ async def sync_historical_data(
     """
     try:
         from app.services.twin_integration import TwinIntegrationService
-        
+
         integration_service = TwinIntegrationService(db)
-        
+
         # Sync all historical data
         sync_stats = await integration_service.sync_all_user_health_data(user_id)
-        
+
         # Auto-learn if enough data
         learning_results = await integration_service.auto_learn_from_recent_data(user_id, min_events=3)
-        
+
         return {
             "message": "Historical data synced successfully",
             "sync_stats": sync_stats,
             "learning_results": learning_results,
             "twin_ready": True
         }
-        
+
     except Exception as e:
         logger.error(f"Error syncing historical data: {e}")
         raise HTTPException(
@@ -524,38 +524,38 @@ async def trigger_learning(
 ):
     """
     Trigger the digital twin to analyze recent data and discover new patterns.
-    
+
     This manually initiates the learning process.
     """
     try:
         from app.services.twin_integration import TwinIntegrationService
-        
+
         integration_service = TwinIntegrationService(db)
-        
+
         # First, ensure all recent data is synced
         await integration_service.sync_all_user_health_data(user_id)
-        
+
         # Then trigger learning
         learning_results = await integration_service.auto_learn_from_recent_data(user_id, min_events=3)
-        
+
         if not learning_results:
             twin_service = DigitalTwinService(db)
             twin = await twin_service.get_or_create_twin(user_id)
             events = await twin_service.get_timeline(twin.id, limit=10)
-            
+
             return {
                 "message": "Not enough data to learn patterns yet",
                 "events_count": len(events),
                 "minimum_required": 3,
                 "suggestion": "Complete a few health assessments first"
             }
-        
+
         return {
             "message": "Learning completed successfully",
             **learning_results,
             "twin_updated": True
         }
-        
+
     except Exception as e:
         logger.error(f"Error during twin learning: {e}")
         raise HTTPException(

@@ -5,10 +5,11 @@ These models define the structure for patient data, symptoms, assessments,
 and medical reports used throughout the application.
 """
 
-from typing import List, Optional, Dict, Any
-from pydantic import BaseModel, Field, validator
 from datetime import datetime
 from enum import Enum
+from typing import Any, Dict, List, Optional
+
+from pydantic import BaseModel, Field, validator
 
 
 class Feeling(str, Enum):

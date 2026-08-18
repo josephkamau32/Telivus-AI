@@ -5,13 +5,13 @@ Supports PostgreSQL with SQLAlchemy and async operations.
 Includes comprehensive error handling and retry logic.
 """
 
+import asyncio
+import logging
+
+from sqlalchemy.exc import OperationalError
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy.exc import OperationalError, SQLAlchemyError
-import logging
-import asyncio
-from typing import Optional
 
 from app.core.config import settings
 
@@ -71,31 +71,42 @@ async def create_tables(max_retries: int = 3) -> None:
     Create all database tables with retry logic.
 
     This function should be called during application startup.
-    
+
     Args:
         max_retries: Maximum number of retry attempts
-        
+
     Raises:
         RuntimeError: If table creation fails after all retries
     """
     if engine is None:
         logger.error("Database engine not initialized - skipping table creation")
         return
-    
+
     last_error = None
     for attempt in range(max_retries):
         try:
             async with engine.begin() as conn:
                 # Import all models to ensure they are registered with SQLAlchemy
                 from app.models.db_models import (  # noqa: F401
-                    User, HealthReport, ReportLog, ChatSession,
-                    ChatMessage, ChatSubscription, ReportCache,
-                    VectorDocument, APILog
+                    APILog,
+                    ChatMessage,
+                    ChatSession,
+                    ChatSubscription,
+                    HealthReport,
+                    ReportCache,
+                    ReportLog,
+                    User,
+                    VectorDocument,
                 )
+
                 # Import Digital Twin models
                 from app.models.digital_twin import (  # noqa: F401
-                    DigitalTwin, HealthEvent, LearnedPattern,
-                    ProactiveAlert, TwinInsight, TwinLearningLog
+                    DigitalTwin,
+                    HealthEvent,
+                    LearnedPattern,
+                    ProactiveAlert,
+                    TwinInsight,
+                    TwinLearningLog,
                 )
 
                 await conn.run_sync(Base.metadata.create_all)
@@ -116,7 +127,7 @@ async def create_tables(max_retries: int = 3) -> None:
             last_error = e
             logger.error(f"Unexpected error creating database tables: {e}")
             break
-    
+
     if last_error:
         raise RuntimeError(f"Failed to create database tables: {last_error}")
 
@@ -142,7 +153,7 @@ async def check_database_connection(timeout: int = 5) -> dict:
 
     Args:
         timeout: Connection timeout in seconds
-        
+
     Returns:
         dict: Connection status with details
     """
@@ -152,14 +163,14 @@ async def check_database_connection(timeout: int = 5) -> dict:
             "error": "Database engine not initialized",
             "details": "Check DATABASE_URL configuration"
         }
-    
+
     try:
         # Use asyncio timeout to prevent hanging
         async with asyncio.timeout(timeout):
             async with engine.begin() as conn:
                 result = await conn.execute("SELECT 1")
                 await result.fetchone()
-                
+
                 return {
                     "connected": True,
                     "database_url": settings.DATABASE_URL.split('@')[1] if '@' in settings.DATABASE_URL else "<unknown>",

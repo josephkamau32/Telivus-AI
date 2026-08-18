@@ -8,9 +8,9 @@ Tests the vector database and retrieval-augmented generation:
 - Context building for AI
 """
 
+from unittest.mock import AsyncMock, patch
+
 import pytest
-from unittest.mock import Mock, patch, AsyncMock
-import numpy as np
 
 
 class TestVectorStoreService:

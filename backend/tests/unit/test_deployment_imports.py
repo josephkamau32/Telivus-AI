@@ -8,8 +8,9 @@ if str(BACKEND_ROOT) not in sys.path:
 
 
 def test_metrics_setup_handles_missing_instrumentator():
-    from app.core import monitoring
     from fastapi import FastAPI
+
+    from app.core import monitoring
 
     app = FastAPI()
     monitoring.configure_metrics(app)

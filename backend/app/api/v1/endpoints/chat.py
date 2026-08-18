@@ -5,13 +5,14 @@ Provides real-time chat functionality with LangChain agents.
 """
 
 from typing import Any, List
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
+from app.core.logging import get_logger
 from app.models.health import ChatMessage, ChatSession
 from app.services.chat_service import ChatService
-from app.core.logging import get_logger
 
 # Create router
 router = APIRouter()

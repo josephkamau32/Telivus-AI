@@ -6,18 +6,21 @@ continuously from user interactions.
 """
 
 import logging
-from typing import Optional, Dict, Any, List
-from datetime import datetime, timedelta
 import uuid
+from datetime import datetime, timedelta
+from typing import Any, Dict, List, Optional
+
+from sqlalchemy import and_, desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, and_, desc, func
-from sqlalchemy.orm import selectinload
 
 from app.models.digital_twin import (
-    DigitalTwin, HealthEvent, LearnedPattern, ProactiveAlert,
-    TwinInsight, TwinLearningLog
+    DigitalTwin,
+    HealthEvent,
+    LearnedPattern,
+    ProactiveAlert,
+    TwinInsight,
+    TwinLearningLog,
 )
-from app.models.health import HealthAssessmentRequest
 
 logger = logging.getLogger(__name__)
 
@@ -25,20 +28,20 @@ logger = logging.getLogger(__name__)
 class DigitalTwinService:
     """
     Service for managing digital twin operations.
-    
+
     Handles creation, updates, learning, and querying of AI health avatars.
     """
-    
+
     def __init__(self, session: AsyncSession):
         self.session = session
-    
+
     async def get_or_create_twin(self, user_id: str) -> DigitalTwin:
         """
         Get existing digital twin or create a new one for the user.
-        
+
         Args:
             user_id: User ID
-            
+
         Returns:
             DigitalTwin instance
         """
@@ -48,16 +51,16 @@ class DigitalTwinService:
                 select(DigitalTwin).where(DigitalTwin.user_id == user_id)
             )
             twin = result.scalar_one_or_none()
-            
+
             if twin:
                 logger.info(f"Found existing twin for user {user_id}")
                 return twin
-            
+
             # Create new twin
             twin = DigitalTwin(
                 id=f"twin_{uuid.uuid4().hex}",
                 user_id=user_id,
-                twin_name=f"Health Twin",
+                twin_name="Health Twin",
                 learning_level="beginner",
                 data_points_count=0,
                 interaction_count=0,
@@ -65,19 +68,19 @@ class DigitalTwinService:
                 prediction_accuracy=0.0,
                 confidence_level=0.0
             )
-            
+
             self.session.add(twin)
             await self.session.commit()
             await self.session.refresh(twin)
-            
+
             logger.info(f"Created new twin for user {user_id}: {twin.id}")
             return twin
-            
+
         except Exception as e:
             logger.error(f"Error getting/creating twin for user {user_id}: {e}")
             await self.session.rollback()
             raise
-    
+
     async def get_twin_by_id(self, twin_id: str) -> Optional[DigitalTwin]:
         """Get digital twin by ID."""
         try:
@@ -88,7 +91,7 @@ class DigitalTwinService:
         except Exception as e:
             logger.error(f"Error getting twin {twin_id}: {e}")
             return None
-    
+
     async def update_twin(
         self,
         twin_id: str,
@@ -96,11 +99,11 @@ class DigitalTwinService:
     ) -> Optional[DigitalTwin]:
         """
         Update digital twin attributes.
-        
+
         Args:
             twin_id: Digital twin ID
             **updates: Fields to update
-            
+
         Returns:
             Updated DigitalTwin or None
         """
@@ -108,23 +111,23 @@ class DigitalTwinService:
             twin = await self.get_twin_by_id(twin_id)
             if not twin:
                 return None
-            
+
             for key, value in updates.items():
                 if hasattr(twin, key):
                     setattr(twin, key, value)
-            
+
             twin.updated_at = datetime.utcnow()
             await self.session.commit()
             await self.session.refresh(twin)
-            
+
             logger.info(f"Updated twin {twin_id}")
             return twin
-            
+
         except Exception as e:
             logger.error(f"Error updating twin {twin_id}: {e}")
             await self.session.rollback()
             return None
-    
+
     async def record_health_event(
         self,
         twin_id: str,
@@ -134,13 +137,13 @@ class DigitalTwinService:
     ) -> Optional[HealthEvent]:
         """
         Record a health event for the digital twin.
-        
+
         Args:
             twin_id: Digital twin ID
             event_type: Type of event (assessment, symptom, vital_sign, etc.)
             event_data: Event data dictionary
             event_date: When the event occurred (defaults to now)
-            
+
         Returns:
             Created HealthEvent or None
         """
@@ -161,27 +164,27 @@ class DigitalTwinService:
                 source=event_data.get("source", "user_input"),
                 extra_data=event_data.get("metadata", {})
             )
-            
+
             self.session.add(event)
-            
+
             # Update twin data points count
             twin = await self.get_twin_by_id(twin_id)
             if twin:
                 twin.data_points_count += 1
                 twin.interaction_count += 1
                 twin.last_learning_update = datetime.utcnow()
-            
+
             await self.session.commit()
             await self.session.refresh(event)
-            
+
             logger.info(f"Recorded health event for twin {twin_id}: {event.id}")
             return event
-            
+
         except Exception as e:
             logger.error(f"Error recording health event for twin {twin_id}: {e}")
             await self.session.rollback()
             return None
-    
+
     async def get_timeline(
         self,
         twin_id: str,
@@ -190,12 +193,12 @@ class DigitalTwinService:
     ) -> List[HealthEvent]:
         """
         Get health timeline for a digital twin.
-        
+
         Args:
             twin_id: Digital twin ID
             limit: Maximum number of events to return
             offset: Offset for pagination
-            
+
         Returns:
             List of HealthEvents ordered by date (newest first)
         """
@@ -209,11 +212,11 @@ class DigitalTwinService:
             )
             events = result.scalars().all()
             return list(events)
-            
+
         except Exception as e:
             logger.error(f"Error getting timeline for twin {twin_id}: {e}")
             return []
-    
+
     async def discover_pattern(
         self,
         twin_id: str,
@@ -225,7 +228,7 @@ class DigitalTwinService:
     ) -> Optional[LearnedPattern]:
         """
         Record a newly discovered pattern for the digital twin.
-        
+
         Args:
             twin_id: Digital twin ID
             cause: What causes the effect
@@ -233,7 +236,7 @@ class DigitalTwinService:
             confidence: Confidence score (0-100)
             evidence_count: Number of times observed
             pattern_data: Additional pattern information
-            
+
         Returns:
             Created LearnedPattern or None
         """
@@ -257,22 +260,22 @@ class DigitalTwinService:
                 supporting_data=pattern_data.get("supporting_data"),
                 last_confirmed_at=datetime.utcnow()
             )
-            
+
             self.session.add(pattern)
             await self.session.commit()
             await self.session.refresh(pattern)
-            
+
             # Update twin learning level based on patterns
             await self._update_learning_level(twin_id)
-            
+
             logger.info(f"Discovered pattern for twin {twin_id}: {pattern.id}")
             return pattern
-            
+
         except Exception as e:
             logger.error(f"Error discovering pattern for twin {twin_id}: {e}")
             await self.session.rollback()
             return None
-    
+
     async def get_learned_patterns(
         self,
         twin_id: str,
@@ -281,12 +284,12 @@ class DigitalTwinService:
     ) -> List[LearnedPattern]:
         """
         Get all learned patterns for a digital twin.
-        
+
         Args:
             twin_id: Digital twin ID
             min_confidence: Minimum confidence threshold
             is_active: Filter by active status
-            
+
         Returns:
             List of LearnedPatterns
         """
@@ -298,15 +301,15 @@ class DigitalTwinService:
                     LearnedPattern.is_active == is_active
                 )
             ).order_by(desc(LearnedPattern.confidence_score))
-            
+
             result = await self.session.execute(query)
             patterns = result.scalars().all()
             return list(patterns)
-            
+
         except Exception as e:
             logger.error(f"Error getting patterns for twin {twin_id}: {e}")
             return []
-    
+
     async def create_proactive_alert(
         self,
         twin_id: str,
@@ -314,11 +317,11 @@ class DigitalTwinService:
     ) -> Optional[ProactiveAlert]:
         """
         Create a proactive health alert for the user.
-        
+
         Args:
             twin_id: Digital twin ID
             alert_data: Alert information
-            
+
         Returns:
             Created ProactiveAlert or None
         """
@@ -343,19 +346,19 @@ class DigitalTwinService:
                 expires_at=datetime.utcnow() + timedelta(days=7),
                 extra_data=alert_data.get("metadata", {})
             )
-            
+
             self.session.add(alert)
             await self.session.commit()
             await self.session.refresh(alert)
-            
+
             logger.info(f"Created proactive alert for twin {twin_id}: {alert.id}")
             return alert
-            
+
         except Exception as e:
             logger.error(f"Error creating alert for twin {twin_id}: {e}")
             await self.session.rollback()
             return None
-    
+
     async def get_active_alerts(
         self,
         twin_id: str,
@@ -370,20 +373,20 @@ class DigitalTwinService:
                     ProactiveAlert.expires_at > datetime.utcnow()
                 )
             )
-            
+
             if severity:
                 query = query.where(ProactiveAlert.severity == severity)
-            
+
             query = query.order_by(desc(ProactiveAlert.triggered_at))
-            
+
             result = await self.session.execute(query)
             alerts = result.scalars().all()
             return list(alerts)
-            
+
         except Exception as e:
             logger.error(f"Error getting alerts for twin {twin_id}: {e}")
             return []
-    
+
     async def acknowledge_alert(self, alert_id: str) -> bool:
         """Acknowledge an alert."""
         try:
@@ -391,19 +394,19 @@ class DigitalTwinService:
                 select(ProactiveAlert).where(ProactiveAlert.id == alert_id)
             )
             alert = result.scalar_one_or_none()
-            
+
             if alert:
                 alert.status = "acknowledged"
                 alert.acknowledged_at = datetime.utcnow()
                 await self.session.commit()
                 return True
             return False
-            
+
         except Exception as e:
             logger.error(f"Error acknowledging alert {alert_id}: {e}")
             await self.session.rollback()
             return False
-    
+
     async def create_insight(
         self,
         twin_id: str,
@@ -429,19 +432,19 @@ class DigitalTwinService:
                 priority=insight_data.get("priority", 5),
                 extra_data=insight_data.get("metadata", {})
             )
-            
+
             self.session.add(insight)
             await self.session.commit()
             await self.session.refresh(insight)
-            
+
             logger.info(f"Created insight for twin {twin_id}: {insight.id}")
             return insight
-            
+
         except Exception as e:
             logger.error(f"Error creating insight for twin {twin_id}: {e}")
             await self.session.rollback()
             return None
-    
+
     async def get_insights(
         self,
         twin_id: str,
@@ -453,26 +456,26 @@ class DigitalTwinService:
             query = select(TwinInsight).where(
                 and_(
                     TwinInsight.twin_id == twin_id,
-                    TwinInsight.is_active == True
+                    TwinInsight.is_active is True
                 )
             )
-            
+
             if is_highlighted is not None:
                 query = query.where(TwinInsight.is_highlighted == is_highlighted)
-            
+
             query = query.order_by(
                 desc(TwinInsight.priority),
                 desc(TwinInsight.discovered_at)
             ).limit(limit)
-            
+
             result = await self.session.execute(query)
             insights = result.scalars().all()
             return list(insights)
-            
+
         except Exception as e:
             logger.error(f"Error getting insights for twin {twin_id}: {e}")
             return []
-    
+
     async def log_learning_event(
         self,
         twin_id: str,
@@ -494,35 +497,35 @@ class DigitalTwinService:
                 improvement_delta=metrics_after.get("accuracy", 0) - metrics_before.get("accuracy", 0),
                 success=success
             )
-            
+
             self.session.add(log)
             await self.session.commit()
-            
+
             return log
-            
+
         except Exception as e:
             logger.error(f"Error logging learning event for twin {twin_id}: {e}")
             await self.session.rollback()
             return None
-    
+
     async def _update_learning_level(self, twin_id: str):
         """Update the twin's learning level based on accumulated knowledge."""
         try:
             twin = await self.get_twin_by_id(twin_id)
             if not twin:
                 return
-            
+
             # Count patterns
             pattern_count = await self.session.execute(
                 select(func.count(LearnedPattern.id)).where(
                     and_(
                         LearnedPattern.twin_id == twin_id,
-                        LearnedPattern.is_active == True
+                        LearnedPattern.is_active is True
                     )
                 )
             )
             num_patterns = pattern_count.scalar()
-            
+
             # Determine learning level
             if num_patterns >= 20:
                 level = "expert"
@@ -536,32 +539,32 @@ class DigitalTwinService:
             else:
                 level = "beginner"
                 confidence = 40.0
-            
+
             # Update twin
             twin.learning_level = level
             twin.confidence_level = min(confidence, 95.0)
             twin.accuracy_score = min(confidence + (twin.data_points_count * 0.1), 95.0)
-            
+
             await self.session.commit()
-            
+
         except Exception as e:
             logger.error(f"Error updating learning level for twin {twin_id}: {e}")
             await self.session.rollback()
-    
+
     async def get_twin_stats(self, twin_id: str) -> Dict[str, Any]:
         """Get comprehensive stats for a digital twin."""
         try:
             twin = await self.get_twin_by_id(twin_id)
             if not twin:
                 return {}
-            
+
             # Count patterns
             pattern_count = await self.session.execute(
                 select(func.count(LearnedPattern.id)).where(
                     LearnedPattern.twin_id == twin_id
                 )
             )
-            
+
             # Count active alerts
             alert_count = await self.session.execute(
                 select(func.count(ProactiveAlert.id)).where(
@@ -571,14 +574,14 @@ class DigitalTwinService:
                     )
                 )
             )
-            
+
             # Count insights
             insight_count = await self.session.execute(
                 select(func.count(TwinInsight.id)).where(
                     TwinInsight.twin_id == twin_id
                 )
             )
-            
+
             return {
                 "twin_id": twin.id,
                 "twin_name": twin.twin_name,
@@ -593,7 +596,7 @@ class DigitalTwinService:
                 "twin_age_days": (datetime.utcnow() - twin.created_at).days,
                 "last_updated": twin.last_learning_update.isoformat() if twin.last_learning_update else None
             }
-            
+
         except Exception as e:
             logger.error(f"Error getting stats for twin {twin_id}: {e}")
             return {}

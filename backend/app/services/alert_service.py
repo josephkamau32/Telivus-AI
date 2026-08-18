@@ -6,33 +6,16 @@ user-defined rules, and real-time health monitoring to provide early warnings
 and preventive care recommendations.
 """
 
-import asyncio
-from typing import List, Dict, Any, Optional, Tuple
 from datetime import datetime, timedelta
-import logging
-import json
+from typing import Any, Dict, List, Optional
+
+from sqlalchemy.orm import Session
 
 from app.core.logging import get_logger
-from app.models.db_models import (
-    PredictiveAlert,
-    AlertRule,
-    AlertNotification,
-    AlertAnalytics,
-    User
-)
-from app.models.health import (
-    PredictiveAlert as AlertModel,
-    AlertRule as RuleModel,
-    AlertType,
-    AlertSeverity,
-    AlertStatus,
-    AlertRequest,
-    AlertRuleRequest,
-    AlertAcknowledgeRequest
-)
+from app.models.db_models import AlertAnalytics, AlertNotification, AlertRule, PredictiveAlert
+from app.models.health import AlertAcknowledgeRequest, AlertRequest, AlertRuleRequest, AlertSeverity, AlertType
+from app.models.health import PredictiveAlert as AlertModel
 from app.services.trajectory_service import trajectory_service_instance
-from app.core.database import get_db
-from sqlalchemy.orm import Session
 
 logger = get_logger(__name__)
 
@@ -71,7 +54,7 @@ class AlertService:
             # Get user's active alert rules
             user_rules = db.query(AlertRule).filter(
                 AlertRule.user_id == user_id,
-                AlertRule.is_active == True
+                AlertRule.is_active is True
             ).all()
 
             # If no custom rules, use defaults
@@ -301,7 +284,7 @@ class AlertService:
             user_rules = db.query(AlertRule).filter(
                 AlertRule.user_id == alert.user_id,
                 AlertRule.alert_type == alert.alert_type,
-                AlertRule.is_active == True
+                AlertRule.is_active is True
             ).all()
 
             notification_results = []

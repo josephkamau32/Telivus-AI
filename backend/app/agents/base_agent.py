@@ -4,16 +4,14 @@ Base agent class for Telivus AI health agents.
 Provides common functionality and interfaces for all health-related AI agents.
 """
 
-from typing import Dict, List, Any, Optional
 from abc import ABC, abstractmethod
-import logging
+from typing import Any, Dict, List, Optional
 
 from langchain.agents import AgentExecutor, create_openai_functions_agent
-from langchain_openai import ChatOpenAI
-from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
-from langchain.schema import BaseMessage
 from langchain.memory import ConversationBufferWindowMemory
+from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain.tools import BaseTool
+from langchain_openai import ChatOpenAI
 
 # Optional Langfuse import
 try:
@@ -147,7 +145,7 @@ class BaseHealthAgent(ABC):
 
         except Exception as e:
             logger.error(f"Error executing {self.agent_name}: {e}")
-            return f"I apologize, but I encountered an error processing your request. Please try again."
+            return "I apologize, but I encountered an error processing your request. Please try again."
 
     def add_to_memory(self, human_message: str, ai_message: str) -> None:
         """

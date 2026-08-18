@@ -10,19 +10,20 @@ Tests model validation, serialization, and edge cases:
 """
 
 import pytest
+
 from app.models.health import (
-    Feeling,
-    Gender,
-    PatientInfo,
-    SymptomAssessment,
-    MedicalHistory,
-    HealthAssessmentRequest,
     AlertSeverity,
     AlertStatus,
     AlertType,
-    SafetyLevel,
     ConfidenceBreakdown,
     EvidenceItem,
+    Feeling,
+    Gender,
+    HealthAssessmentRequest,
+    MedicalHistory,
+    PatientInfo,
+    SafetyLevel,
+    SymptomAssessment,
     UncertaintyFactor,
 )
 

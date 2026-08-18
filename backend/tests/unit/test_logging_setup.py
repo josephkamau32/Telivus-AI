@@ -7,9 +7,9 @@ Tests the structured logging configuration:
 - Logger instance creation
 """
 
-import pytest
 import logging
-from unittest.mock import patch
+
+import pytest
 
 
 class TestLoggingSetup:

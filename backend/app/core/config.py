@@ -5,7 +5,8 @@ Uses Pydantic settings for environment variable management and validation.
 """
 
 from typing import List, Optional, Union
-from pydantic import AnyHttpUrl, field_validator, ValidationInfo
+
+from pydantic import AnyHttpUrl, field_validator
 from pydantic_settings import BaseSettings
 
 

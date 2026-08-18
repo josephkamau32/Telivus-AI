@@ -5,9 +5,9 @@ Production startup script for Telivus AI Backend.
 This script ensures proper initialization and error handling for production deployment.
 """
 
+import logging
 import os
 import sys
-import logging
 from pathlib import Path
 
 # Add backend directory to Python path
@@ -57,8 +57,9 @@ def main():
 
     try:
         # Import and run the FastAPI app
-        from app.main import app
         import uvicorn
+
+        from app.main import app
 
         print("Application loaded successfully")
         print("Starting server on 0.0.0.0:8000")

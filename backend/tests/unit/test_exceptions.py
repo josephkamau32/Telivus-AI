@@ -8,17 +8,18 @@ Tests the custom exception classes:
 """
 
 import pytest
+
 from app.core.exceptions import (
-    TelivusBaseException,
     AIServiceError,
-    AIServiceUnavailableError,
     AIServiceTimeoutError,
-    UnexpectedAIError,
-    DataValidationError,
-    RAGRetrievalError,
+    AIServiceUnavailableError,
     CCEEError,
     ConfidenceCalculationError,
+    DataValidationError,
+    RAGRetrievalError,
     SafetyScoringError,
+    TelivusBaseException,
+    UnexpectedAIError,
 )
 
 

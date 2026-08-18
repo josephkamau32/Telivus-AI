@@ -6,28 +6,24 @@ risk assessment, and intervention simulation using time-series analysis,
 ensemble modeling, and reinforcement learning techniques.
 """
 
+import warnings
+from dataclasses import dataclass
+from datetime import datetime, timedelta
+from typing import Any, Dict, List, Optional, Tuple
+
 import numpy as np
 import pandas as pd
-from typing import List, Dict, Any, Optional, Tuple
-from datetime import datetime, timedelta
-from dataclasses import dataclass
-import logging
-import json
-from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
+from sklearn.ensemble import GradientBoostingRegressor, RandomForestRegressor
 from sklearn.preprocessing import StandardScaler
-from sklearn.model_selection import TimeSeriesSplit
-from sklearn.metrics import mean_absolute_error, mean_squared_error
-import warnings
+
 warnings.filterwarnings('ignore')
 
 from app.core.logging import get_logger
 from app.models.health import (
     HealthDataPoint,
-    TrajectoryPrediction,
     InterventionPlan,
     SimulationScenario,
-    HealthTrajectoryResponse,
-    TrajectoryRequest
+    TrajectoryPrediction,
 )
 from app.services.advanced_trajectory_models import advanced_predictor
 
@@ -471,7 +467,7 @@ class TrajectoryPredictionService:
         # Start with last known values
         current_features = df[feature_cols].iloc[-1:].copy()
 
-        for day in range(horizon_days):
+        for _day in range(horizon_days):
             # Prepare features for prediction
             feature_vector = current_features.iloc[-1].values.reshape(1, -1)
 
@@ -596,7 +592,7 @@ class TrajectoryPredictionService:
 
             # Map to top features
             feature_importance = {}
-            for name, importance in zip(feature_names[:len(importances)], importances):
+            for name, importance in zip(feature_names[:len(importances)], importances, strict=False):
                 feature_importance[name] = float(importance)
 
             return feature_importance
@@ -620,7 +616,7 @@ class TrajectoryPredictionService:
         """Format prediction results for API response."""
         formatted = []
 
-        for i, (value, lower, upper) in enumerate(zip(result.values, result.lower_bound, result.upper_bound)):
+        for i, (value, lower, upper) in enumerate(zip(result.values, result.lower_bound, result.upper_bound, strict=False)):
             formatted.append({
                 'day': i + 1,
                 'predicted_value': float(value),
@@ -777,7 +773,7 @@ class TrajectoryPredictionService:
         avg_improvement = np.mean(improvements) if improvements else 0.0
 
         # Risk reduction proportional to symptom improvement
-        for condition, baseline_risk in baseline_risks.items():
+        for condition, _baseline_risk in baseline_risks.items():
             risk_reduction = avg_improvement * 0.1  # 10% risk reduction per unit improvement
             risk_changes[condition] = -risk_reduction  # Negative = reduction
 

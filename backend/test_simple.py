@@ -3,16 +3,16 @@
 Simple test script to verify basic functionality without complex dependencies.
 """
 
-import asyncio
-import os
 import json
+import os
 import uuid
 from datetime import datetime
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
 
 # Load environment variables from .env file
 from dotenv import load_dotenv
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+
 load_dotenv()
 
 # Create a simple FastAPI app for testing

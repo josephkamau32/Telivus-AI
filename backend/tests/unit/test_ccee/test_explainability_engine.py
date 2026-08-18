@@ -9,9 +9,10 @@ Tests evidence mapping and explanation summary generation:
 """
 
 import pytest
+
 from app.services.ccee.explainability_engine import (
-    ExplainabilityEngine,
     EvidenceItem,
+    ExplainabilityEngine,
 )
 
 

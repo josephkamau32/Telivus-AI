@@ -5,9 +5,10 @@ Applies deterministic medical guardrails to override AI confidence when necessar
 Safety levels: GREEN (safe), AMBER (caution), RED (emergency).
 """
 
-from typing import List, Dict, Any, Optional
-from enum import Enum
 from dataclasses import dataclass
+from enum import Enum
+from typing import List, Optional
+
 from app.core.logging import get_logger
 
 logger = get_logger(__name__)
@@ -32,11 +33,11 @@ class SafetyResult:
 class SafetyScorer:
     """
     Applies medical safety guardrails with deterministic rules.
-    
+
     Safety layer ALWAYS overrides AI confidence for patient safety.
     Uses clear, auditable rules that can be traced and explained.
     """
-    
+
     # Emergency symptoms requiring immediate care
     EMERGENCY_SYMPTOMS = [
         'chest pain', 'severe chest pain', 'crushing chest pain',
@@ -50,15 +51,15 @@ class SafetyScorer:
         'seizure', 'convulsion',
         'suicidal thoughts', 'wanting to harm self'
     ]
-    
+
     # High-risk age groups
     HIGH_RISK_INFANT_AGE = 2  # Under 2 years
     HIGH_RISK_ELDERLY_AGE = 75  # Over 75 years
-    
+
     # Confidence thresholds
     LOW_CONFIDENCE_THRESHOLD = 0.50
     MEDIUM_CONFIDENCE_THRESHOLD = 0.70
-    
+
     def calculate_safety_score(
         self,
         symptoms: List[str],
@@ -69,19 +70,19 @@ class SafetyScorer:
     ) -> SafetyResult:
         """
         Calculate safety score using deterministic medical rules.
-        
+
         Args:
             symptoms: List of reported symptoms
             assessment: AI-generated assessment text
             confidence: Calculated confidence score (0.0-1.0)
             age: Patient age
             red_flags: Red flags from diagnostic plan
-            
+
         Returns:
             SafetyResult with safety level and details
         """
         triggered_rules = []
-        
+
         # Rule 1: Check for emergency symptoms
         if self._check_emergency_symptoms(symptoms):
             triggered_rules.append("Emergency symptoms detected")
@@ -91,7 +92,7 @@ class SafetyScorer:
                 triggered_rules=triggered_rules,
                 requires_immediate_care=True
             )
-        
+
         # Rule 2: Check red flags from diagnostic plan
         if red_flags and len(red_flags) > 0:
             # Check if red flags contain emergency language
@@ -104,7 +105,7 @@ class SafetyScorer:
                         triggered_rules=triggered_rules,
                         requires_immediate_care=True
                     )
-        
+
         # Rule 3: High-risk age group with concerning symptoms
         if self._check_high_risk_age_group(age, symptoms):
             triggered_rules.append(f"High-risk age group (age {age}) with concerning symptoms")
@@ -122,7 +123,7 @@ class SafetyScorer:
                     triggered_rules=triggered_rules,
                     requires_immediate_care=False
                 )
-        
+
         # Rule 4: Low confidence on potentially serious symptoms
         if confidence < self.LOW_CONFIDENCE_THRESHOLD:
             triggered_rules.append(f"Low confidence ({confidence:.0%}) on assessment")
@@ -140,7 +141,7 @@ class SafetyScorer:
                     triggered_rules=triggered_rules,
                     requires_immediate_care=False
                 )
-        
+
         # Rule 5: Medium confidence - caution advised
         if confidence < self.MEDIUM_CONFIDENCE_THRESHOLD:
             triggered_rules.append(f"Medium confidence ({confidence:.0%})")
@@ -150,7 +151,7 @@ class SafetyScorer:
                 triggered_rules=triggered_rules,
                 requires_immediate_care=False
             )
-        
+
         # Rule 6: Check for conflicting signals
         if self._check_conflicting_signals(assessment, symptoms, confidence):
             triggered_rules.append("Conflicting signals detected between assessment and symptoms")
@@ -160,7 +161,7 @@ class SafetyScorer:
                 triggered_rules=triggered_rules,
                 requires_immediate_care=False
             )
-        
+
         # GREEN: High confidence, no red flags, appropriate age group
         triggered_rules.append(f"High confidence ({confidence:.0%}), no emergency symptoms")
         return SafetyResult(
@@ -169,7 +170,7 @@ class SafetyScorer:
             triggered_rules=triggered_rules,
             requires_immediate_care=False
         )
-    
+
     def _check_emergency_symptoms(self, symptoms: List[str]) -> bool:
         """Check if any symptoms are emergencies."""
         symptoms_lower = [s.lower() for s in symptoms]
@@ -179,7 +180,7 @@ class SafetyScorer:
                     logger.warning(f"Emergency symptom detected: {symptom}")
                     return True
         return False
-    
+
     def _check_high_risk_age_group(self, age: int, symptoms: List[str]) -> bool:
         """Check if patient is in high-risk age group with concerning symptoms."""
         # Infants (under 2)
@@ -190,7 +191,7 @@ class SafetyScorer:
             for symptom in symptoms_lower:
                 if any(concern in symptom for concern in concerning_infant_symptoms):
                     return True
-        
+
         # Elderly (over 75)
         if age > self.HIGH_RISK_ELDERLY_AGE:
             # Falls, confusion, chest symptoms are high-risk
@@ -199,9 +200,9 @@ class SafetyScorer:
             for symptom in symptoms_lower:
                 if any(risk in symptom for risk in high_risk_elderly_symptoms):
                     return True
-        
+
         return False
-    
+
     def _has_potentially_serious_symptoms(self, symptoms: List[str]) -> bool:
         """Check if symptoms could indicate serious conditions."""
         serious_indicators = [
@@ -213,7 +214,7 @@ class SafetyScorer:
             if any(serious in symptom for serious in serious_indicators):
                 return True
         return False
-    
+
     def _check_conflicting_signals(
         self,
         assessment: str,
@@ -222,7 +223,7 @@ class SafetyScorer:
     ) -> bool:
         """Check for conflicting signals between assessment and inputs."""
         assessment_lower = assessment.lower()
-        
+
         # High confidence but uncertain language
         if confidence >= 0.75:
             uncertain_phrases = [
@@ -232,9 +233,9 @@ class SafetyScorer:
             ]
             if any(phrase in assessment_lower for phrase in uncertain_phrases):
                 return True
-        
+
         # Multiple symptoms but very simple assessment
         if len(symptoms) >= 4 and len(assessment) < 100:
             return True
-        
+
         return False

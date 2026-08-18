@@ -8,8 +8,8 @@ Tests the Settings class and environment variable parsing:
 - Feature flags
 """
 
+
 import pytest
-import os
 
 
 class TestSettings:

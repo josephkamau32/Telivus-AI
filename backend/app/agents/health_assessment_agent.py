@@ -4,22 +4,15 @@ Health Assessment Agent for generating comprehensive medical reports.
 Uses LangChain agents with medical knowledge RAG to provide detailed health assessments.
 """
 
-from typing import Dict, List, Any, Optional
 import json
-import logging
+from typing import Any, Dict
 
 from langchain.tools import BaseTool
-from langchain.schema import Document
 
 from app.agents.base_agent import BaseHealthAgent
-from app.services.vector_store import vector_store_service
-from app.models.health import (
-    HealthAssessmentRequest,
-    MedicalAssessment,
-    OTCRecommendation,
-    DiagnosticPlan
-)
 from app.core.logging import get_logger
+from app.models.health import DiagnosticPlan, HealthAssessmentRequest, MedicalAssessment, OTCRecommendation
+from app.services.vector_store import vector_store_service
 
 # Get logger
 logger = get_logger(__name__)

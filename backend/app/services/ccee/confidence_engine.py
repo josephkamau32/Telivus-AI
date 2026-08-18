@@ -9,10 +9,11 @@ Calculates confidence scores using a weighted, deterministic formula based on:
 - Model consistency (10%)
 """
 
-from typing import Dict, List, Any, Optional
 from dataclasses import dataclass
-from app.models.health import HealthAssessmentRequest
+from typing import Any, Dict, List, Optional
+
 from app.core.logging import get_logger
+from app.models.health import HealthAssessmentRequest
 
 logger = get_logger(__name__)
 
@@ -32,18 +33,18 @@ class ConfidenceBreakdownData:
 class ConfidenceEngine:
     """
     Calculates confidence scores for AI health assessments.
-    
+
     Uses a weighted, explainable formula that is deterministic and testable.
     No black-box ML - all calculations are transparent and auditable.
     """
-    
+
     # Weights for confidence calculation
     WEIGHT_DATA_COMPLETENESS = 0.30
     WEIGHT_SYMPTOM_SIGNAL = 0.25
     WEIGHT_RAG_RELEVANCE = 0.25
     WEIGHT_AGENT_AGREEMENT = 0.10
     WEIGHT_MODEL_CONSISTENCY = 0.10
-    
+
     def calculate_confidence_score(
         self,
         request: HealthAssessmentRequest,
@@ -53,13 +54,13 @@ class ConfidenceEngine:
     ) -> ConfidenceBreakdownData:
         """
         Calculate overall confidence score with detailed breakdown.
-        
+
         Args:
             request: The original health assessment request
             assessment_data: Generated assessment data from AI
             rag_results: RAG retrieval results (optional)
             emergency_check: Emergency assessment results (optional)
-            
+
         Returns:
             ConfidenceBreakdownData with overall score and component breakdown
         """
@@ -74,7 +75,7 @@ class ConfidenceEngine:
             rag_relevance = self._calculate_rag_relevance(rag_results)
             agent_agreement = self._calculate_agent_agreement(assessment_data, emergency_check)
             model_consistency = self._calculate_model_consistency(assessment_data)
-            
+
             # Calculate weighted overall score
             overall_score = (
                 self.WEIGHT_DATA_COMPLETENESS * data_completeness +
@@ -83,7 +84,7 @@ class ConfidenceEngine:
                 self.WEIGHT_AGENT_AGREEMENT * agent_agreement +
                 self.WEIGHT_MODEL_CONSISTENCY * model_consistency
             )
-            
+
             # Determine confidence level
             if overall_score >= 0.80:
                 level = "high"
@@ -91,7 +92,7 @@ class ConfidenceEngine:
                 level = "medium"
             else:
                 level = "low"
-            
+
             logger.info(
                 f"Confidence calculated: {overall_score:.2f} ({level})",
                 extra={
@@ -102,7 +103,7 @@ class ConfidenceEngine:
                     "model_consistency": f"{model_consistency:.2f}"
                 }
             )
-            
+
             return ConfidenceBreakdownData(
                 data_completeness=data_completeness,
                 symptom_signal_strength=symptom_signal,
@@ -112,7 +113,7 @@ class ConfidenceEngine:
                 overall_score=overall_score,
                 level=level
             )
-            
+
         except Exception as e:
             logger.error(f"Error calculating confidence score: {e}", exc_info=True)
             # Return conservative fallback
@@ -125,11 +126,11 @@ class ConfidenceEngine:
                 overall_score=0.5,
                 level="medium"
             )
-    
+
     def _calculate_data_completeness(self, request: HealthAssessmentRequest) -> float:
         """
         Calculate data completeness score (0.0-1.0).
-        
+
         Components:
         - Age provided: +0.2
         - Gender provided: +0.1
@@ -138,34 +139,34 @@ class ConfidenceEngine:
         - Symptom duration provided: +0.2
         """
         score = 0.0
-        
+
         # Age is always required, so it's always present
         score += 0.2
-        
+
         # Gender
         if request.patient_info.gender:
             score += 0.1
-        
+
         # Medical history
         if request.medical_history:
             history = request.medical_history
-            if (history.past_medical_conditions or 
-                history.current_medications or 
+            if (history.past_medical_conditions or
+                history.current_medications or
                 history.allergies):
                 score += 0.3
-        
+
         # Symptom severity
         if hasattr(request.symptom_assessment, 'severity') and request.symptom_assessment.severity:
             if len(request.symptom_assessment.severity) > 0:
                 score += 0.2
-        
+
         # Symptom duration
         if hasattr(request.symptom_assessment, 'duration') and request.symptom_assessment.duration:
             if len(request.symptom_assessment.duration) > 0:
                 score += 0.2
-        
+
         return min(score, 1.0)
-    
+
     def _calculate_symptom_signal_strength(
         self,
         symptoms: List[str],
@@ -174,7 +175,7 @@ class ConfidenceEngine:
     ) -> float:
         """
         Calculate symptom signal strength (0.0-1.0).
-        
+
         Components:
         - Number of symptoms: 0.3 × min(count / 5, 1.0)
         - Average severity: 0.4 × (avg_severity / 10)
@@ -182,10 +183,10 @@ class ConfidenceEngine:
         """
         if not symptoms:
             return 0.0
-        
+
         # Number of symptoms (more symptoms = better signal, up to 5)
         symptom_count_score = 0.3 * min(len(symptoms) / 5.0, 1.0)
-        
+
         # Average severity
         severity_score = 0.0
         if severity and len(severity) > 0:
@@ -194,27 +195,27 @@ class ConfidenceEngine:
         else:
             # No severity data - assume medium (5/10)
             severity_score = 0.4 * 0.5
-        
+
         # Duration specificity
         duration_score = 0.0
         if duration and len(duration) > 0:
             duration_score = 0.3 * 1.0
         else:
             duration_score = 0.3 * 0.5
-        
+
         return min(symptom_count_score + severity_score + duration_score, 1.0)
-    
+
     def _calculate_rag_relevance(self, rag_results: Optional[List[Dict[str, Any]]]) -> float:
         """
         Calculate RAG retrieval relevance (0.0-1.0).
-        
+
         Uses average vector similarity score from top-3 retrievals.
         Defaults to 0.5 if RAG not used.
         """
         if not rag_results or len(rag_results) == 0:
             # No RAG used - return neutral score
             return 0.5
-        
+
         # Extract similarity scores from top-3 results
         similarities = []
         for result in rag_results[:3]:
@@ -229,14 +230,14 @@ class ConfidenceEngine:
                         similarities.append(result['metadata']['similarity'])
                     elif 'confidence' in result['metadata']:
                         similarities.append(result['metadata']['confidence'])
-        
+
         if not similarities:
             # Couldn't extract scores - assume moderate relevance
             return 0.65
-        
+
         # Return average similarity
         return min(sum(similarities) / len(similarities), 1.0)
-    
+
     def _calculate_agent_agreement(
         self,
         assessment_data: Dict[str, Any],
@@ -244,24 +245,24 @@ class ConfidenceEngine:
     ) -> float:
         """
         Calculate agent agreement score (0.0-1.0).
-        
+
         Compares assessment tone vs emergency check.
         High agreement = 1.0, low agreement = 0.3
         """
         if not emergency_check:
             # No emergency check performed - assume neutral agreement
             return 0.7
-        
+
         # Extract urgency from emergency check
         emergency_level = emergency_check.get('urgency_level', 'routine')
-        
+
         # Extract red flags from assessment
         red_flags = []
         if 'diagnostic_plan' in assessment_data:
             diagnostic_plan = assessment_data['diagnostic_plan']
             if isinstance(diagnostic_plan, dict):
                 red_flags = diagnostic_plan.get('red_flags', [])
-        
+
         # Check for agreement
         if emergency_level == 'emergency':
             # Emergency detected - should have red flags
@@ -280,11 +281,11 @@ class ConfidenceEngine:
         else:
             # Moderate urgency - neutral
             return 0.7
-    
+
     def _calculate_model_consistency(self, assessment_data: Dict[str, Any]) -> float:
         """
         Calculate model consistency score (0.0-1.0).
-        
+
         Checks if AI response contains all required fields.
         Complete response = 1.0, incomplete = 0.6
         """
@@ -295,9 +296,9 @@ class ConfidenceEngine:
             'diagnostic_plan',
             'otc_recommendations'
         ]
-        
+
         present_fields = sum(1 for field in required_fields if field in assessment_data)
-        
+
         if present_fields == len(required_fields):
             return 1.0  # All fields present
         elif present_fields >= len(required_fields) - 1:

@@ -10,9 +10,8 @@ import asyncio
 import json
 import logging
 from pathlib import Path
-from typing import List, Dict, Any
+from typing import Any, Dict, List
 
-from app.core.config import settings
 from app.core.logging import setup_logging
 from app.services.vector_store import vector_store_service
 

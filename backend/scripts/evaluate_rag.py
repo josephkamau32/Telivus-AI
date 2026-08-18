@@ -4,10 +4,10 @@ RAG Evaluation Script using RAGAs
 Evaluates the RAG pipeline's quality using the RAGAs framework.
 Requires OPENAI_API_KEY to be set for evaluation metrics.
 """
+import asyncio
 import json
 import os
-import asyncio
-from typing import List, Dict
+from typing import List
 
 # Set up environment for testing
 os.environ["TESTING"] = "1"
@@ -25,14 +25,14 @@ async def run_evaluation() -> None:
     # Lazy imports to avoid import errors when dependencies aren't installed
     try:
         from datasets import Dataset
+        from langchain_openai import ChatOpenAI, OpenAIEmbeddings
         from ragas import evaluate
         from ragas.metrics import (
-            faithfulness,
             answer_relevancy,
             context_precision,
             context_recall,
+            faithfulness,
         )
-        from langchain_openai import ChatOpenAI, OpenAIEmbeddings
     except ImportError as e:
         print(f"ERROR: Missing required dependencies: {e}")
         print("Install with: pip install ragas datasets langchain-openai")

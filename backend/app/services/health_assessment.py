@@ -4,21 +4,13 @@ Health Assessment Service.
 Provides high-level interface for health assessment operations using AI agents.
 """
 
-from typing import Dict, List, Any, Optional
-import uuid
-import logging
 from datetime import datetime
+from typing import Any, Dict, List, Optional
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.health import (
-    HealthAssessmentRequest,
-    HealthReport,
-    PatientInfo,
-    MedicalHistory,
-    SymptomAssessment
-)
 from app.core.logging import get_logger
+from app.models.health import HealthAssessmentRequest, HealthReport, SymptomAssessment
 
 # Get logger
 logger = get_logger(__name__)

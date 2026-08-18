@@ -10,9 +10,10 @@ Tests the AdvancedRateLimiter and rate limit utilities:
 - Configuration constants
 """
 
-import pytest
 import time
-from unittest.mock import MagicMock, AsyncMock
+from unittest.mock import MagicMock
+
+import pytest
 
 from app.middleware.rate_limiter import (
     AdvancedRateLimiter,

@@ -8,13 +8,14 @@ Implements comprehensive caching strategy for:
 - API responses
 """
 
-from typing import Optional, Any
-import json
 import hashlib
-from functools import wraps
-import redis.asyncio as redis
-from datetime import timedelta
+import json
 import logging
+from datetime import timedelta
+from functools import wraps
+from typing import Any, Optional
+
+import redis.asyncio as redis
 
 logger = logging.getLogger(__name__)
 
@@ -22,14 +23,14 @@ logger = logging.getLogger(__name__)
 class CacheService:
     """
     Advanced caching service with Redis backend.
-    
+
     Features:
     - Automatic cache key generation
     - TTL (Time-To-Live) management
     - Cache invalidation
     - Hit/miss metrics
     """
-    
+
     def __init__(
         self,
         redis_url: str = "redis://localhost:6379",
@@ -37,7 +38,7 @@ class CacheService:
     ):
         """
         Initialize cache service.
-        
+
         Args:
             redis_url: Redis connection URL
             default_ttl: Default cache TTL in seconds (1 hour)
@@ -47,7 +48,7 @@ class CacheService:
         self._client: Optional[redis.Redis] = None
         self._hits = 0
         self._misses = 0
-    
+
     async def connect(self):
         """Establish Redis connection"""
         try:
@@ -61,21 +62,21 @@ class CacheService:
         except Exception as e:
             logger.warning(f"⚠️ Redis connection failed: {e}. Caching disabled.")
             self._client = None
-    
+
     async def disconnect(self):
         """Close Redis connection"""
         if self._client:
             await self._client.close()
             logger.info("Redis cache disconnected")
-    
+
     def _generate_key(self, *args, **kwargs) -> str:
         """
         Generate cache key from function arguments.
-        
+
         Args:
             *args: Positional arguments
             **kwargs: Keyword arguments
-            
+
         Returns:
             MD5 hash of serialized arguments
         """
@@ -86,20 +87,20 @@ class CacheService:
             default=str
         )
         return hashlib.md5(key_data.encode()).hexdigest()
-    
+
     async def get(self, key: str) -> Optional[Any]:
         """
         Get value from cache.
-        
+
         Args:
             key: Cache key
-            
+
         Returns:
             Cached value or None if not found
         """
         if not self._client:
             return None
-        
+
         try:
             value = await self._client.get(key)
             if value:
@@ -113,7 +114,7 @@ class CacheService:
         except Exception as e:
             logger.error(f"Cache get error: {e}")
             return None
-    
+
     async def set(
         self,
         key: str,
@@ -122,18 +123,18 @@ class CacheService:
     ) -> bool:
         """
         Set value in cache with TTL.
-        
+
         Args:
             key: Cache key
             value: Value to cache
             ttl: Time-to-live in seconds
-            
+
         Returns:
             True if successful, False otherwise
         """
         if not self._client:
             return False
-        
+
         try:
             ttl = ttl or self.default_ttl
             serialized = json.dumps(value, default=str)
@@ -147,20 +148,20 @@ class CacheService:
         except Exception as e:
             logger.error(f"Cache set error: {e}")
             return False
-    
+
     async def delete(self, key: str) -> bool:
         """
         Delete key from cache.
-        
+
         Args:
             key: Cache key
-            
+
         Returns:
             True if deleted, False otherwise
         """
         if not self._client:
             return False
-        
+
         try:
             await self._client.delete(key)
             logger.debug(f"Cache DELETE: {key}")
@@ -168,20 +169,20 @@ class CacheService:
         except Exception as e:
             logger.error(f"Cache delete error: {e}")
             return False
-    
+
     async def clear_pattern(self, pattern: str) -> int:
         """
         Clear all keys matching pattern.
-        
+
         Args:
             pattern: Redis key pattern (e.g., "assessment:*")
-            
+
         Returns:
             Number of keys deleted
         """
         if not self._client:
             return 0
-        
+
         try:
             keys = await self._client.keys(pattern)
             if keys:
@@ -192,24 +193,24 @@ class CacheService:
         except Exception as e:
             logger.error(f"Cache clear error: {e}")
             return 0
-    
+
     def get_stats(self) -> dict:
         """
         Get cache performance statistics.
-        
+
         Returns:
             Dictionary with hit/miss counts and ratios
         """
         total = self._hits + self._misses
         hit_rate = (self._hits / total * 100) if total > 0 else 0
-        
+
         return {
             "hits": self._hits,
             "misses": self._misses,
             "total_requests": total,
             "hit_rate_percent": round(hit_rate, 2)
         }
-    
+
     def cache_result(
         self,
         key_prefix: str = "",
@@ -217,16 +218,16 @@ class CacheService:
     ):
         """
         Decorator to cache function results.
-        
+
         Usage:
             @cache.cache_result("assessment", ttl=3600)
             async def assess_health(...):
                 ...
-        
+
         Args:
             key_prefix: Prefix for cache key
             ttl: Cache TTL in seconds
-            
+
         Returns:
             Decorated function
         """
@@ -236,18 +237,18 @@ class CacheService:
                 # Generate cache key
                 arg_key = self._generate_key(*args, **kwargs)
                 cache_key = f"{key_prefix}:{arg_key}" if key_prefix else arg_key
-                
+
                 # Try to get from cache
                 cached = await self.get(cache_key)
                 if cached is not None:
                     return cached
-                
+
                 # Execute function
                 result = await func(*args, **kwargs)
-                
+
                 # Cache result
                 await self.set(cache_key, result, ttl)
-                
+
                 return result
             return wrapper
         return decorator
@@ -277,12 +278,12 @@ async def get_cached_assessment(
 ) -> Optional[dict]:
     """
     Get cached health assessment if available.
-    
+
     Args:
         feeling: Patient feeling
         symptoms: List of symptoms
         patient_age: Patient age
-        
+
     Returns:
         Cached assessment or None
     """
@@ -300,14 +301,14 @@ async def cache_assessment(
 ) -> bool:
     """
     Cache health assessment result.
-    
+
     Args:
         feeling: Patient feeling
         symptoms: List of symptoms
         patient_age: Patient age
         assessment: Assessment result
         ttl: Cache duration (default 1 hour)
-        
+
     Returns:
         True if cached successfully
     """

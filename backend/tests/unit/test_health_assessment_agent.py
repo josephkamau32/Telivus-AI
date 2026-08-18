@@ -4,9 +4,10 @@ Unit Tests for Health Assessment Agent
 Tests the LangChain-based health assessment agent functionality.
 These tests are skipped if langchain dependencies are not properly installed.
 """
-import pytest
 import json
-from unittest.mock import AsyncMock, patch, MagicMock
+from unittest.mock import AsyncMock, patch
+
+import pytest
 
 # Guard against langchain import errors (version conflicts)
 try:

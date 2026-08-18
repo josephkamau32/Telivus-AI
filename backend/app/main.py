@@ -8,28 +8,29 @@ A comprehensive AI-powered health assessment system featuring:
 - Real-time symptom analysis and personalized recommendations
 """
 
-from contextlib import asynccontextmanager
-from fastapi import FastAPI, Request, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.middleware.trustedhost import TrustedHostMiddleware
-from fastapi.responses import JSONResponse
 import logging
 import time
 import uuid
-import json
+from contextlib import asynccontextmanager
 
-from app.core.monitoring import configure_metrics
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.trustedhost import TrustedHostMiddleware
+from fastapi.responses import JSONResponse
 
-# Import sanitizer for request sanitization middleware
-from app.utils.sanitizer import validate_and_sanitize_json, detect_sql_injection, detect_command_injection
+from app.api.v1.endpoints.digital_twin import router as twin_router
 
 # Use simple versions for now to avoid complex dependencies
 from app.api.v1.endpoints.health import router as health_router
-from app.api.v1.endpoints.digital_twin import router as twin_router
 from app.core.config import settings
-from app.core.logging import setup_logging
-from app.services.vector_store_simple import initialize_vector_store
 from app.core.exceptions import TelivusBaseException
+from app.core.logging import setup_logging
+from app.core.monitoring import configure_metrics
+from app.services.vector_store_simple import initialize_vector_store
+
+# Import sanitizer for request sanitization middleware
+from app.utils.sanitizer import detect_command_injection, detect_sql_injection, validate_and_sanitize_json
+
 
 # Simple database initialization (no complex async setup for now)
 async def create_tables():
@@ -112,7 +113,7 @@ if not settings.DEBUG:
 async def security_headers_middleware(request: Request, call_next):
     """
     Add security headers to all responses.
-    
+
     Headers added:
     - Content-Security-Policy: Restricts resource loading
     - Strict-Transport-Security: Enforces HTTPS
@@ -123,7 +124,7 @@ async def security_headers_middleware(request: Request, call_next):
     - Permissions-Policy: Controls browser features
     """
     response = await call_next(request)
-    
+
     # Content Security Policy - restrictive but allows necessary resources
     csp_policy = (
         "default-src 'self'; "
@@ -138,29 +139,29 @@ async def security_headers_middleware(request: Request, call_next):
         "object-src 'none'"
     )
     response.headers["Content-Security-Policy"] = csp_policy
-    
+
     # Strict Transport Security - enforce HTTPS for 1 year
     if not settings.DEBUG:
         response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains; preload"
-    
+
     # Prevent MIME type sniffing
     response.headers["X-Content-Type-Options"] = "nosniff"
-    
+
     # Prevent clickjacking
     response.headers["X-Frame-Options"] = "DENY"
-    
+
     # Legacy XSS protection (still useful for older browsers)
     response.headers["X-XSS-Protection"] = "1; mode=block"
-    
+
     # Control referrer information
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
-    
+
     # Control browser features
     response.headers["Permissions-Policy"] = (
         "accelerometer=(), camera=(), geolocation=(), gyroscope=(), "
         "magnetometer=(), microphone=(), payment=(), usb=()"
     )
-    
+
     return response
 
 # Request Sanitization Middleware - sanitize incoming request bodies
@@ -168,7 +169,7 @@ async def security_headers_middleware(request: Request, call_next):
 async def request_sanitization_middleware(request: Request, call_next):
     """
     Sanitize incoming request bodies to prevent injection attacks.
-    
+
     Applies to JSON request bodies for POST, PUT, PATCH requests.
     Uses a receive wrapper to avoid consuming the body stream prematurely.
     Properly handles multi-chunk request bodies.
@@ -177,12 +178,12 @@ async def request_sanitization_middleware(request: Request, call_next):
     if request.method in ("POST", "PUT", "PATCH") and request.headers.get("content-type", "").startswith("application/json"):
         import json
         import logging
-        
+
         logger = logging.getLogger(__name__)
         original_receive = request._receive
         body_chunks = []
         chunk_count = 0
-        
+
         async def receive_wrapper():
             nonlocal chunk_count
             message = await original_receive()
@@ -196,15 +197,15 @@ async def request_sanitization_middleware(request: Request, call_next):
                         try:
                             json_data = json.loads(full_body)
                             sanitized_data = validate_and_sanitize_json(json_data)
-                            
+
                             # Check for injection attempts
                             body_str = json.dumps(sanitized_data)
                             if detect_sql_injection(body_str):
                                 logger.warning(f"Potential SQL injection attempt from {request.client.host if request.client else 'unknown'}")
-                            
+
                             if detect_command_injection(body_str):
                                 logger.warning(f"Potential command injection attempt from {request.client.host if request.client else 'unknown'}")
-                            
+
                             # Replace body with sanitized version in the final chunk
                             message["body"] = json.dumps(sanitized_data).encode()
                         except json.JSONDecodeError:
@@ -214,9 +215,9 @@ async def request_sanitization_middleware(request: Request, call_next):
                     # Intermediate chunk - send empty body, the full body will be in the last chunk
                     message["body"] = b""
             return message
-        
+
         request._receive = receive_wrapper
-    
+
     response = await call_next(request)
     return response
 
@@ -363,8 +364,9 @@ async def options_handler(path: str):
     return {"message": "CORS preflight OK", "path": path}
 
 if __name__ == "__main__":
-    import uvicorn
     import os
+
+    import uvicorn
 
     port = int(os.environ.get("PORT", 8000))
 

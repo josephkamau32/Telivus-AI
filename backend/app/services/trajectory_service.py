@@ -5,31 +5,17 @@ This service provides the main interface for trajectory operations, integrating
 ML models with database persistence and API responses.
 """
 
-from typing import List, Dict, Any, Optional
-from datetime import datetime, timedelta
-from sqlalchemy.orm import Session
-import logging
-import asyncio
-from functools import lru_cache
 import json
+from datetime import datetime, timedelta
+from typing import Any, Dict, List, Optional
+
+from sqlalchemy.orm import Session
 
 from app.core.logging import get_logger
-from app.models.db_models import (
-    HealthDataPoint,
-    HealthTrajectory,
-    Intervention,
-    TrajectorySimulation,
-    User
-)
-from app.models.health import (
-    HealthDataPoint as HealthDataPointModel,
-    TrajectoryRequest,
-    HealthTrajectoryResponse,
-    InterventionPlan,
-    SimulationScenario
-)
+from app.models.db_models import HealthDataPoint, HealthTrajectory, Intervention, TrajectorySimulation
+from app.models.health import HealthDataPoint as HealthDataPointModel
+from app.models.health import HealthTrajectoryResponse, InterventionPlan, SimulationScenario, TrajectoryRequest
 from app.services.trajectory_prediction import trajectory_service
-from app.core.database import get_db
 
 logger = get_logger(__name__)
 

@@ -20,7 +20,7 @@ class AIServiceError(TelivusBaseException):
 
 class AIServiceUnavailableError(AIServiceError):
     """Raised when AI service is unavailable after retries.
-    
+
     This indicates OpenAI API or other AI services are down.
     Application should use fallback assessment logic.
     """
@@ -29,7 +29,7 @@ class AIServiceUnavailableError(AIServiceError):
 
 class AIServiceTimeoutError(AIServiceError):
     """Raised when AI service times out.
-    
+
     This indicates the AI service took too long to respond.
     Application should retry or use fallback logic.
     """
@@ -38,7 +38,7 @@ class AIServiceTimeoutError(AIServiceError):
 
 class UnexpectedAIError(AIServiceError):
     """Raised for unexpected AI errors.
-    
+
     This is a catch-all for AI errors that don't fit other categories.
     Should be investigated as they may indicate bugs.
     """
@@ -49,7 +49,7 @@ class UnexpectedAIError(AIServiceError):
 
 class DataValidationError(TelivusBaseException):
     """Raised for invalid input data.
-    
+
     This indicates user-provided data failed validation.
     Should return 400 Bad Request to client.
     """
@@ -60,7 +60,7 @@ class DataValidationError(TelivusBaseException):
 
 class RAGRetrievalError(TelivusBaseException):
     """Raised when RAG retrieval fails.
-    
+
     This indicates vector store or embedding service issues.
     Application can continue without RAG context.
     """
@@ -76,7 +76,7 @@ class CCEEError(TelivusBaseException):
 
 class ConfidenceCalculationError(CCEEError):
     """Raised when confidence score calculation fails.
-    
+
     This indicates an issue in the confidence scoring logic.
     """
     pass
@@ -84,7 +84,7 @@ class ConfidenceCalculationError(CCEEError):
 
 class SafetyScoringError(CCEEError):
     """Raised when safety scoring fails.
-    
+
     This is critical - if safety scoring fails, assessment should be marked as AMBER.
     """
     pass

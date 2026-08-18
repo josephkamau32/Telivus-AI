@@ -8,9 +8,10 @@ Tests the core health assessment functionality including:
 - Error handling
 """
 
-import pytest
-from unittest.mock import Mock, patch, AsyncMock
 import json
+from unittest.mock import patch
+
+import pytest
 
 
 class TestHealthAssessmentService:

@@ -10,15 +10,16 @@ Tests the HealthAssessmentService class:
 - Assessment history
 """
 
+
 import pytest
-from unittest.mock import patch, AsyncMock, MagicMock
+
 from app.models.health import (
-    HealthAssessmentRequest,
-    PatientInfo,
-    SymptomAssessment,
-    MedicalHistory,
     Feeling,
     Gender,
+    HealthAssessmentRequest,
+    MedicalHistory,
+    PatientInfo,
+    SymptomAssessment,
 )
 
 

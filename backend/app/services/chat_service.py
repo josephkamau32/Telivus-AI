@@ -4,17 +4,15 @@ Chat Service for AI-powered health consultations.
 Manages chat sessions, message processing, and agent coordination.
 """
 
-from typing import Dict, List, Any, Optional
 import uuid
-import logging
 from datetime import datetime
+from typing import Any, Dict, List, Optional
 
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, insert, update
 
 from app.agents.consultation_agent import ConsultationAgent
-from app.models.health import ChatMessage, ChatSession
 from app.core.logging import get_logger
+from app.models.health import ChatMessage, ChatSession
 
 # Get logger
 logger = get_logger(__name__)
