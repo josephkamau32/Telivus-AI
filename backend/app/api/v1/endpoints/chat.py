@@ -40,7 +40,7 @@ async def create_chat_session(
         return session
     except Exception as e:
         logger.error(f"Failed to create chat session: {e}")
-        raise HTTPException(status_code=500, detail="Failed to create chat session")
+        raise HTTPException(status_code=500, detail="Failed to create chat session") from e
 
 
 @router.post(
@@ -63,7 +63,7 @@ async def send_message(
         return response
     except Exception as e:
         logger.error(f"Failed to process chat message: {e}")
-        raise HTTPException(status_code=500, detail="Failed to process message")
+        raise HTTPException(status_code=500, detail="Failed to process message") from e
 
 
 @router.get(
@@ -85,4 +85,4 @@ async def get_chat_messages(
         return messages
     except Exception as e:
         logger.error(f"Failed to get chat messages: {e}")
-        raise HTTPException(status_code=500, detail="Failed to retrieve messages")
+        raise HTTPException(status_code=500, detail="Failed to retrieve messages") from e

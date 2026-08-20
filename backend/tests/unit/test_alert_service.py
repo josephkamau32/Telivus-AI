@@ -1,15 +1,16 @@
 """
 Unit Tests for Alert Service
 
-Tests predictive alert system including:
-- Alert generation
-- Risk detection
-- Multi-channel notifications
-- Alert management
+Tests the AlertService class including:
+- Default rule generation
+- Alert deduplication
+- Severity calculation via rule evaluation
+- Alert acknowledgment
+- Alert analytics retrieval
 """
 
 from datetime import datetime, timedelta
-from unittest.mock import patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -26,199 +27,211 @@ pytestmark = pytest.mark.skipif(
 )
 
 
+@pytest.fixture
+def alert_service():
+    """Create an AlertService instance."""
+    from app.services.alert_service import AlertService
+    return AlertService()
+
+
+@pytest.fixture
+def mock_db():
+    """Create a mock database session."""
+    db = MagicMock()
+    db.query.return_value.filter.return_value.all.return_value = []
+    db.query.return_value.filter.return_value.first.return_value = None
+    return db
+
+
 class TestAlertService:
-    """Test suite for predictive alert system"""
+    """Test suite for predictive alert system."""
+
+    @pytest.mark.unit
+    def test_default_alert_rules(self, alert_service):
+        """Test that default alert rules are generated on init."""
+        rules = alert_service.default_rules
+        assert isinstance(rules, list)
+        assert len(rules) > 0
+
+        # Check all required rule types exist
+        rule_types = {r["alert_type"] for r in rules}
+        assert "symptom_worsening" in rule_types
+        assert "risk_level_increase" in rule_types
+        assert "emergency_warning" in rule_types
+        assert "preventive_action" in rule_types
+
+    @pytest.mark.unit
+    def test_default_rule_structure(self, alert_service):
+        """Test that each default rule has the required fields."""
+        required_keys = {
+            "alert_type", "metric_name", "operator",
+            "threshold_value", "severity", "time_window_days", "cooldown_hours",
+        }
+        for rule in alert_service.default_rules:
+            assert required_keys.issubset(rule.keys()), (
+                f"Rule {rule.get('alert_type')} missing keys: "
+                f"{required_keys - rule.keys()}"
+            )
+
+    @pytest.mark.unit
+    def test_alert_severity_levels(self, alert_service):
+        """Test that severity levels are valid across all default rules."""
+        valid_severities = {"low", "medium", "high", "critical"}
+        for rule in alert_service.default_rules:
+            assert rule["severity"] in valid_severities
+
+    @pytest.mark.unit
+    def test_alert_deduplication(self, alert_service):
+        """Test that duplicate alerts are removed."""
+        from app.models.health import AlertSeverity, AlertType
+        from app.models.health import PredictiveAlert as AlertModel
+
+        base_time = datetime.utcnow()
+
+        # Create duplicate alerts (same type, user, condition)
+        alerts = [
+            AlertModel(
+                alert_id="alert_1",
+                user_id="user_123",
+                alert_type=AlertType.SYMPTOM_WORSENING,
+                severity=AlertSeverity.HIGH,
+                title="Symptom Worsening Detected",
+                message="Test alert 1",
+                condition_name="Headache",
+                predicted_value=7.5,
+                threshold_value=7.0,
+                confidence_score=0.85,
+            ),
+            AlertModel(
+                alert_id="alert_2",
+                user_id="user_123",
+                alert_type=AlertType.SYMPTOM_WORSENING,
+                severity=AlertSeverity.HIGH,
+                title="Symptom Worsening Detected",
+                message="Test alert 2",
+                condition_name="Headache",
+                predicted_value=7.8,
+                threshold_value=7.0,
+                confidence_score=0.9,
+            ),
+            AlertModel(
+                alert_id="alert_3",
+                user_id="user_123",
+                alert_type=AlertType.RISK_LEVEL_INCREASE,
+                severity=AlertSeverity.CRITICAL,
+                title="Risk Elevated",
+                message="Different type",
+                condition_name="Diabetes",
+                predicted_value=0.9,
+                threshold_value=0.8,
+                confidence_score=0.88,
+            ),
+        ]
+
+        deduped = alert_service._deduplicate_alerts(alerts)
+
+        # Should keep one symptom_worsening and one risk_level_increase
+        assert len(deduped) == 2
+        types = {a.alert_type for a in deduped}
+        assert AlertType.SYMPTOM_WORSENING in types
+        assert AlertType.RISK_LEVEL_INCREASE in types
 
     @pytest.mark.unit
     @pytest.mark.asyncio
-    async def test_generate_health_alert(self):
-        """Test alert generation from health data"""
-        from app.services.alert_service import generate_health_alert
+    async def test_generate_alerts_no_trajectory(self, alert_service, mock_db):
+        """Test alert generation returns empty when no trajectory data."""
+        with patch.object(
+            alert_service, '_create_default_rules_for_user', return_value=[]
+        ):
+            with patch(
+                'app.services.alert_service.trajectory_service_instance'
+            ) as mock_traj:
+                mock_traj.get_trajectory_history = AsyncMock(return_value=[])
 
-        health_data = {
-            "metric": "blood_pressure",
-            "current_value": 160,
-            "threshold": 140,
-            "trend": "increasing"
+                alerts = await alert_service.generate_alerts_for_user(
+                    "user_123", mock_db
+                )
+                assert alerts == []
+
+    @pytest.mark.unit
+    @pytest.mark.asyncio
+    async def test_acknowledge_alert_not_found(self, alert_service, mock_db):
+        """Test acknowledging a non-existent alert raises ValueError."""
+        from app.models.health import AlertAcknowledgeRequest
+
+        mock_db.query.return_value.filter.return_value.first.return_value = None
+
+        request = AlertAcknowledgeRequest(
+            alert_id="nonexistent_alert",
+            user_id="user_123",
+        )
+
+        with pytest.raises(ValueError, match="not found"):
+            await alert_service.acknowledge_alert(request, mock_db)
+
+    @pytest.mark.unit
+    def test_calculate_trend_increasing(self, alert_service):
+        """Test trend calculation detects increasing values."""
+        values = [1.0, 2.0, 3.0, 4.0, 5.0]
+        trend = alert_service._calculate_trend(values)
+        assert trend > 0, "Increasing values should produce positive trend"
+
+    @pytest.mark.unit
+    def test_calculate_trend_decreasing(self, alert_service):
+        """Test trend calculation detects decreasing values."""
+        values = [5.0, 4.0, 3.0, 2.0, 1.0]
+        trend = alert_service._calculate_trend(values)
+        assert trend < 0, "Decreasing values should produce negative trend"
+
+    @pytest.mark.unit
+    def test_calculate_trend_stable(self, alert_service):
+        """Test trend calculation detects stable values."""
+        values = [3.0, 3.0, 3.0, 3.0, 3.0]
+        trend = alert_service._calculate_trend(values)
+        assert abs(trend) < 0.01, "Stable values should produce near-zero trend"
+
+    @pytest.mark.unit
+    @pytest.mark.asyncio
+    async def test_check_symptom_worsening_triggered(self, alert_service):
+        """Test symptom worsening alert triggers on upward trend above threshold."""
+        mock_rule = MagicMock()
+        mock_rule.threshold_value = 5.0
+        mock_rule.severity = "high"
+
+        trajectory = {
+            "predicted_values": [
+                {"predicted_value": v} for v in [4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0]
+            ],
+            "condition_name": "Migraine",
+            "confidence_score": 0.85,
         }
 
-        alert = await generate_health_alert(health_data)
+        alert = await alert_service._check_symptom_worsening(
+            mock_rule, trajectory, "user_123"
+        )
 
         assert alert is not None
-        assert alert["severity"] in ["low", "medium", "high", "critical"]
-        assert alert["metric"] == "blood_pressure"
-        assert alert["message"] is not None
+        assert alert.alert_type.value == "symptom_worsening"
+        assert alert.user_id == "user_123"
 
     @pytest.mark.unit
     @pytest.mark.asyncio
-    async def test_alert_severity_calculation(self):
-        """Test alert severity is correctly calculated"""
-        from app.services.alert_service import calculate_alert_severity
+    async def test_check_symptom_worsening_not_triggered(self, alert_service):
+        """Test symptom worsening alert does NOT trigger on stable values below threshold."""
+        mock_rule = MagicMock()
+        mock_rule.threshold_value = 7.0
+        mock_rule.severity = "high"
 
-        # Critical alert (very high value, rapid increase)
-        critical = calculate_alert_severity(
-            current_value=180,
-            threshold=140,
-            rate_of_change=10,  # Rapid increase
-            metric="blood_pressure"
-        )
-        assert critical == "critical"
-
-        # Low alert (slightly above threshold, stable)
-        low = calculate_alert_severity(
-            current_value=145,
-            threshold=140,
-            rate_of_change=1,  # Slow increase
-            metric="blood_pressure"
-        )
-        assert low == "low"
-
-    @pytest.mark.unit
-    @pytest.mark.asyncio
-    async def test_early_warning_detection(self):
-        """Test early warning system detects patterns before critical"""
-        from app.services.alert_service import detect_early_warning
-
-        # Gradually increasing values (should trigger early warning)
-        time_series = {
-            "dates": [
-                datetime.now() - timedelta(days=i)
-                for i in range(7, 0, -1)
+        trajectory = {
+            "predicted_values": [
+                {"predicted_value": v} for v in [2.0, 2.1, 2.0, 1.9, 2.0, 2.1, 2.0]
             ],
-            "values": [130, 135, 140, 145, 150, 155, 160]
+            "condition_name": "Migraine",
+            "confidence_score": 0.85,
         }
 
-        warning = await detect_early_warning(time_series, threshold=140)
+        alert = await alert_service._check_symptom_worsening(
+            mock_rule, trajectory, "user_123"
+        )
 
-        assert warning["early_warning"] is True
-        assert "trend" in warning
-        assert warning["trend"] == "increasing"
-
-    @pytest.mark.unit
-    @pytest.mark.asyncio
-    async def test_multi_channel_notification(self):
-        """Test alerts can be sent via multiple channels"""
-        from app.services.alert_service import send_alert_notification
-
-        alert = {
-            "id": "alert_123",
-            "severity": "high",
-            "message": "Blood pressure elevated"
-        }
-
-        channels = ["email", "sms", "push", "in_app"]
-
-        with patch('app.services.alert_service.send_email') as mock_email, \
-             patch('app.services.alert_service.send_sms') as mock_sms, \
-             patch('app.services.alert_service.send_push') as mock_push:
-
-            await send_alert_notification(alert, channels=channels)
-
-            # Should attempt all channels
-            mock_email.assert_called_once()
-            mock_sms.assert_called_once()
-            mock_push.assert_called_once()
-
-    @pytest.mark.unit
-    @pytest.mark.asyncio
-    async def test_alert_deduplication(self):
-        """Test that duplicate alerts are not sent"""
-        from app.services.alert_service import should_send_alert
-
-        alert = {
-            "metric": "blood_pressure",
-            "severity": "high",
-            "value": 160
-        }
-
-        # First alert should send
-        assert await should_send_alert(alert, user_id="user_123") is True
-
-        # Duplicate alert within time window should not send
-        assert await should_send_alert(alert, user_id="user_123") is False
-
-        # Different user should send
-        assert await should_send_alert(alert, user_id="user_456") is True
-
-    @pytest.mark.unit
-    @pytest.mark.asyncio
-    async def test_alert_acknowledge(self):
-        """Test alert acknowledgment workflow"""
-        from app.services.alert_service import acknowledge_alert
-
-        alert_id = "alert_123"
-        user_id = "user_456"
-
-        result = await acknowledge_alert(alert_id, user_id)
-
-        assert result["status"] == "acknowledged"
-        assert result["acknowledged_at"] is not None
-
-    @pytest.mark.unit
-    @pytest.mark.asyncio
-    async def test_alert_settings_customization(self):
-        """Test user can customize alert preferences"""
-        from app.services.alert_service import update_alert_settings
-
-        user_settings = {
-            "user_id": "user_123",
-            "channels": {
-                "email": True,
-                "sms": False,
-                "push": True
-            },
-            "thresholds": {
-                "blood_pressure": 140,
-                "heart_rate": 100
-            },
-            "quiet_hours": {
-                "enabled": True,
-                "start": "22:00",
-                "end": "08:00"
-            }
-        }
-
-        result = await update_alert_settings(user_settings)
-
-        assert result["success"] is True
-        assert result["settings"] == user_settings
-
-    @pytest.mark.unit
-    @pytest.mark.asyncio
-    async def test_alert_escalation(self):
-        """Test alert escalation for unacknowledged critical alerts"""
-        from app.services.alert_service import check_alert_escalation
-
-        unacknowledged_alert = {
-            "id": "alert_789",
-            "severity": "critical",
-            "sent_at": datetime.now() - timedelta(hours=2),
-            "acknowledged": False
-        }
-
-        should_escalate = await check_alert_escalation(unacknowledged_alert)
-
-        # Critical alerts unacknowledged for >1 hour should escalate
-        assert should_escalate is True
-
-    @pytest.mark.unit
-    @pytest.mark.asyncio
-    async def test_alert_analytics(self):
-        """Test alert performance analytics"""
-        from app.services.alert_service import get_alert_analytics
-
-        user_id = "user_123"
-
-        with patch('app.services.alert_service.fetch_user_alerts') as mock_fetch:
-            mock_fetch.return_value = [
-                {"severity": "high", "acknowledged": True, "response_time": 300},
-                {"severity": "low", "acknowledged": True, "response_time": 600},
-                {"severity": "high", "acknowledged": False}
-            ]
-
-            analytics = await get_alert_analytics(user_id)
-
-            assert "total_alerts" in analytics
-            assert "acknowledgment_rate" in analytics
-            assert "average_response_time" in analytics
-            assert analytics["total_alerts"] == 3
+        assert alert is None

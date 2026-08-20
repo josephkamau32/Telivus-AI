@@ -86,13 +86,13 @@ async def analyze_trajectory(
         raise HTTPException(
             status_code=400,
             detail=str(e)
-        )
+        ) from e
     except Exception as e:
         logger.error(f"Failed to analyze trajectory: {e}", exc_info=True)
         raise HTTPException(
             status_code=500,
             detail="Failed to analyze health trajectory. Please try again."
-        )
+        ) from e
 
 
 @router.post(
@@ -152,13 +152,13 @@ async def track_intervention_outcome(
         raise HTTPException(
             status_code=404,
             detail=str(e)
-        )
+        ) from e
     except Exception as e:
         logger.error(f"Failed to track intervention outcome: {e}", exc_info=True)
         raise HTTPException(
             status_code=500,
             detail="Failed to track intervention outcome. Please try again."
-        )
+        ) from e
 
 
 @router.get(
@@ -218,13 +218,13 @@ async def get_trajectory_history(
         raise HTTPException(
             status_code=400,
             detail=str(e)
-        )
+        ) from e
     except Exception as e:
         logger.error(f"Failed to retrieve trajectory history: {e}", exc_info=True)
         raise HTTPException(
             status_code=500,
             detail="Failed to retrieve trajectory history. Please try again."
-        )
+        ) from e
 
 
 @router.get(
@@ -303,13 +303,13 @@ async def get_user_interventions(
         raise HTTPException(
             status_code=400,
             detail=str(e)
-        )
+        ) from e
     except Exception as e:
         logger.error(f"Failed to retrieve user interventions: {e}", exc_info=True)
         raise HTTPException(
             status_code=500,
             detail="Failed to retrieve interventions. Please try again."
-        )
+        ) from e
 
 
 @router.post(
@@ -379,13 +379,13 @@ async def simulate_intervention_scenarios(
         raise HTTPException(
             status_code=404,
             detail=str(e)
-        )
+        ) from e
     except Exception as e:
         logger.error(f"Failed to simulate intervention scenarios: {e}", exc_info=True)
         raise HTTPException(
             status_code=500,
             detail="Failed to simulate intervention scenarios. Please try again."
-        )
+        ) from e
 
 
 async def _log_trajectory_metrics(

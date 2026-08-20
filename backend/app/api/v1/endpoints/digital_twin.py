@@ -263,7 +263,7 @@ async def update_twin(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to update twin: {str(e)}"
-        )
+        ) from e
 
 
 @router.post("/events", response_model=HealthEventResponse)
@@ -316,7 +316,7 @@ async def record_health_event(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to record health event: {str(e)}"
-        )
+        ) from e
 
 
 @router.get("/timeline", response_model=List[HealthEventResponse])
@@ -439,7 +439,7 @@ async def acknowledge_alert(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to acknowledge alert: {str(e)}"
-        )
+        ) from e
 
 
 @router.get("/insights", response_model=List[TwinInsightResponse])
@@ -514,7 +514,7 @@ async def sync_historical_data(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to sync historical data: {str(e)}"
-        )
+        ) from e
 
 
 @router.post("/learn")
@@ -561,5 +561,5 @@ async def trigger_learning(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to complete learning: {str(e)}"
-        )
+        ) from e
 

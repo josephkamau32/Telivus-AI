@@ -94,17 +94,14 @@ class SafetyScorer:
             )
 
         # Rule 2: Check red flags from diagnostic plan
-        if red_flags and len(red_flags) > 0:
-            # Check if red flags contain emergency language
-            for flag in red_flags:
-                if any(emergency in flag.lower() for emergency in ['emergency', 'immediate', 'urgent', '911']):
-                    triggered_rules.append("Critical red flags in diagnostic plan")
-                    return SafetyResult(
-                        safety_level=SafetyLevel.RED,
-                        safety_notes="⚠️ URGENT: Assessment identified concerning symptoms requiring prompt medical evaluation.",
-                        triggered_rules=triggered_rules,
-                        requires_immediate_care=True
-                    )
+        if self._has_emergency_red_flags(red_flags):
+            triggered_rules.append("Critical red flags in diagnostic plan")
+            return SafetyResult(
+                safety_level=SafetyLevel.RED,
+                safety_notes="⚠️ URGENT: Assessment identified concerning symptoms requiring prompt medical evaluation.",
+                triggered_rules=triggered_rules,
+                requires_immediate_care=True
+            )
 
         # Rule 3: High-risk age group with concerning symptoms
         if self._check_high_risk_age_group(age, symptoms):
@@ -180,6 +177,16 @@ class SafetyScorer:
                     logger.warning(f"Emergency symptom detected: {symptom}")
                     return True
         return False
+
+    def _has_emergency_red_flags(self, red_flags: Optional[List[str]]) -> bool:
+        """Check if red flags contain emergency language."""
+        if not red_flags:
+            return False
+        emergency_terms = ['emergency', 'immediate', 'urgent', '911']
+        return any(
+            any(term in flag.lower() for term in emergency_terms)
+            for flag in red_flags
+        )
 
     def _check_high_risk_age_group(self, age: int, symptoms: List[str]) -> bool:
         """Check if patient is in high-risk age group with concerning symptoms."""

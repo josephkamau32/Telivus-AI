@@ -208,7 +208,7 @@ def decode_token(token: str) -> TokenData:
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Could not validate credentials",
             headers={"WWW-Authenticate": "Bearer"}
-        )
+        ) from e
 
 
 # FastAPI dependencies

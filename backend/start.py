@@ -59,7 +59,7 @@ def main():
         # Import and run the FastAPI app
         import uvicorn
 
-        from app.main import app
+        from app.main import app  # noqa: F401 - import validates app loads before uvicorn
 
         print("Application loaded successfully")
         print("Starting server on 0.0.0.0:8000")

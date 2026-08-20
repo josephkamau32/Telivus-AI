@@ -19,7 +19,7 @@ os.environ["TESTING"] = "1"
 os.environ["DEBUG"] = "True"
 os.environ["OPENAI_API_KEY"] = "test-key-not-real"
 
-from app.main import app
+from app.main import app  # noqa: E402 - must come after env var setup
 
 
 @pytest.fixture

@@ -5,6 +5,7 @@ Provides endpoints for managing predictive health alerts, alert rules,
 and notification preferences.
 """
 
+from datetime import datetime
 from typing import Any, Dict, List
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
@@ -106,7 +107,7 @@ async def generate_alerts(
         raise HTTPException(
             status_code=500,
             detail="Failed to generate predictive alerts. Please try again."
-        )
+        ) from e
 
 
 @router.get(
@@ -168,7 +169,7 @@ async def get_user_alerts(
         raise HTTPException(
             status_code=500,
             detail="Failed to retrieve alerts. Please try again."
-        )
+        ) from e
 
 
 @router.post(
@@ -215,13 +216,13 @@ async def acknowledge_alert(
         raise HTTPException(
             status_code=404,
             detail=str(e)
-        )
+        ) from e
     except Exception as e:
         logger.error(f"Failed to acknowledge alert {request.alert_id}: {e}", exc_info=True)
         raise HTTPException(
             status_code=500,
             detail="Failed to acknowledge alert. Please try again."
-        )
+        ) from e
 
 
 @router.post(
@@ -271,7 +272,7 @@ async def create_alert_rule(
         raise HTTPException(
             status_code=500,
             detail="Failed to create alert rule. Please try again."
-        )
+        ) from e
 
 
 @router.get(
@@ -338,7 +339,7 @@ async def get_user_alert_rules(
         raise HTTPException(
             status_code=500,
             detail="Failed to retrieve alert rules. Please try again."
-        )
+        ) from e
 
 
 @router.put(
@@ -404,13 +405,13 @@ async def update_alert_rule(
         raise HTTPException(
             status_code=404,
             detail=str(e)
-        )
+        ) from e
     except Exception as e:
         logger.error(f"Failed to update alert rule {rule_id}: {e}", exc_info=True)
         raise HTTPException(
             status_code=500,
             detail="Failed to update alert rule. Please try again."
-        )
+        ) from e
 
 
 @router.delete(
@@ -465,13 +466,13 @@ async def delete_alert_rule(
         raise HTTPException(
             status_code=404,
             detail=str(e)
-        )
+        ) from e
     except Exception as e:
         logger.error(f"Failed to delete alert rule {rule_id}: {e}", exc_info=True)
         raise HTTPException(
             status_code=500,
             detail="Failed to delete alert rule. Please try again."
-        )
+        ) from e
 
 
 @router.get(
@@ -544,7 +545,7 @@ async def get_alert_analytics(
         raise HTTPException(
             status_code=500,
             detail="Failed to retrieve alert analytics. Please try again."
-        )
+        ) from e
 
 
 async def _send_notifications_for_alerts(alert_ids: List[str], db: Session):
@@ -566,6 +567,3 @@ async def _send_notifications_for_alerts(alert_ids: List[str], db: Session):
     except Exception as e:
         logger.error(f"Error in background notification sending: {e}")
 
-
-# Import datetime for type hints
-from datetime import datetime

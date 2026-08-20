@@ -11,6 +11,7 @@ Protects against:
 
 import html
 import logging
+import os
 import re
 from typing import Any, Optional
 
@@ -279,7 +280,7 @@ def validate_age(age: Any) -> int:
     try:
         age = int(age)
     except (TypeError, ValueError):
-        raise ValueError("Age must be a number")
+        raise ValueError("Age must be a number") from None
 
     if age < 0:
         raise ValueError("Age cannot be negative")
@@ -306,13 +307,10 @@ def validate_symptom_severity(severity: Any) -> int:
     try:
         severity = int(severity)
     except (TypeError, ValueError):
-        raise ValueError("Severity must be a number")
+        raise ValueError("Severity must be a number") from None
 
     if severity < 1 or severity > 10:
         raise ValueError("Severity must be between 1 and 10")
 
     return severity
 
-
-# Import os for filename sanitization
-import os

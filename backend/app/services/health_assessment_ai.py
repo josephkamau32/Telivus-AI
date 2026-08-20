@@ -323,13 +323,6 @@ class AIHealthAssessmentService:
                         logger.error("OpenAI API failed after all retries")
                         return self._get_fallback_assessment_data(request)
 
-                except Exception as e:
-                    logger.error(f"Unexpected error in AI call (attempt {attempt + 1}): {e}")
-                    if attempt < max_retries:
-                        continue
-                    else:
-                        return self._get_fallback_assessment_data(request)
-
             # If we get here, all retries failed
             logger.error("All AI attempts failed - using fallback")
             return self._get_fallback_assessment_data(request)

@@ -52,31 +52,15 @@ async def run_evaluation() -> None:
     questions = [item["question"] for item in eval_data]
     ground_truths = [item["ground_truth"] for item in eval_data]
 
-    answers: List[str] = []
-    contexts: List[List[str]] = []
-
-    print(f"Processing {len(questions)} questions...")
-    for q in questions:
-        # Retrieve context using the vector store instance
-        docs = await simple_vector_store.search_documents(q, top_k=3)
-        context_str = [doc["content"] for doc in docs]
-        contexts.append(context_str if context_str else ["No context found"])
-
-        # Generate a simple answer based on retrieved context
-        if context_str:
-            answers.append(f"Based on medical knowledge: {' '.join(context_str[:2])}")
-        else:
-            answers.append("No relevant medical knowledge found for this query.")
+    answers, contexts = await _process_questions(questions, simple_vector_store)
 
     # Create huggingface dataset required by RAGAs
-    data = {
+    dataset = Dataset.from_dict({
         "question": questions,
         "answer": answers,
         "contexts": contexts,
         "ground_truth": ground_truths,
-    }
-
-    dataset = Dataset.from_dict(data)
+    })
 
     print("Evaluating with RAGAs...")
 
@@ -86,29 +70,47 @@ async def run_evaluation() -> None:
 
     result = evaluate(
         dataset,
-        metrics=[
-            context_precision,
-            context_recall,
-            faithfulness,
-            answer_relevancy,
-        ],
+        metrics=[context_precision, context_recall, faithfulness, answer_relevancy],
         llm=evaluator_llm,
         embeddings=evaluator_embeddings,
     )
 
-    # Print results
+    _print_and_save_results(dict(result))
+
+
+async def _process_questions(
+    questions: List[str], vector_store: object
+) -> tuple:
+    """Retrieve context and generate answers for each question."""
+    answers: List[str] = []
+    contexts: List[List[str]] = []
+
+    print(f"Processing {len(questions)} questions...")
+    for q in questions:
+        docs = await vector_store.search_documents(q, top_k=3)
+        context_str = [doc["content"] for doc in docs]
+        contexts.append(context_str if context_str else ["No context found"])
+
+        if context_str:
+            answers.append(f"Based on medical knowledge: {' '.join(context_str[:2])}")
+        else:
+            answers.append("No relevant medical knowledge found for this query.")
+
+    return answers, contexts
+
+
+def _print_and_save_results(result_dict: dict) -> None:
+    """Print and save evaluation results to disk."""
     print("\n" + "=" * 50)
     print("RAG EVALUATION RESULTS")
     print("=" * 50)
 
-    result_dict = dict(result)
     for metric, score in result_dict.items():
         if isinstance(score, float):
             print(f"{metric}: {score:.4f}")
         else:
             print(f"{metric}: {score}")
 
-    # Save results
     report_dir = os.path.join(os.path.dirname(__file__), '..', 'reports')
     os.makedirs(report_dir, exist_ok=True)
     report_path = os.path.join(report_dir, 'rag_eval_results.json')

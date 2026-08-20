@@ -12,7 +12,7 @@ from typing import Any, Dict, List, Optional
 from sqlalchemy.orm import Session
 
 from app.core.logging import get_logger
-from app.models.db_models import HealthDataPoint, HealthTrajectory, Intervention, TrajectorySimulation
+from app.models.db_models import HealthDataPoint, HealthReport, HealthTrajectory, Intervention, TrajectorySimulation
 from app.models.health import HealthDataPoint as HealthDataPointModel
 from app.models.health import HealthTrajectoryResponse, InterventionPlan, SimulationScenario, TrajectoryRequest
 from app.services.trajectory_prediction import trajectory_service
@@ -516,9 +516,6 @@ class TrajectoryService:
             logger.warning(f"Error updating trajectory from outcomes: {e}")
             db.rollback()
 
-
-# Import HealthReport for type hints
-from app.models.db_models import HealthReport
 
 # Global service instance
 trajectory_service_instance = TrajectoryService()

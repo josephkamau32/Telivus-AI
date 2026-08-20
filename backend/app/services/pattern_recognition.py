@@ -416,6 +416,16 @@ class PatternRecognitionEngine:
             logger.error(f"Error predicting symptom risk: {e}")
             return []
 
+    # Lookup tables for temporal matching (reduces cyclomatic complexity)
+    _DAY_NAMES = {
+        "Monday": 0, "Tuesday": 1, "Wednesday": 2, "Thursday": 3,
+        "Friday": 4, "Saturday": 5, "Sunday": 6,
+    }
+    _TIME_OF_DAY_RANGES = {
+        "Morning": (5, 12), "Afternoon": (12, 17),
+        "Evening": (17, 21),
+    }
+
     def _matches_temporal_pattern(
         self,
         pattern: LearnedPattern,
@@ -423,49 +433,40 @@ class PatternRecognitionEngine:
     ) -> bool:
         """Check if current time matches a temporal pattern."""
         try:
-            if "Monday" in pattern.cause and current_time.weekday() == 0:
-                return True
-            if "Tuesday" in pattern.cause and current_time.weekday() == 1:
-                return True
-            if "Wednesday" in pattern.cause and current_time.weekday() == 2:
-                return True
-            if "Thursday" in pattern.cause and current_time.weekday() == 3:
-                return True
-            if "Friday" in pattern.cause and current_time.weekday() == 4:
-                return True
-            if "Saturday" in pattern.cause and current_time.weekday() == 5:
-                return True
-            if "Sunday" in pattern.cause and current_time.weekday() == 6:
-                return True
+            # Check day of week
+            for day_name, weekday_num in self._DAY_NAMES.items():
+                if day_name in pattern.cause and current_time.weekday() == weekday_num:
+                    return True
 
             # Check time of day
             hour = current_time.hour
-            if "Morning" in pattern.cause and 5 <= hour < 12:
-                return True
-            if "Afternoon" in pattern.cause and 12 <= hour < 17:
-                return True
-            if "Evening" in pattern.cause and 17 <= hour < 21:
-                return True
+            for period, (start, end) in self._TIME_OF_DAY_RANGES.items():
+                if period in pattern.cause and start <= hour < end:
+                    return True
             if "Night" in pattern.cause and (hour >= 21 or hour < 5):
                 return True
 
             # Check month/season
-            month = current_time.month
             if pattern.seasonality == "annual":
-                # Extract month from cause if present
-                month_names = [
-                    "January", "February", "March", "April", "May", "June",
-                    "July", "August", "September", "October", "November", "December"
-                ]
-                for i, month_name in enumerate(month_names, 1):
-                    if month_name in pattern.cause and month == i:
-                        return True
+                return self._matches_annual_pattern(pattern, current_time.month)
 
             return False
 
         except Exception as e:
             logger.error(f"Error matching temporal pattern: {e}")
             return False
+
+    @staticmethod
+    def _matches_annual_pattern(pattern: LearnedPattern, month: int) -> bool:
+        """Check if a pattern matches an annual/seasonal cycle."""
+        month_names = [
+            "January", "February", "March", "April", "May", "June",
+            "July", "August", "September", "October", "November", "December"
+        ]
+        for i, month_name in enumerate(month_names, 1):
+            if month_name in pattern.cause and month == i:
+                return True
+        return False
 
     def generate_health_insights(
         self,

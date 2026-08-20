@@ -77,7 +77,7 @@ async def assess_health(
         raise HTTPException(
             status_code=500,
             detail="Failed to generate health assessment. Please try again."
-        )
+        ) from e
 
 
 @router.get(
@@ -125,7 +125,7 @@ async def get_symptom_suggestions(
         raise HTTPException(
             status_code=500,
             detail="Failed to generate symptom suggestions."
-        )
+        ) from e
 
 
 @router.post(
@@ -159,7 +159,7 @@ async def validate_symptoms(
         raise HTTPException(
             status_code=400,
             detail="Invalid symptom data provided."
-        )
+        ) from e
 
 
 @router.get(
@@ -201,4 +201,4 @@ async def check_emergency_symptoms(
         raise HTTPException(
             status_code=500,
             detail="Failed to assess emergency symptoms."
-        )
+        ) from e

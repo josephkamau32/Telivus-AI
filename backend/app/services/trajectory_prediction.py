@@ -16,8 +16,6 @@ import pandas as pd
 from sklearn.ensemble import GradientBoostingRegressor, RandomForestRegressor
 from sklearn.preprocessing import StandardScaler
 
-warnings.filterwarnings('ignore')
-
 from app.core.logging import get_logger
 from app.models.health import (
     HealthDataPoint,
@@ -26,6 +24,8 @@ from app.models.health import (
     TrajectoryPrediction,
 )
 from app.services.advanced_trajectory_models import advanced_predictor
+
+warnings.filterwarnings('ignore')
 
 logger = get_logger(__name__)
 
@@ -115,34 +115,7 @@ class TrajectoryPredictionService:
                 raise ValueError("Insufficient historical data for prediction (minimum 3 data points required)")
 
             # Convert HealthDataPoint objects to dictionaries for advanced predictor
-            data_dicts = []
-            for point in historical_data:
-                data_dict = {
-                    'recorded_at': point.recorded_at,
-                    'data_source': point.data_source,
-                    'confidence_score': point.confidence_score
-                }
-
-                # Add symptom severity data
-                if point.symptom_severity:
-                    data_dict.update(point.symptom_severity)
-
-                # Add vital signs
-                if point.vital_signs:
-                    for key, value in point.vital_signs.items():
-                        data_dict[f'vital_{key}'] = value
-
-                # Add lab values
-                if point.lab_values:
-                    for key, value in point.lab_values.items():
-                        data_dict[f'lab_{key}'] = value
-
-                # Add lifestyle factors
-                if point.lifestyle_factors:
-                    for key, value in point.lifestyle_factors.items():
-                        data_dict[f'lifestyle_{key}'] = value
-
-                data_dicts.append(data_dict)
+            data_dicts = [self._health_point_to_dict(point) for point in historical_data]
 
             # Use advanced ML predictor
             advanced_result = advanced_predictor.predict_trajectory(
@@ -177,6 +150,26 @@ class TrajectoryPredictionService:
             logger.error(f"Error in advanced trajectory prediction: {e}")
             # Fallback to simple prediction method
             return self._fallback_prediction(historical_data, prediction_horizon_days, condition_focus)
+
+    @staticmethod
+    def _health_point_to_dict(point: HealthDataPoint) -> Dict[str, Any]:
+        """Convert a HealthDataPoint to a flat dictionary for ML models."""
+        data_dict: Dict[str, Any] = {
+            'recorded_at': point.recorded_at,
+            'data_source': point.data_source,
+            'confidence_score': point.confidence_score,
+        }
+        if point.symptom_severity:
+            data_dict.update(point.symptom_severity)
+        for prefix, source in [
+            ('vital', point.vital_signs),
+            ('lab', point.lab_values),
+            ('lifestyle', point.lifestyle_factors),
+        ]:
+            if source:
+                for key, value in source.items():
+                    data_dict[f'{prefix}_{key}'] = value
+        return data_dict
 
     def simulate_intervention(
         self,
