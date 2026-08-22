@@ -20,6 +20,7 @@ let mockSubscriptions: Array<{
   expires_at?: string | null;
 }> = [];
 let mockRpcActivateResult: { success: boolean; already_active?: boolean; subscription_type?: string; error?: string } | null = null;
+let mockRpcError: Error | null = null;
 
 vi.mock('@supabase/supabase-js', () => {
   return {
@@ -34,6 +35,9 @@ vi.mock('@supabase/supabase-js', () => {
       },
       rpc: vi.fn().mockImplementation(async (funcName: string, params: any) => {
         if (funcName === 'activate_subscription_atomic') {
+          if (mockRpcError) {
+            return { data: null, error: mockRpcError };
+          }
           if (mockRpcActivateResult) {
             return { data: mockRpcActivateResult, error: null };
           }
@@ -88,8 +92,9 @@ describe('Finding H-03 & H-04: Verify Payment Edge Function', () => {
   let handler: (req: Request) => Promise<Response>;
 
   beforeEach(async () => {
-    vi.clearAllMocks();
+    mockSubscriptions = [];
     mockRpcActivateResult = null;
+    mockRpcError = null;
 
     // Mock Paystack verification endpoint
     globalThis.fetch = vi.fn().mockImplementation(async (url: string) => {
@@ -188,5 +193,28 @@ describe('Finding H-03 & H-04: Verify Payment Edge Function', () => {
     const body = await res.json();
     expect(body.success).toBe(true);
     expect(body.subscription_type).toBe('unlimited');
+  });
+
+  it('H-04 Fail-Closed: Rejects verification with 500 when RPC activate_subscription_atomic errors out', async () => {
+    mockUser = { id: 'user-legit', email: 'legit@example.com' };
+    mockSubscriptions = [
+      { id: 'sub-legit', user_id: 'user-legit', subscription_type: 'unlimited', status: 'pending', payment_reference: 'ref-fail-rpc' },
+    ];
+    mockRpcError = new Error('Database connection reset / lock timeout');
+
+    const req = new Request('http://localhost/functions/v1/verify-payment', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer valid-legit-token',
+        'Origin': 'https://telivus.co.ke',
+      },
+      body: JSON.stringify({ reference: 'ref-fail-rpc' }),
+    });
+
+    const res = await handler(req);
+    expect(res.status).toBe(500);
+    const body = await res.json();
+    expect(body.error).toContain('unable to activate subscription atomically');
   });
 });

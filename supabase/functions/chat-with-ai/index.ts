@@ -98,30 +98,16 @@ serve(async (req: Request) => {
           }
         );
 
-        if (!rpcConsumeError && rpcConsume && rpcConsume.success) {
-          hasAccess = true;
-        } else if (rpcConsumeError) {
-          console.warn("RPC consume_chat_atomic unavailable, falling back to conditional update:", rpcConsumeError.message);
-          if (subscription.chats_remaining > 0) {
-            const { data: updatedSub, error: decError } = await supabaseAdmin
-              .from("chat_subscriptions")
-              .update({ chats_remaining: subscription.chats_remaining - 1 })
-              .eq("id", subscription.id)
-              .gt("chats_remaining", 0)
-              .select();
+        if (rpcConsumeError) {
+          console.error("CRITICAL: RPC consume_chat_atomic failed:", rpcConsumeError.message);
+          return new Response(
+            JSON.stringify({ error: "Internal server error: unable to verify chat balance atomically" }),
+            { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
 
-            if (!decError && updatedSub && updatedSub.length > 0) {
-              hasAccess = true;
-            } else {
-              needsPayment = true;
-            }
-          } else {
-            await supabaseAdmin
-              .from("chat_subscriptions")
-              .update({ status: "expired" })
-              .eq("id", subscription.id);
-            needsPayment = true;
-          }
+        if (rpcConsume && rpcConsume.success) {
+          hasAccess = true;
         } else {
           needsPayment = true;
         }

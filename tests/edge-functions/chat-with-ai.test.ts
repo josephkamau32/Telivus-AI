@@ -23,6 +23,7 @@ let mockSubscriptions: Array<{
 }> = [];
 let mockMessages: Array<{ session_id: string; user_id: string; role: string; content: string }> = [];
 let mockRpcConsumeResult: { success: boolean; chats_remaining?: number } | null = null;
+let mockRpcError: Error | null = null;
 
 // Mock @supabase/supabase-js
 vi.mock('@supabase/supabase-js', () => {
@@ -38,6 +39,9 @@ vi.mock('@supabase/supabase-js', () => {
       },
       rpc: vi.fn().mockImplementation(async (funcName: string, params: any) => {
         if (funcName === 'consume_chat_atomic') {
+          if (mockRpcError) {
+            return { data: null, error: mockRpcError };
+          }
           if (mockRpcConsumeResult) {
             return { data: mockRpcConsumeResult, error: null };
           }
@@ -105,6 +109,7 @@ describe('Finding C-02 & H-04: Chat With AI Edge Function', () => {
     vi.clearAllMocks();
     mockMessages = [];
     mockRpcConsumeResult = null;
+    mockRpcError = null;
 
     // Mock global fetch for OpenAI call
     globalThis.fetch = vi.fn().mockImplementation(async (url: string) => {
@@ -206,5 +211,30 @@ describe('Finding C-02 & H-04: Chat With AI Edge Function', () => {
     const body = await res.json();
     expect(body.needsPayment).toBe(true);
     expect(body.message).toContain('Payment required');
+  });
+
+  it('H-04 Fail-Closed: Rejects request with 500 when RPC consume_chat_atomic errors out', async () => {
+    mockUser = { id: 'user-pay', email: 'pay@example.com' };
+    mockSessions = [{ id: 'session-pay', user_id: 'user-pay' }];
+    mockSubscriptions = [
+      { id: 'sub-pay', user_id: 'user-pay', subscription_type: 'pay_per_chat', status: 'active', chats_remaining: 5 },
+    ];
+    mockRpcError = new Error('Database serialization error / RPC timeout');
+
+    const req = new Request('http://localhost/functions/v1/chat-with-ai', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer valid-pay-user-token',
+        'Origin': 'https://telivus.co.ke',
+      },
+      body: JSON.stringify({ message: 'Hello AI', sessionId: 'session-pay' }),
+    });
+
+    const res = await handler(req);
+    expect(res.status).toBe(500);
+    const body = await res.json();
+    expect(body.error).toContain('unable to verify chat balance atomically');
+    expect(mockMessages.length).toBe(0); // No message written
   });
 });

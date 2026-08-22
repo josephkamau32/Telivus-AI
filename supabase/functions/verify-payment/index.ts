@@ -125,30 +125,16 @@ serve(async (req: Request) => {
     );
 
     if (rpcError) {
-      console.warn("RPC activate_subscription_atomic unavailable or failed, falling back to direct update:", rpcError.message);
-      // Fallback: Expire any existing active subscriptions then activate
-      await supabaseAdmin
-        .from("chat_subscriptions")
-        .update({ status: "expired" })
-        .eq("user_id", user.id)
-        .eq("status", "active")
-        .neq("id", subscription.id);
-
-      const updateData: Record<string, string> = {
-        status: "active",
-        updated_at: new Date().toISOString(),
-      };
-      if (expiresAt) {
-        updateData.expires_at = expiresAt;
-      }
-
-      await supabaseAdmin
-        .from("chat_subscriptions")
-        .update(updateData)
-        .eq("id", subscription.id);
-    } else if (rpcResult && !rpcResult.success) {
+      console.error("CRITICAL: RPC activate_subscription_atomic failed:", rpcError.message);
       return new Response(
-        JSON.stringify({ error: rpcResult.error || "Failed to activate subscription" }),
+        JSON.stringify({ error: "Payment verification failed: unable to activate subscription atomically" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (!rpcResult || !rpcResult.success) {
+      return new Response(
+        JSON.stringify({ error: rpcResult?.error || "Failed to activate subscription" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
