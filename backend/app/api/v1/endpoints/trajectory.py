@@ -1,8 +1,8 @@
 """
 Trajectory prediction and intervention simulation endpoints.
 
-Provides endpoints for health trajectory analysis, intervention recommendations,
-and outcome simulation using advanced ML models.
+NOTE: This router is not currently mounted in main.py. Kept for future feature activation.
+All endpoints are pre-wired with Supabase JWT authentication (get_current_user).
 """
 
 from typing import Any, Dict, List
@@ -10,6 +10,7 @@ from typing import Any, Dict, List
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from sqlalchemy.orm import Session
 
+from app.core.auth import SupabaseUser, get_current_user
 from app.core.database import get_db
 from app.core.logging import get_logger
 from app.models.health import HealthTrajectoryResponse, InterventionTrackingRequest, TrajectoryRequest
@@ -43,6 +44,7 @@ async def analyze_trajectory(
     *,
     background_tasks: BackgroundTasks,
     request: TrajectoryRequest,
+    current_user: SupabaseUser = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> Any:
     """
@@ -85,7 +87,7 @@ async def analyze_trajectory(
         logger.warning(f"Trajectory analysis validation error: {e}")
         raise HTTPException(
             status_code=400,
-            detail=str(e)
+            detail="Invalid trajectory request parameters"
         ) from e
     except Exception as e:
         logger.error(f"Failed to analyze trajectory: {e}", exc_info=True)
@@ -151,7 +153,7 @@ async def track_intervention_outcome(
         logger.warning(f"Intervention tracking validation error: {e}")
         raise HTTPException(
             status_code=404,
-            detail=str(e)
+            detail="Intervention not found or invalid"
         ) from e
     except Exception as e:
         logger.error(f"Failed to track intervention outcome: {e}", exc_info=True)
@@ -217,7 +219,7 @@ async def get_trajectory_history(
         logger.warning(f"Trajectory history validation error: {e}")
         raise HTTPException(
             status_code=400,
-            detail=str(e)
+            detail="Invalid history request parameters"
         ) from e
     except Exception as e:
         logger.error(f"Failed to retrieve trajectory history: {e}", exc_info=True)
@@ -302,7 +304,7 @@ async def get_user_interventions(
         logger.warning(f"Intervention retrieval validation error: {e}")
         raise HTTPException(
             status_code=400,
-            detail=str(e)
+            detail="Invalid status filter or parameters"
         ) from e
     except Exception as e:
         logger.error(f"Failed to retrieve user interventions: {e}", exc_info=True)
@@ -378,7 +380,7 @@ async def simulate_intervention_scenarios(
         logger.warning(f"Simulation validation error: {e}")
         raise HTTPException(
             status_code=404,
-            detail=str(e)
+            detail="Trajectory not found or invalid simulation scenarios"
         ) from e
     except Exception as e:
         logger.error(f"Failed to simulate intervention scenarios: {e}", exc_info=True)

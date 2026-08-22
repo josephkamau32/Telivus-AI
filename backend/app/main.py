@@ -26,7 +26,9 @@ from app.core.config import settings
 from app.core.exceptions import TelivusBaseException
 from app.core.logging import setup_logging
 from app.core.monitoring import configure_metrics
+from app.middleware.rate_limiter import custom_rate_limit_handler, limiter, rate_limit_middleware
 from app.services.vector_store_simple import initialize_vector_store
+from slowapi.errors import RateLimitExceeded
 
 # Import sanitizer for request sanitization middleware
 from app.utils.sanitizer import detect_command_injection, detect_sql_injection, validate_and_sanitize_json
@@ -84,17 +86,14 @@ app = FastAPI(
 # Expose metrics endpoint when the optional dependency is available
 configure_metrics(app)
 
-# Set up CORS with comprehensive configuration
+# Rate limiting setup
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, custom_rate_limit_handler)
+
+# Set up CORS with validated origins from settings
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "http://localhost:5173",
-        "http://localhost:8000",
-        "http://localhost:8080",
-        "https://telivus.co.ke",
-        "https://telivus-ai-git-main-joseph-kamaus-projects-ff2f6da1.vercel.app",
-    ],
+    allow_origins=[str(origin).rstrip("/") for origin in settings.BACKEND_CORS_ORIGINS],
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
@@ -125,14 +124,14 @@ async def security_headers_middleware(request: Request, call_next):
     """
     response = await call_next(request)
 
-    # Content Security Policy - restrictive but allows necessary resources
+    # Content Security Policy - restrictive and hardened (H-08)
     csp_policy = (
         "default-src 'self'; "
-        "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://unpkg.com; "
-        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+        "script-src 'self' https://cdn.jsdelivr.net; "
+        "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; "
         "font-src 'self' https://fonts.gstatic.com; "
-        "img-src 'self' data: https:; "
-        "connect-src 'self' https://telivus-ai.onrender.com https://api.openai.com wss://*.langfuse.com; "
+        "img-src 'self' data: https://fastapi.tiangolo.com; "
+        "connect-src 'self' https://lhrbmfpsjahwxgdylmar.supabase.co https://api.openai.com; "
         "frame-ancestors 'none'; "
         "base-uri 'self'; "
         "form-action 'self'; "
@@ -163,6 +162,12 @@ async def security_headers_middleware(request: Request, call_next):
     )
 
     return response
+
+# Rate Limiting Middleware
+@app.middleware("http")
+async def app_rate_limit_middleware(request: Request, call_next):
+    """Apply rate limiting to all requests."""
+    return await rate_limit_middleware(request, call_next)
 
 # Request Sanitization Middleware - sanitize incoming request bodies
 @app.middleware("http")

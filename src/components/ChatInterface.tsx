@@ -82,12 +82,10 @@ const ChatInterface = ({ onBack, autoSendMessage, onAutoSendComplete }: ChatInte
       console.log('Initializing chat...');
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        console.log('No user found, cannot initialize chat');
         setIsInitializing(false);
         setInitFailed(true);
         return;
       }
-      console.log('User found:', user.id);
 
       // Check for existing active session
       const { data: existingSession } = await supabase
@@ -104,7 +102,6 @@ const ChatInterface = ({ onBack, autoSendMessage, onAutoSendComplete }: ChatInte
         // Use existing session
         currentSessionId = existingSession.id;
         setSessionId(currentSessionId);
-        console.log('Using existing session:', currentSessionId);
 
         // Load existing messages
         const { data: existingMessages } = await supabase
@@ -143,7 +140,6 @@ const ChatInterface = ({ onBack, autoSendMessage, onAutoSendComplete }: ChatInte
         }
         currentSessionId = session.id;
         setSessionId(currentSessionId);
-        console.log('Created new session:', currentSessionId);
       }
 
       // Load initial greeting only for new sessions

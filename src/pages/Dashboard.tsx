@@ -661,9 +661,9 @@ const Dashboard = () => {
         {/* Health Alert Center */}
         <div className="mb-8 animate-in slide-in-from-top-4 duration-700">
           <AlertCenter
-            userId={user?.id || "demo_user"}
+            userId={user?.id || ""}
             onAlertAction={(alertId, action) => {
-              console.log(`Alert ${alertId} ${action} by user ${user?.id || "demo_user"}`);
+              console.log(`Alert ${alertId} ${action} by user ${user?.id || "unauthenticated"}`);
               // In a real app, this would send the action to the backend
             }}
           />
@@ -874,7 +874,7 @@ const Dashboard = () => {
         {/* Health Trajectory Analysis */}
         <div className="animate-in slide-in-from-bottom-4 duration-700">
           <TrajectoryDashboard
-            userId={user?.id || "demo_user"}
+            userId={user?.id || ""}
             onRefresh={() => loadDashboardData()}
             className="animate-in fade-in-50 duration-500"
           />

@@ -17,13 +17,26 @@ class Settings(BaseSettings):
 
     # API Configuration
     API_V1_STR: str = "/api/v1"
-    SECRET_KEY: str = "your-secret-key-change-in-production"
+    SECRET_KEY: str = ""  # Required for production — no insecure default
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 8  # 8 days
 
     # Server Configuration
     SERVER_NAME: str = "Telivus AI Backend"
     SERVER_HOST: AnyHttpUrl = "http://localhost"
-    DEBUG: Union[bool, str] = True
+    DEBUG: Union[bool, str] = False  # Must be explicitly enabled for development
+
+    # Demo Mode — standalone flag, NOT tied to DEBUG
+    # When True, endpoints return clearly-labeled demo data if the database is unavailable.
+    # When False (default), endpoints fail closed with proper error responses.
+    DEMO_MODE: bool = False
+
+    # Supabase JWT Verification (ES256 / JWKS)
+    # JWKS URL for fetching Supabase's public signing keys
+    SUPABASE_JWKS_URL: str = ""
+    # JWT issuer claim — must match the token's `iss` field
+    SUPABASE_JWT_ISSUER: str = ""
+    # JWT audience claim — Supabase uses "authenticated" for logged-in users
+    SUPABASE_JWT_AUDIENCE: str = "authenticated"
 
     @field_validator("DEBUG", mode="before")
     @classmethod
@@ -42,7 +55,6 @@ class Settings(BaseSettings):
         "http://localhost:8000",  # FastAPI server
         "http://localhost:8080",  # Vite dev server (current config)
         "https://telivus.co.ke",  # Production frontend
-        "https://telivus-ai-git-main-joseph-kamaus-projects-ff2f6da1.vercel.app",  # Current Vercel deployment
     ]
 
     @field_validator("BACKEND_CORS_ORIGINS", mode="before")
@@ -92,13 +104,6 @@ class Settings(BaseSettings):
     SUPABASE_URL: str = ""
     SUPABASE_SERVICE_ROLE_KEY: str = ""
     SUPABASE_ANON_KEY: str = ""
-
-    # Payment Configuration
-    PAYMENT_PROVIDER: str = "flutterwave"  # or "stripe"
-    FLUTTERWAVE_SECRET_KEY: str = ""
-    FLUTTERWAVE_PUBLIC_KEY: str = ""
-    STRIPE_SECRET_KEY: str = ""
-    STRIPE_WEBHOOK_SECRET: str = ""
 
     # Email Configuration
     SMTP_TLS: bool = True

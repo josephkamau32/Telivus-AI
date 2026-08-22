@@ -6,8 +6,9 @@ Provides endpoints for health assessment, symptom analysis, and medical report g
 
 from typing import Any, Dict
 
-from fastapi import APIRouter, BackgroundTasks, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 
+from app.core.auth import SupabaseUser, get_current_user
 from app.core.logging import get_logger
 from app.models.health import (
     HealthAssessmentRequest,
@@ -38,6 +39,7 @@ async def assess_health(
     *,
     background_tasks: BackgroundTasks,
     request: HealthAssessmentRequest,
+    current_user: SupabaseUser = Depends(get_current_user),
 ) -> Any:
     """
     Generate health assessment report.
@@ -90,6 +92,7 @@ async def get_symptom_suggestions(
     age: int,
     gender: str = None,
     medical_history: str = None,
+    current_user: SupabaseUser = Depends(get_current_user),
 ) -> Dict[str, Any]:
     """
     Get symptom suggestions based on reported symptoms.
@@ -135,6 +138,7 @@ async def get_symptom_suggestions(
 )
 async def validate_symptoms(
     symptom_data: SymptomAssessment,
+    current_user: SupabaseUser = Depends(get_current_user),
 ) -> Dict[str, Any]:
     """
     Validate symptom assessment data.

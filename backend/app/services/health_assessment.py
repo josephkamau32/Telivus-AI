@@ -9,6 +9,7 @@ from typing import Any, Dict, List, Optional
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import settings
 from app.core.logging import get_logger
 from app.models.health import HealthAssessmentRequest, HealthReport, SymptomAssessment
 
@@ -60,8 +61,8 @@ class HealthAssessmentService:
         """
         self.db = db
 
-        # Prioritize AI service, then advanced agent, then simple service
-        if _use_ai_service:
+        # Prioritize AI service, then advanced agent, then simple service (only in DEMO_MODE)
+        if _use_ai_service and getattr(_ai_service, "api_key", None):
             self.service = _ai_service
             self.service_type = "ai"
             logger.info("Using AI health assessment service (OpenAI GPT-4o-mini)")
@@ -69,12 +70,13 @@ class HealthAssessmentService:
             self.service = _advanced_agent
             self.service_type = "advanced"
             logger.info("Using advanced health assessment agent")
-        elif _use_simple_service:
+        elif settings.DEMO_MODE and _use_simple_service:
             self.service = _simple_service
             self.service_type = "simple"
-            logger.info("Using simple health assessment service")
+            logger.warning("DEMO_MODE active: Using simple mock health assessment service")
         else:
-            raise RuntimeError("No health assessment service available")
+            logger.error("AI service unconfigured and DEMO_MODE is False — failing closed")
+            raise RuntimeError("Health assessment AI service unavailable. Set OPENAI_API_KEY or enable DEMO_MODE.")
 
     async def generate_assessment(
         self,
@@ -95,15 +97,25 @@ class HealthAssessmentService:
             # Delegate to the appropriate service
             report = await self.service.generate_assessment(request)
 
-            # Update metadata based on service type
+            # Update metadata and compute dynamic confidence score
             if self.service_type == "ai":
                 report.ai_model_used = "gpt-4o-mini"
-                report.confidence_score = 0.85
+                # Dynamic confidence calculation (H-09)
+                symptom_count = len(request.symptoms.reported_symptoms)
+                base_score = 0.70
+                # Add confidence if symptom details, medical history, or vital signs provided
+                if getattr(request, "medical_history", None):
+                    base_score += 0.08
+                if getattr(request, "vital_signs", None):
+                    base_score += 0.10
+                if 2 <= symptom_count <= 6:
+                    base_score += 0.07
+                report.confidence_score = min(0.95, round(base_score, 2))
                 report.disclaimer = "This AI assessment is for informational purposes only. Always consult healthcare professionals for medical advice."
             elif self.service_type == "simple":
                 report.ai_model_used = "mock_assessment_service"
-                report.confidence_score = 0.8
-                report.disclaimer = "This is a mock assessment for demonstration purposes. Always consult healthcare professionals for actual medical advice."
+                report.confidence_score = 0.50
+                report.disclaimer = "This is a mock assessment for demonstration purposes only. Always consult healthcare professionals for actual medical advice."
 
             # Log assessment metrics
             await self.log_assessment_metrics(report.id, request)

@@ -9,7 +9,7 @@ services:
     environment:
       POSTGRES_DB: telivus_ai
       POSTGRES_USER: telivus
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-changeme}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-telivus_secure_dev_pw_2026}
     ports:
       - "5432:5432"
     volumes:
@@ -47,9 +47,14 @@ services:
     container_name: telivus-backend
     environment:
       - DEBUG=${DEBUG:-False}
-      - DATABASE_URL=postgresql://telivus:${DB_PASSWORD:-changeme}@postgres:5432/telivus_ai
+      - DATABASE_URL=postgresql://telivus:${DB_PASSWORD:-telivus_secure_dev_pw_2026}@postgres:5432/telivus_ai
       - REDIS_URL=redis://redis:6379
       - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - SUPABASE_URL=${SUPABASE_URL:-https://lhrbmfpsjahwxgdylmar.supabase.co}
+      - SUPABASE_JWKS_URL=${SUPABASE_JWKS_URL:-https://lhrbmfpsjahwxgdylmar.supabase.co/auth/v1/.well-known/jwks.json}
+      - SUPABASE_JWT_ISSUER=${SUPABASE_JWT_ISSUER:-https://lhrbmfpsjahwxgdylmar.supabase.co/auth/v1}
+      - SUPABASE_JWT_AUDIENCE=${SUPABASE_JWT_AUDIENCE:-authenticated}
+      - DEMO_MODE=${DEMO_MODE:-False}
       - SENTRY_DSN=${SENTRY_DSN}
       - ENVIRONMENT=${ENVIRONMENT:-production}
     ports:
@@ -60,7 +65,7 @@ services:
       redis:
         condition: service_healthy
     healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:8000/health" ]
+      test: [ "CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/v1/health/emergency-check?symptoms=ping&age=20', timeout=5)" ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -71,9 +76,9 @@ services:
     volumes:
       - ./backend/app:/app/app:ro # Read-only for security
 
-  # Frontend (Optional - for full stack local dev)
+  # Frontend
   frontend:
-    image: node:18-alpine
+    image: node:20-alpine
     container_name: telivus-frontend
     working_dir: /app
     command: sh -c "npm install && npm run dev"
@@ -89,7 +94,7 @@ services:
 
   # Prometheus (Monitoring)
   prometheus:
-    image: prom/prometheus:latest
+    image: prom/prometheus:v2.48.1
     container_name: telivus-prometheus
     ports:
       - "9090:9090"
@@ -104,12 +109,12 @@ services:
 
   # Grafana (Visualization)
   grafana:
-    image: grafana/grafana:latest
+    image: grafana/grafana:10.2.3
     container_name: telivus-grafana
     ports:
       - "3000:3000"
     environment:
-      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-telivus_grafana_admin_2026}
     volumes:
       - grafana_data:/var/lib/grafana
     depends_on:
@@ -122,7 +127,6 @@ volumes:
   redis_data:
   prometheus_data:
   grafana_data:
-
 
 networks:
   telivus-network:

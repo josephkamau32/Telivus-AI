@@ -1,7 +1,8 @@
 """
 Chat endpoints for AI-powered health consultations.
 
-Provides real-time chat functionality with LangChain agents.
+NOTE: This router is not currently mounted in main.py. Kept for future feature activation.
+All endpoints are pre-wired with Supabase JWT authentication (get_current_user).
 """
 
 from typing import Any, List
@@ -9,6 +10,7 @@ from typing import Any, List
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.auth import SupabaseUser, get_current_user
 from app.core.database import get_db
 from app.core.logging import get_logger
 from app.models.health import ChatMessage, ChatSession
@@ -30,10 +32,11 @@ logger = get_logger(__name__)
 async def create_chat_session(
     *,
     db: AsyncSession = Depends(get_db),
-    user_id: str,
+    current_user: SupabaseUser = Depends(get_current_user),
     title: str = "Health Consultation"
 ) -> Any:
-    """Create a new chat session."""
+    """Create a new chat session for the authenticated user."""
+    user_id = current_user.user_id
     try:
         chat_service = ChatService(db)
         session = await chat_service.create_session(user_id, title)
@@ -54,9 +57,10 @@ async def send_message(
     db: AsyncSession = Depends(get_db),
     session_id: str,
     message: str,
-    user_id: str
+    current_user: SupabaseUser = Depends(get_current_user),
 ) -> Any:
     """Send message to AI assistant."""
+    user_id = current_user.user_id
     try:
         chat_service = ChatService(db)
         response = await chat_service.process_message(session_id, message, user_id)
@@ -76,9 +80,10 @@ async def get_chat_messages(
     *,
     db: AsyncSession = Depends(get_db),
     session_id: str,
-    user_id: str
+    current_user: SupabaseUser = Depends(get_current_user),
 ) -> Any:
     """Get messages from chat session."""
+    user_id = current_user.user_id
     try:
         chat_service = ChatService(db)
         messages = await chat_service.get_session_messages(session_id, user_id)

@@ -2,22 +2,69 @@
 Digital Twin API Endpoints
 
 RESTful API for managing and interacting with digital health twins.
+All endpoints require Supabase JWT authentication.
 """
 
 import logging
-from datetime import datetime
+import uuid
+from datetime import datetime, timezone
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.auth import SupabaseUser, get_current_user
+from app.core.config import settings
 from app.core.database import get_db
 from app.services.twin_service import DigitalTwinService
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/v1/twin", tags=["Digital Twin"])
+
+
+def _demo_twin_response(user_id: str) -> dict:
+    """Return clearly-labeled demo data. Only called when DEMO_MODE=True."""
+    return TwinResponse(
+        id=f"demo_{uuid.uuid4().hex[:8]}",
+        user_id=user_id,
+        twin_name="Health Twin (Demo)",
+        learning_level="beginner",
+        data_points_count=0,
+        interaction_count=0,
+        accuracy_score=0.0,
+        confidence_level=0.0,
+        twin_age_days=0,
+        last_updated=None,
+    )
+
+
+def _calculate_twin_age_days(created_at: Optional[datetime]) -> int:
+    """Calculate twin age in days safely regardless of timezone awareness."""
+    if not created_at:
+        return 0
+    now = datetime.now(timezone.utc)
+    dt = created_at if created_at.tzinfo else created_at.replace(tzinfo=timezone.utc)
+    return max(0, (now - dt).days)
+
+
+def _demo_stats_response(user_id: str) -> dict:
+    """Return clearly-labeled demo stats. Only called when DEMO_MODE=True."""
+    return TwinStatsResponse(
+        twin_id=f"demo_{uuid.uuid4().hex[:8]}",
+        twin_name="Health Twin (Demo)",
+        learning_level="beginner",
+        data_points=0,
+        interactions=0,
+        accuracy_score=0.0,
+        confidence_level=0.0,
+        patterns_learned=0,
+        active_alerts=0,
+        insights_generated=0,
+        twin_age_days=0,
+        last_updated=None,
+    )
 
 
 # Pydantic Models
@@ -139,20 +186,20 @@ class TwinUpdateRequest(BaseModel):
 # Endpoints
 @router.get("/me", response_model=TwinResponse)
 async def get_my_twin(
-    user_id: str = "demo_user",  # In production, get from auth token
-    db: AsyncSession = Depends(get_db)
+    current_user: SupabaseUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ):
     """
     Get or create the current user's digital twin.
 
     If the twin doesn't exist, it will be created automatically.
     """
+    user_id = current_user.user_id
     try:
         service = DigitalTwinService(db)
         twin = await service.get_or_create_twin(user_id)
 
-        # Calculate twin age
-        twin_age = (datetime.utcnow() - twin.created_at).days
+        twin_age = _calculate_twin_age_days(twin.created_at)
 
         return TwinResponse(
             id=twin.id,
@@ -164,32 +211,27 @@ async def get_my_twin(
             accuracy_score=twin.accuracy_score,
             confidence_level=twin.confidence_level,
             twin_age_days=twin_age,
-            last_updated=twin.last_learning_update.isoformat() if twin.last_learning_update else None
+            last_updated=twin.last_learning_update.isoformat() if twin.last_learning_update else None,
         )
 
     except Exception as e:
-        logger.warning(f"Database unavailable, returning mock twin: {e}")
-        # Return mock data when database is not available
-        return TwinResponse(
-            id="mock_twin_001",
-            user_id=user_id,
-            twin_name="Health Twin (Demo)",
-            learning_level="beginner",
-            data_points_count=0,
-            interaction_count=0,
-            accuracy_score=0.0,
-            confidence_level=0.0,
-            twin_age_days=0,
-            last_updated=None
-        )
+        if settings.DEMO_MODE:
+            logger.warning("Database unavailable in DEMO_MODE, returning demo twin")
+            return _demo_twin_response(user_id)
+        logger.error("Failed to get digital twin: %s", e)
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Digital twin service temporarily unavailable",
+        ) from e
 
 
 @router.get("/stats", response_model=TwinStatsResponse)
 async def get_twin_stats(
-    user_id: str = "demo_user",
-    db: AsyncSession = Depends(get_db)
+    current_user: SupabaseUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ):
     """Get comprehensive statistics for the user's digital twin."""
+    user_id = current_user.user_id
     try:
         service = DigitalTwinService(db)
         twin = await service.get_or_create_twin(user_id)
@@ -198,31 +240,24 @@ async def get_twin_stats(
         return TwinStatsResponse(**stats)
 
     except Exception as e:
-        logger.warning(f"Database unavailable, returning mock twin stats: {e}")
-        # Return mock data when database is not available
-        return TwinStatsResponse(
-            twin_id="mock_twin_001",
-            twin_name="Health Twin (Demo)",
-            learning_level="beginner",
-            data_points=0,
-            interactions=0,
-            accuracy_score=0.0,
-            confidence_level=0.0,
-            patterns_learned=0,
-            active_alerts=0,
-            insights_generated=0,
-            twin_age_days=0,
-            last_updated=None
-        )
+        if settings.DEMO_MODE:
+            logger.warning("Database unavailable in DEMO_MODE, returning demo stats")
+            return _demo_stats_response(user_id)
+        logger.error("Failed to get twin stats: %s", e)
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Digital twin service temporarily unavailable",
+        ) from e
 
 
 @router.put("/update", response_model=TwinResponse)
 async def update_twin(
     request: TwinUpdateRequest,
-    user_id: str = "demo_user",
-    db: AsyncSession = Depends(get_db)
+    current_user: SupabaseUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ):
     """Update the user's digital twin settings."""
+    user_id = current_user.user_id
     try:
         service = DigitalTwinService(db)
         twin = await service.get_or_create_twin(user_id)
@@ -238,10 +273,10 @@ async def update_twin(
         if not updated_twin:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="Twin not found"
+                detail="Twin not found",
             )
 
-        twin_age = (datetime.utcnow() - updated_twin.created_at).days
+        twin_age = _calculate_twin_age_days(updated_twin.created_at)
 
         return TwinResponse(
             id=updated_twin.id,
@@ -253,26 +288,27 @@ async def update_twin(
             accuracy_score=updated_twin.accuracy_score,
             confidence_level=updated_twin.confidence_level,
             twin_age_days=twin_age,
-            last_updated=updated_twin.last_learning_update.isoformat() if updated_twin.last_learning_update else None
+            last_updated=updated_twin.last_learning_update.isoformat() if updated_twin.last_learning_update else None,
         )
 
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error updating twin: {e}")
+        logger.error("Error updating twin: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to update twin: {str(e)}"
+            detail="Failed to update twin",
         ) from e
 
 
 @router.post("/events", response_model=HealthEventResponse)
 async def record_health_event(
     event: HealthEventCreate,
-    user_id: str = "demo_user",
-    db: AsyncSession = Depends(get_db)
+    current_user: SupabaseUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ):
     """Record a new health event for the digital twin."""
+    user_id = current_user.user_id
     try:
         service = DigitalTwinService(db)
         twin = await service.get_or_create_twin(user_id)
@@ -285,19 +321,19 @@ async def record_health_event(
             "outcomes": event.outcomes,
             "severity": event.severity,
             "feeling_state": event.feeling_state,
-            "source": event.source
+            "source": event.source,
         }
 
         created_event = await service.record_health_event(
             twin.id,
             event.event_type,
-            event_data
+            event_data,
         )
 
         if not created_event:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Failed to create health event"
+                detail="Failed to create health event",
             )
 
         return HealthEventResponse(
@@ -306,27 +342,28 @@ async def record_health_event(
             event_date=created_event.event_date,
             symptoms=created_event.symptoms,
             severity=created_event.severity,
-            feeling_state=created_event.feeling_state
+            feeling_state=created_event.feeling_state,
         )
 
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error recording health event: {e}")
+        logger.error("Error recording health event: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to record health event: {str(e)}"
+            detail="Failed to record health event",
         ) from e
 
 
 @router.get("/timeline", response_model=List[HealthEventResponse])
 async def get_timeline(
-    user_id: str = "demo_user",
+    current_user: SupabaseUser = Depends(get_current_user),
     limit: int = 50,
     offset: int = 0,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     """Get the health timeline for the user's digital twin."""
+    user_id = current_user.user_id
     try:
         service = DigitalTwinService(db)
         twin = await service.get_or_create_twin(user_id)
@@ -339,23 +376,30 @@ async def get_timeline(
                 event_date=event.event_date,
                 symptoms=event.symptoms,
                 severity=event.severity,
-                feeling_state=event.feeling_state
+                feeling_state=event.feeling_state,
             )
             for event in events
         ]
 
     except Exception as e:
-        logger.warning(f"Database unavailable, returning empty timeline: {e}")
-        return []  # Return empty list when database is not available
+        if settings.DEMO_MODE:
+            logger.warning("Database unavailable in DEMO_MODE, returning empty timeline")
+            return []
+        logger.error("Failed to get timeline: %s", e)
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Digital twin service temporarily unavailable",
+        ) from e
 
 
 @router.get("/patterns", response_model=List[LearnedPatternResponse])
 async def get_learned_patterns(
-    user_id: str = "demo_user",
+    current_user: SupabaseUser = Depends(get_current_user),
     min_confidence: float = 70.0,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     """Get learned patterns discovered by the digital twin."""
+    user_id = current_user.user_id
     try:
         service = DigitalTwinService(db)
         twin = await service.get_or_create_twin(user_id)
@@ -370,23 +414,30 @@ async def get_learned_patterns(
                 confidence_score=pattern.confidence_score,
                 evidence_count=pattern.evidence_count,
                 effect_direction=pattern.effect_direction,
-                discovered_at=pattern.discovered_at
+                discovered_at=pattern.discovered_at,
             )
             for pattern in patterns
         ]
 
     except Exception as e:
-        logger.warning(f"Database unavailable, returning empty patterns: {e}")
-        return []  # Return empty list when database is not available
+        if settings.DEMO_MODE:
+            logger.warning("Database unavailable in DEMO_MODE, returning empty patterns")
+            return []
+        logger.error("Failed to get patterns: %s", e)
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Digital twin service temporarily unavailable",
+        ) from e
 
 
 @router.get("/alerts", response_model=List[ProactiveAlertResponse])
 async def get_proactive_alerts(
-    user_id: str = "demo_user",
+    current_user: SupabaseUser = Depends(get_current_user),
     severity: Optional[str] = None,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     """Get active proactive alerts for the user."""
+    user_id = current_user.user_id
     try:
         service = DigitalTwinService(db)
         twin = await service.get_or_create_twin(user_id)
@@ -404,30 +455,38 @@ async def get_proactive_alerts(
                 predicted_likelihood=alert.predicted_likelihood,
                 recommended_actions=alert.recommended_actions,
                 status=alert.status,
-                triggered_at=alert.triggered_at
+                triggered_at=alert.triggered_at,
             )
             for alert in alerts
         ]
 
     except Exception as e:
-        logger.warning(f"Database unavailable, returning empty alerts: {e}")
-        return []  # Return empty list when database is not available
+        if settings.DEMO_MODE:
+            logger.warning("Database unavailable in DEMO_MODE, returning empty alerts")
+            return []
+        logger.error("Failed to get alerts: %s", e)
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Digital twin service temporarily unavailable",
+        ) from e
 
 
 @router.post("/alerts/{alert_id}/acknowledge")
 async def acknowledge_alert(
     alert_id: str,
-    db: AsyncSession = Depends(get_db)
+    current_user: SupabaseUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ):
     """Acknowledge a proactive alert."""
     try:
         service = DigitalTwinService(db)
+        # TODO: Verify alert belongs to current_user's twin before acknowledging
         success = await service.acknowledge_alert(alert_id)
 
         if not success:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="Alert not found"
+                detail="Alert not found",
             )
 
         return {"message": "Alert acknowledged successfully"}
@@ -435,20 +494,21 @@ async def acknowledge_alert(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error acknowledging alert: {e}")
+        logger.error("Error acknowledging alert: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to acknowledge alert: {str(e)}"
+            detail="Failed to acknowledge alert",
         ) from e
 
 
 @router.get("/insights", response_model=List[TwinInsightResponse])
 async def get_insights(
-    user_id: str = "demo_user",
+    current_user: SupabaseUser = Depends(get_current_user),
     highlighted_only: bool = False,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     """Get health insights generated by the digital twin."""
+    user_id = current_user.user_id
     try:
         service = DigitalTwinService(db)
         twin = await service.get_or_create_twin(user_id)
@@ -467,20 +527,26 @@ async def get_insights(
                 health_impact=insight.health_impact,
                 is_actionable=insight.is_actionable,
                 suggested_actions=insight.suggested_actions,
-                priority=insight.priority
+                priority=insight.priority,
             )
             for insight in insights
         ]
 
     except Exception as e:
-        logger.warning(f"Database unavailable, returning empty insights: {e}")
-        return []  # Return empty list when database is not available
+        if settings.DEMO_MODE:
+            logger.warning("Database unavailable in DEMO_MODE, returning empty insights")
+            return []
+        logger.error("Failed to get insights: %s", e)
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Digital twin service temporarily unavailable",
+        ) from e
 
 
 @router.post("/sync")
 async def sync_historical_data(
-    user_id: str = "demo_user",
-    db: AsyncSession = Depends(get_db)
+    current_user: SupabaseUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ):
     """
     Sync all historical health data to the digital twin.
@@ -491,51 +557,47 @@ async def sync_historical_data(
     - Creates health events in the timeline
     - Triggers automatic learning
     """
+    user_id = current_user.user_id
     try:
         from app.services.twin_integration import TwinIntegrationService
 
         integration_service = TwinIntegrationService(db)
 
-        # Sync all historical data
         sync_stats = await integration_service.sync_all_user_health_data(user_id)
-
-        # Auto-learn if enough data
         learning_results = await integration_service.auto_learn_from_recent_data(user_id, min_events=3)
 
         return {
             "message": "Historical data synced successfully",
             "sync_stats": sync_stats,
             "learning_results": learning_results,
-            "twin_ready": True
+            "twin_ready": True,
         }
 
     except Exception as e:
-        logger.error(f"Error syncing historical data: {e}")
+        logger.error("Error syncing historical data: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to sync historical data: {str(e)}"
+            detail="Failed to sync historical data",
         ) from e
 
 
 @router.post("/learn")
 async def trigger_learning(
-    user_id: str = "demo_user",
-    db: AsyncSession = Depends(get_db)
+    current_user: SupabaseUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ):
     """
     Trigger the digital twin to analyze recent data and discover new patterns.
 
     This manually initiates the learning process.
     """
+    user_id = current_user.user_id
     try:
         from app.services.twin_integration import TwinIntegrationService
 
         integration_service = TwinIntegrationService(db)
 
-        # First, ensure all recent data is synced
         await integration_service.sync_all_user_health_data(user_id)
-
-        # Then trigger learning
         learning_results = await integration_service.auto_learn_from_recent_data(user_id, min_events=3)
 
         if not learning_results:
@@ -547,19 +609,19 @@ async def trigger_learning(
                 "message": "Not enough data to learn patterns yet",
                 "events_count": len(events),
                 "minimum_required": 3,
-                "suggestion": "Complete a few health assessments first"
+                "suggestion": "Complete a few health assessments first",
             }
 
         return {
             "message": "Learning completed successfully",
             **learning_results,
-            "twin_updated": True
+            "twin_updated": True,
         }
 
     except Exception as e:
-        logger.error(f"Error during twin learning: {e}")
+        logger.error("Error during twin learning: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to complete learning: {str(e)}"
+            detail="Failed to complete learning",
         ) from e
 

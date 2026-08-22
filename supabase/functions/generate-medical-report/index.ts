@@ -1,65 +1,23 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
-import { createClient } from 'npm:@supabase/supabase-js@2.57.4';
+import { createClient } from "npm:@supabase/supabase-js@2.57.4";
+import { getCorsHeaders, handleCorsPreflight } from "../_shared/cors.ts";
 
-const getCorsHeaders = (req: Request) => {
-  const requestOrigin = req.headers.get('origin') || '*';
-  const requestHeaders = req.headers.get('access-control-request-headers') || 'authorization, x-client-info, apikey, content-type';
-  return {
-    'Access-Control-Allow-Origin': requestOrigin,
-    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-    'Access-Control-Allow-Headers': requestHeaders,
-    'Access-Control-Max-Age': '86400',
-    'Vary': 'Origin',
-  } as Record<string, string>;
-};
-
-const validateInput = (data: any) => {
+const validateInput = (data: Record<string, unknown>) => {
   const errors: string[] = [];
-  
-  if (!data.feelings || typeof data.feelings !== 'string' || data.feelings.trim().length === 0) {
-    errors.push('Feeling is required');
+
+  if (!data.feelings || typeof data.feelings !== "string" || data.feelings.trim().length === 0) {
+    errors.push("Feeling description is required");
   }
-  
+
   if (!Array.isArray(data.symptoms) || data.symptoms.length === 0) {
-    errors.push('At least one symptom is required');
+    errors.push("At least one symptom is required");
   }
-  
-  if (!data.age || typeof data.age !== 'number' || data.age < 0 || data.age > 130) {
-    errors.push('Age must be a number between 0 and 130');
+
+  if (!data.age || typeof data.age !== "number" || data.age < 0 || data.age > 130) {
+    errors.push("Age must be a number between 0 and 130");
   }
-  
+
   return errors;
-};
-
-const generateCacheKey = async (symptoms: string[], feelings: string, age: number) => {
-  // Normalize inputs to maximize cache hits without changing report content
-  const normalizedSymptoms = [...symptoms]
-    .map(s => (s || '').toString().trim().toLowerCase())
-    .filter(Boolean)
-    .sort()
-    .join(',');
-  const normalizedFeelings = (feelings || '')
-    .toString()
-    .trim()
-    .toLowerCase()
-    .replace(/\s+/g, ' ');
-  // More granular age grouping: 1-year intervals for ages 0-18, 2-year for 19-40, 5-year for 41+
-  let ageGroup;
-  if (age <= 18) {
-    ageGroup = age;
-  } else if (age <= 40) {
-    ageGroup = Math.floor(age / 2) * 2;
-  } else {
-    ageGroup = Math.floor(age / 5) * 5;
-  }
-  const cacheString = `${normalizedSymptoms}|${normalizedFeelings}|${ageGroup}`;
-
-  const msgUint8 = new TextEncoder().encode(cacheString);
-  const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-
-  return hashHex;
 };
 
 const retryWithBackoff = async (fn: () => Promise<any>, maxRetries = 2) => {
@@ -72,15 +30,14 @@ const retryWithBackoff = async (fn: () => Promise<any>, maxRetries = 2) => {
       lastError = error;
 
       if (error instanceof Error) {
-        if (error.message.includes('400') || error.message.includes('401') || error.message.includes('403')) {
+        if (error.message.includes("400") || error.message.includes("401") || error.message.includes("403")) {
           throw error;
         }
       }
 
       if (attempt < maxRetries) {
         const delay = Math.pow(2, attempt) * 1000;
-        console.log(`Attempt ${attempt + 1} failed, retrying in ${delay}ms...`);
-        await new Promise(resolve => setTimeout(resolve, delay));
+        await new Promise((resolve) => setTimeout(resolve, delay));
       }
     }
   }
@@ -88,140 +45,121 @@ const retryWithBackoff = async (fn: () => Promise<any>, maxRetries = 2) => {
   throw lastError;
 };
 
-Deno.serve(async (req) => {
-  const corsHeaders = getCorsHeaders(req);
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { status: 204, headers: corsHeaders });
+Deno.serve(async (req: Request) => {
+  const preflight = handleCorsPreflight(req);
+  if (preflight) return preflight;
+
+  const corsHeaders = getCorsHeaders(req.headers.get("Origin"));
+
+  const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
+  const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+  const openAiApiKey = Deno.env.get("OPENAI_API_KEY");
+
+  if (!supabaseUrl || !supabaseServiceKey || !openAiApiKey) {
+    return new Response(
+      JSON.stringify({ error: "Service configuration error" }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
   }
 
-  const supabase = createClient(
-    Deno.env.get('SUPABASE_URL') ?? '',
-    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-  );
+  const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
+  // C-03 Remediation: Require valid Supabase JWT authentication
+  const authHeader = req.headers.get("Authorization");
+  if (!authHeader) {
+    return new Response(
+      JSON.stringify({ error: "Missing Authorization header" }),
+      { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  }
+
+  const token = authHeader.replace("Bearer ", "");
+  const { data: { user }, error: userError } = await supabase.auth.getUser(token);
+
+  if (userError || !user) {
+    return new Response(
+      JSON.stringify({ error: "Unauthorized" }),
+      { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  }
+
+  const userId = user.id; // Bound strictly to authenticated session
   let healthReportId: string | null = null;
 
   try {
-    console.log('Function started - processing request');
-
     const requestBody = await req.json();
-    const { feelings, symptoms, age, name, gender, medicalHistory, surgicalHistory, currentMedications, allergies, userId } = requestBody;
+    const {
+      feelings,
+      symptoms,
+      age,
+      name,
+      gender,
+      medicalHistory,
+      surgicalHistory,
+      currentMedications,
+      allergies,
+    } = requestBody;
 
-    console.log('Request body received:', { feelings: feelings?.substring(0, 50), symptomsCount: symptoms?.length, age, userId });
+    const validationErrors = validateInput({
+      feelings,
+      symptoms,
+      age,
+      name,
+      gender,
+      medicalHistory,
+      surgicalHistory,
+      currentMedications,
+      allergies,
+    });
 
-    const validationErrors = validateInput({ feelings, symptoms, age, name, gender, medicalHistory, surgicalHistory, currentMedications, allergies });
     if (validationErrors.length > 0) {
-      await supabase.from('report_logs').insert({
-        event_type: 'validation_failed',
-        payload: { validationErrors, requestBody },
-        user_id: userId || null
-      });
-
-      return new Response(JSON.stringify({
-        error: 'Validation failed',
-        details: validationErrors
-      }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return new Response(
+        JSON.stringify({
+          error: "Validation failed",
+          details: validationErrors,
+        }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
     }
 
-    // Check cache FIRST to return immediately on hits
-    const cacheKey = await generateCacheKey(symptoms, feelings, age);
-    const { data: cachedReport } = await supabase
-      .from('report_cache')
-      .select('*')
-      .eq('cache_key', cacheKey)
-      .gt('expires_at', new Date().toISOString())
-      .maybeSingle();
-
-    if (cachedReport) {
-      console.log(`Cache HIT for key: ${cacheKey}`);
-
-      const cachedData = cachedReport.report_data;
-
-      cachedData.demographic_header = {
-        name: name || 'Not provided',
-        age: age,
-        gender: gender || 'Not provided',
-        date: new Date().toISOString().split('T')[0]
-      };
-
-      if (medicalHistory) cachedData.past_medical_history = medicalHistory;
-      if (surgicalHistory) cachedData.past_surgical_history = surgicalHistory;
-      if (currentMedications) cachedData.medications = currentMedications;
-      if (allergies) cachedData.allergies = allergies;
-
-      return new Response(JSON.stringify({
-        ...cachedData,
-        timestamp: new Date().toISOString(),
-        health_report_id: null,
-        cached: true
-      }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    console.log(`Cache MISS for key: ${cacheKey} - generating new report`);
-
-    // Only if cache missed, create DB record and proceed
+    // C-04 Remediation: Cross-user cache removed.
+    // Medical reports must always be uniquely generated and confidential to the patient.
     const { data: healthReport, error: insertError } = await supabase
-      .from('health_reports')
+      .from("health_reports")
       .insert({
-        user_id: userId || null,
+        user_id: userId,
         age,
         feeling: feelings,
         symptoms,
-        status: 'processing'
+        status: "processing",
       })
       .select()
       .single();
 
     if (insertError) {
-      console.error('Error creating health report:', insertError);
-      throw new Error('Failed to create health report record');
+      console.error("Error creating health report:", insertError);
+      throw new Error("Failed to create health report record");
     }
 
     healthReportId = healthReport.id;
 
-    await supabase.from('report_logs').insert({
+    await supabase.from("report_logs").insert({
       health_report_id: healthReportId,
-      event_type: 'request_started',
-      payload: { feelings, symptoms, age, userId },
-      user_id: userId || null
+      event_type: "request_started",
+      payload: { feelings: feelings?.substring(0, 50), symptomsCount: symptoms?.length, age },
+      user_id: userId,
     });
-
-    const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
-
-    if (!OPENAI_API_KEY) {
-      throw new Error('OpenAI API key not configured');
-    }
-
-    // Debug: Log API key status (remove in production)
-    console.log('OpenAI API key configured:', OPENAI_API_KEY ? 'Yes' : 'No');
-    console.log('API key length:', OPENAI_API_KEY?.length || 0);
-    console.log('API key starts with:', OPENAI_API_KEY?.substring(0, 10) + '...' || 'No key');
-
-    const patientProfile = `
-PATIENT INFORMATION:
-- Age: ${age} years old
-- Gender: ${gender || 'Not specified'}
-- Name: ${name || 'Not provided'}
-- Current Symptoms: ${symptoms.join(', ')}
-- How they feel: ${feelings}
-${medicalHistory ? `- Past Medical History: ${medicalHistory}` : ''}
-${surgicalHistory ? `- Past Surgical History: ${surgicalHistory}` : ''}
-${currentMedications ? `- Current Medications: ${currentMedications}` : ''}
-${allergies ? `- Known Allergies: ${allergies}` : ''}
-`;
 
     const prompt = `Dr. Sarah Mitchell, MD, PharmD with 20+ years experience.
 
-PATIENT: Age ${age}, ${gender || 'gender not specified'}, symptoms: ${symptoms.join(', ')}, feels: ${feelings}
-${medicalHistory ? `Medical history: ${medicalHistory}` : ''}
-${surgicalHistory ? `Surgical history: ${surgicalHistory}` : ''}
-${currentMedications ? `Medications: ${currentMedications}` : ''}
-${allergies ? `Allergies: ${allergies}` : ''}
+PATIENT: Age ${age}, ${gender || "gender not specified"}, symptoms: ${symptoms.join(", ")}, feels: ${feelings}
+${medicalHistory ? `Medical history: ${medicalHistory}` : ""}
+${surgicalHistory ? `Surgical history: ${surgicalHistory}` : ""}
+${currentMedications ? `Medications: ${currentMedications}` : ""}
+${allergies ? `Allergies: ${allergies}` : ""}
 
 CRITICAL: Use ONLY stated symptoms. No hallucinations. FDA-approved OTC only. Return JSON only.
 
@@ -236,7 +174,7 @@ CRITICAL: Use ONLY stated symptoms. No hallucinations. FDA-approved OTC only. Re
       "dosage": "Age-${age} appropriate",
       "purpose": "Treats [symptom]",
       "instructions": "How/when to take",
-      "precautions": "Warnings. ${currentMedications ? 'Check vs: ' + currentMedications : ''}${allergies ? ' Safe with: ' + allergies : ''}",
+      "precautions": "Warnings. ${currentMedications ? "Check vs: " + currentMedications : ""}${allergies ? " Safe with: " + allergies : ""}",
       "max_duration": "Days max"
     }
   ]
@@ -245,41 +183,39 @@ CRITICAL: Use ONLY stated symptoms. No hallucinations. FDA-approved OTC only. Re
     const openaiResponse = await retryWithBackoff(async () => {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 15000);
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
+      const response = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
         headers: {
-          'Authorization': `Bearer ${OPENAI_API_KEY}`,
-          'Content-Type': 'application/json',
+          "Authorization": `Bearer ${openAiApiKey}`,
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: 'gpt-4o-mini',
-          messages: [{
-            role: 'user',
-            content: prompt
-          }],
+          model: "gpt-4o-mini",
+          messages: [
+            {
+              role: "user",
+              content: prompt,
+            },
+          ],
           max_tokens: 1200,
           temperature: 0.1,
-          response_format: { type: "json_object" }
+          response_format: { type: "json_object" },
         }),
         signal: controller.signal,
       }).finally(() => clearTimeout(timeoutId));
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('OpenAI API error response:', errorText);
-
-        // Handle specific error codes
         if (response.status === 429) {
-          throw new Error('OpenAI API quota exceeded. Please try again later.');
+          throw new Error("OpenAI API quota exceeded. Please try again later.");
         } else if (response.status === 400) {
-          throw new Error('Invalid request to AI service. Please check your input.');
+          throw new Error("Invalid request to AI service. Please check your input.");
         } else if (response.status === 401) {
-          throw new Error('Invalid API key. Please check your OpenAI API key.');
+          throw new Error("AI service authentication error.");
         } else if (response.status >= 500) {
-          throw new Error('AI service temporarily unavailable. Please try again.');
+          throw new Error("AI service temporarily unavailable. Please try again.");
         }
-
-        throw new Error(`OpenAI API error: ${response.status} - ${errorText}`);
+        throw new Error(`OpenAI API error: ${response.status}`);
       }
 
       return response;
@@ -289,197 +225,118 @@ CRITICAL: Use ONLY stated symptoms. No hallucinations. FDA-approved OTC only. Re
     const reportText = data.choices?.[0]?.message?.content;
 
     if (!reportText) {
-      throw new Error('No response from OpenAI API');
+      throw new Error("No response from OpenAI API");
     }
 
     let parsedReport;
     try {
       let cleanedText = reportText.trim();
-
-      if (cleanedText.startsWith('```')) {
-        cleanedText = cleanedText.replace(/^```(?:json)?\n?/gi, '').replace(/\n?```$/g, '');
+      if (cleanedText.startsWith("```")) {
+        cleanedText = cleanedText.replace(/^```(?:json)?\n?/gi, "").replace(/\n?```$/g, "");
       }
-
       const jsonMatch = cleanedText.match(/\{[\s\S]*\}/);
       if (!jsonMatch) {
-        throw new Error('No JSON object found in response');
+        throw new Error("No JSON object found in response");
       }
+      parsedReport = JSON.parse(jsonMatch[0]);
 
-      const jsonString = jsonMatch[0];
-      parsedReport = JSON.parse(jsonString);
-
-      const validationErrors = [];
-
-      if (!parsedReport.chief_complaint || typeof parsedReport.chief_complaint !== 'string') {
-        validationErrors.push('Missing or invalid chief_complaint');
-      }
-
-      if (!parsedReport.assessment || typeof parsedReport.assessment !== 'string') {
-        validationErrors.push('Missing or invalid assessment');
-      }
-
-      if (!parsedReport.history_present_illness || typeof parsedReport.history_present_illness !== 'string') {
-        validationErrors.push('Missing or invalid history_present_illness');
-      }
-
-      if (!parsedReport.diagnostic_plan || typeof parsedReport.diagnostic_plan !== 'string') {
-        validationErrors.push('Missing or invalid diagnostic_plan');
-      }
-
-      const reportedSymptoms = symptoms.map((s: string) => s.toLowerCase());
-      const assessmentText = (parsedReport.assessment || '').toLowerCase();
-      const complaintText = (parsedReport.chief_complaint || '').toLowerCase();
-
-      let symptomMatchCount = 0;
-      reportedSymptoms.forEach((symptom: string) => {
-        if (assessmentText.includes(symptom) || complaintText.includes(symptom)) {
-          symptomMatchCount++;
-        }
-      });
-
-      if (symptomMatchCount === 0 && reportedSymptoms.length > 0) {
-        validationErrors.push('Assessment does not reference any reported symptoms - possible hallucination');
+      if (!parsedReport.chief_complaint || !parsedReport.assessment || !parsedReport.history_present_illness || !parsedReport.diagnostic_plan) {
+        throw new Error("Missing required report fields from AI response");
       }
 
       if (!Array.isArray(parsedReport.otc_recommendations)) {
         parsedReport.otc_recommendations = [];
       }
 
-      parsedReport.otc_recommendations.forEach((otc: any, index: number) => {
-        if (!otc.medicine || typeof otc.medicine !== 'string') {
+      parsedReport.otc_recommendations.forEach((otc: Record<string, unknown>, index: number) => {
+        if (!otc.medicine || typeof otc.medicine !== "string") {
           validationErrors.push(`OTC recommendation ${index + 1}: Missing medicine name`);
         }
-        if (!otc.dosage || typeof otc.dosage !== 'string') {
+        if (!otc.dosage || typeof otc.dosage !== "string") {
           validationErrors.push(`OTC recommendation ${index + 1}: Missing dosage`);
         }
-        if (!otc.purpose || typeof otc.purpose !== 'string') {
+        if (!otc.purpose || typeof otc.purpose !== "string") {
           validationErrors.push(`OTC recommendation ${index + 1}: Missing purpose`);
         }
-        if (!otc.precautions || typeof otc.precautions !== 'string') {
+        if (!otc.precautions || typeof otc.precautions !== "string") {
           validationErrors.push(`OTC recommendation ${index + 1}: Missing precautions`);
         }
       });
 
-      if (!parsedReport.demographic_header) {
-        parsedReport.demographic_header = {
-          name: name || 'Not provided',
-          age: age,
-          gender: gender || 'Not provided',
-          date: new Date().toISOString().split('T')[0]
-        };
-      }
-
-      if (validationErrors.length > 0) {
-        console.error('Report validation failed:', validationErrors);
-        console.error('Partial report received. This may indicate response truncation.');
-        throw new Error(`AI response incomplete or truncated. Please try again. Missing: ${validationErrors.join(', ')}`);
-      }
-
-      console.log(`Successfully parsed and validated medical report (symptom match: ${symptomMatchCount}/${reportedSymptoms.length})`);
-
-    } catch (parseError) {
-      console.error('Failed to parse JSON response:', parseError);
-      console.error('Raw response (first 1000 chars):', reportText.substring(0, 1000));
-
-      throw new Error(`Failed to parse AI response: ${parseError instanceof Error ? parseError.message : 'Unknown error'}`);
+      parsedReport.demographic_header = {
+        name: name || "Not provided",
+        age: age,
+        gender: gender || "Not provided",
+        date: new Date().toISOString().split("T")[0],
+      };
+    } catch (parseError: unknown) {
+      console.error("Failed to parse JSON response:", parseError);
+      throw new Error("Failed to parse AI medical report response");
     }
 
-    const { error: updateError } = await supabase
-      .from('health_reports')
+    // Update report in database
+    await supabase
+      .from("health_reports")
       .update({
-        status: 'completed',
+        status: "completed",
         report: parsedReport,
-        otc_medicines: parsedReport.otc_recommendations || []
+        otc_medicines: parsedReport.otc_recommendations || [],
       })
-      .eq('id', healthReportId);
+      .eq("id", healthReportId);
 
-    if (updateError) {
-      console.error('Error updating health report:', updateError);
-    }
-
-    const cacheData = {
-      chief_complaint: parsedReport.chief_complaint,
-      history_present_illness: parsedReport.history_present_illness,
-      assessment: parsedReport.assessment,
-      diagnostic_plan: parsedReport.diagnostic_plan,
-      otc_recommendations: parsedReport.otc_recommendations
-    };
-
-    const expiresAt = new Date();
-    expiresAt.setHours(expiresAt.getHours() + 24);
-
-    await supabase.from('report_cache').upsert({
-      cache_key: cacheKey,
-      report_data: cacheData,
-      expires_at: expiresAt.toISOString(),
-      hit_count: 0
-    }, {
-      onConflict: 'cache_key'
-    });
-
-    await supabase.from('report_logs').insert({
+    await supabase.from("report_logs").insert({
       health_report_id: healthReportId,
-      event_type: 'request_completed',
-      payload: { success: true, reportLength: reportText.length, cacheKey },
-      user_id: userId || null
+      event_type: "request_completed",
+      payload: { success: true },
+      user_id: userId,
     });
 
-    console.log(`Successfully generated medical report for health_report_id: ${healthReportId}`);
+    return new Response(
+      JSON.stringify({
+        ...parsedReport,
+        timestamp: new Date().toISOString(),
+        health_report_id: healthReportId,
+        cached: false,
+      }),
+      {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      }
+    );
 
-    return new Response(JSON.stringify({
-      ...parsedReport,
-      timestamp: new Date().toISOString(),
-      health_report_id: healthReportId,
-      cached: false
-    }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+  } catch (error: unknown) {
+    console.error("Error in generate-medical-report:", error);
 
-  } catch (error) {
-    console.error('Error in generate-medical-report:', error);
-
-    const errorMessage = error instanceof Error ? error.message : 'Failed to generate medical report';
-
-    let errorUserId: string | null = null;
-    try {
-      const errorBody = await req.clone().json();
-      errorUserId = errorBody.userId || null;
-    } catch {
-      // Ignore JSON parsing errors for error extraction
-    }
+    const errorMessage = error instanceof Error ? error.message : "Failed to generate medical report";
 
     if (healthReportId) {
       await supabase
-        .from('health_reports')
+        .from("health_reports")
         .update({
-          status: 'failed',
-          error_message: errorMessage
+          status: "failed",
+          error_message: errorMessage,
         })
-        .eq('id', healthReportId);
+        .eq("id", healthReportId);
 
-      await supabase.from('report_logs').insert({
+      await supabase.from("report_logs").insert({
         health_report_id: healthReportId,
-        event_type: 'request_failed',
-        payload: { error: errorMessage, stack: error instanceof Error ? error.stack : undefined },
-        user_id: errorUserId
+        event_type: "request_failed",
+        payload: { error: errorMessage },
+        user_id: userId,
       });
     }
 
-    const isQuotaError = error instanceof Error && error.message.includes('429');
-    const errorResponse = {
-      error: isQuotaError
-        ? 'OpenAI API quota exceeded. Please upgrade to a paid plan or try again later.'
-        : errorMessage,
-      error_code: isQuotaError ? 'QUOTA_EXCEEDED' : 'GENERATION_FAILED',
-      ...(isQuotaError && {
-        retry_after: '1 hour',
-        upgrade_info: 'Consider upgrading to OpenAI API Pro for higher quotas'
-      })
-    };
-
-    return new Response(JSON.stringify(errorResponse), {
-      status: isQuotaError ? 429 : 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    const isQuotaError = error instanceof Error && error.message.includes("quota exceeded");
+    return new Response(
+      JSON.stringify({
+        error: isQuotaError
+          ? "AI service quota temporarily reached. Please try again shortly."
+          : "Failed to generate medical report. Please try again.",
+        error_code: isQuotaError ? "QUOTA_EXCEEDED" : "GENERATION_FAILED",
+      }),
+      {
+        status: isQuotaError ? 429 : 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      }
+    );
   }
 });

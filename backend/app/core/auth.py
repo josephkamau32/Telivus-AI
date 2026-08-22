@@ -1,404 +1,285 @@
 """
-JWT Authentication System for Telivus AI
+Supabase JWT Authentication for Telivus AI
 
-Implements secure authentication with:
-- User registration and login
-- JWT token generation and validation
-- Password hashing with bcrypt
-- Token refresh mechanism
-- Role-based access control (RBAC)
+Verifies Supabase-issued JWTs using ES256 (ECDSA P-256) public keys
+fetched from the project's JWKS endpoint. No custom JWT issuance,
+no password management, no mock users.
+
+Key design decisions:
+- ES256 only — no HS256 fallback (project has migrated to asymmetric signing)
+- JWKS keys cached with TTL; cache refreshed on kid-miss for key rotation
+- get_current_user is the sole FastAPI dependency for protected endpoints
 """
 
 import logging
-import os
-from datetime import datetime, timedelta
-from typing import Optional
+import threading
+import time
+from typing import Any, Dict, Optional
 
+import requests
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from jose import JWTError, jwt
-from passlib.context import CryptContext
+from jose import jwt, JWTError
+from jose.utils import base64url_decode
 from pydantic import BaseModel
 
 logger = logging.getLogger(__name__)
 
-# Configuration - Load from environment with validation
-SECRET_KEY = os.getenv("SECRET_KEY", "your-secret-key-change-in-production")
-
-# Warn if using default secret key in production
-if SECRET_KEY == "your-secret-key-change-in-production":
-    if os.getenv("DEBUG", "True").lower() != "true":
-        logger.critical("SECURITY WARNING: Using default SECRET_KEY in production! Set SECRET_KEY environment variable.")
-        raise RuntimeError("SECRET_KEY must be set for production deployment")
-    else:
-        logger.warning("Using default SECRET_KEY - OK for development, but change for production")
-
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
-REFRESH_TOKEN_EXPIRE_DAYS = 7
-
-# Password hashing
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
-# HTTP Bearer token security
+# HTTP Bearer token security scheme
 security = HTTPBearer()
 
 
+# ---------------------------------------------------------------------------
 # Models
-class TokenData(BaseModel):
-    """JWT token data payload"""
-    user_id: str
-    email: str
-    role: str = "user"
-    exp: datetime
+# ---------------------------------------------------------------------------
+
+class SupabaseUser(BaseModel):
+    """Authenticated user extracted from a verified Supabase JWT."""
+    user_id: str   # The `sub` claim — Supabase user UUID
+    email: Optional[str] = None
+    role: str = "authenticated"
 
 
-class Token(BaseModel):
-    """Token response model"""
-    access_token: str
-    refresh_token: str
-    token_type: str = "bearer"
-    expires_in: int
+# ---------------------------------------------------------------------------
+# JWKS Cache
+# ---------------------------------------------------------------------------
 
-
-class UserCreate(BaseModel):
-    """User registration model"""
-    email: str
-    password: str
-    name: str
-
-
-class UserLogin(BaseModel):
-    """User login model"""
-    email: str
-    password: str
-
-
-class User(BaseModel):
-    """User model"""
-    id: str
-    email: str
-    name: str
-    role: str = "user"
-    is_active: bool = True
-    created_at: datetime
-
-
-# Password utilities
-def hash_password(password: str) -> str:
+class JWKSCache:
     """
-    Hash password using bcrypt.
+    Thread-safe JWKS key cache with TTL and kid-miss refresh.
 
-    Args:
-        password: Plain text password
-
-    Returns:
-        Hashed password
+    - Fetches public keys from the Supabase JWKS endpoint
+    - Caches keys for `ttl_seconds` (default: 1 hour)
+    - On a kid-miss, re-fetches once to handle key rotation
+    - All access is thread-safe via a lock
     """
-    return pwd_context.hash(password)
 
+    def __init__(self, jwks_url: str, ttl_seconds: int = 3600):
+        self._jwks_url = jwks_url
+        self._ttl_seconds = ttl_seconds
+        self._keys: Dict[str, Dict[str, Any]] = {}
+        self._last_fetch: float = 0.0
+        self._lock = threading.Lock()
 
-def verify_password(plain_password: str, hashed_password: str) -> bool:
-    """
-    Verify password against hash.
+    def _fetch_keys(self) -> None:
+        """Fetch JWKS from the endpoint and index by kid."""
+        try:
+            response = requests.get(self._jwks_url, timeout=10)
+            response.raise_for_status()
+            jwks = response.json()
 
-    Args:
-        plain_password: Plain text password
-        hashed_password: Bcrypt hash
+            new_keys: Dict[str, Dict[str, Any]] = {}
+            for key_data in jwks.get("keys", []):
+                kid = key_data.get("kid")
+                if kid:
+                    new_keys[kid] = key_data
 
-    Returns:
-        True if password matches
-    """
-    return pwd_context.verify(plain_password, hashed_password)
+            if not new_keys:
+                logger.error("JWKS endpoint returned no keys")
+                return
 
+            with self._lock:
+                self._keys = new_keys
+                self._last_fetch = time.monotonic()
 
-# JWT token utilities
-def create_access_token(
-    data: dict,
-    expires_delta: Optional[timedelta] = None
-) -> str:
-    """
-    Create JWT access token.
-
-    Args:
-        data: Token payload data
-        expires_delta: Token expiration time
-
-    Returns:
-        Encoded JWT token
-    """
-    to_encode = data.copy()
-
-    if expires_delta:
-        expire = datetime.utcnow() + expires_delta
-    else:
-        expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-
-    to_encode.update({
-        "exp": expire,
-        "iat": datetime.utcnow(),
-        "type": "access"
-    })
-
-    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
-    return encoded_jwt
-
-
-def create_refresh_token(user_id: str) -> str:
-    """
-    Create JWT refresh token.
-
-    Args:
-        user_id: User identifier
-
-    Returns:
-        Encoded refresh token
-    """
-    expire = datetime.utcnow() + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
-
-    to_encode = {
-        "user_id": user_id,
-        "exp": expire,
-        "iat": datetime.utcnow(),
-        "type": "refresh"
-    }
-
-    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
-    return encoded_jwt
-
-
-def decode_token(token: str) -> TokenData:
-    """
-    Decode and validate JWT token.
-
-    Args:
-        token: JWT token string
-
-    Returns:
-        TokenData object
-
-    Raises:
-        HTTPException: If token is invalid
-    """
-    try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-
-        user_id: str = payload.get("user_id")
-        email: str = payload.get("email")
-        role: str = payload.get("role", "user")
-        exp: datetime = datetime.fromtimestamp(payload.get("exp"))
-
-        if user_id is None:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid token: missing user_id",
-                headers={"WWW-Authenticate": "Bearer"}
+            logger.info(
+                "JWKS cache refreshed: %d key(s) loaded from %s",
+                len(new_keys),
+                self._jwks_url,
             )
 
-        return TokenData(
-            user_id=user_id,
-            email=email,
-            role=role,
-            exp=exp
-        )
+        except requests.RequestException as e:
+            logger.error("Failed to fetch JWKS from %s: %s", self._jwks_url, e)
+            # Keep stale keys rather than going keyless
+            if not self._keys:
+                raise RuntimeError(
+                    f"Cannot fetch JWKS and no cached keys available: {e}"
+                ) from e
 
-    except JWTError as e:
-        logger.error(f"JWT decode error: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Could not validate credentials",
-            headers={"WWW-Authenticate": "Bearer"}
-        ) from e
+    def _is_stale(self) -> bool:
+        """Check if cached keys are older than TTL."""
+        return (time.monotonic() - self._last_fetch) > self._ttl_seconds
+
+    def get_key(self, kid: str) -> Optional[Dict[str, Any]]:
+        """
+        Get a public key by kid.
+
+        If the cache is stale or the kid is not found, re-fetches JWKS once.
+        Returns None only if the kid is genuinely not present after refresh.
+        """
+        with self._lock:
+            if not self._is_stale() and kid in self._keys:
+                return self._keys[kid]
+
+        # Cache miss or stale — re-fetch
+        self._fetch_keys()
+
+        with self._lock:
+            return self._keys.get(kid)
 
 
-# FastAPI dependencies
-async def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(security)
-) -> TokenData:
+# Module-level cache instance — initialized lazily on first use
+_jwks_cache: Optional[JWKSCache] = None
+_cache_init_lock = threading.Lock()
+
+
+def _get_jwks_cache() -> JWKSCache:
+    """Get or create the JWKS cache singleton (lazy initialization)."""
+    global _jwks_cache
+    if _jwks_cache is not None:
+        return _jwks_cache
+
+    with _cache_init_lock:
+        # Double-check after acquiring lock
+        if _jwks_cache is not None:
+            return _jwks_cache
+
+        from app.core.config import settings
+
+        jwks_url = settings.SUPABASE_JWKS_URL
+        if not jwks_url:
+            # Construct from SUPABASE_URL if JWKS_URL not explicitly set
+            supabase_url = settings.SUPABASE_URL
+            if not supabase_url:
+                raise RuntimeError(
+                    "SUPABASE_JWKS_URL or SUPABASE_URL must be set for JWT verification"
+                )
+            jwks_url = f"{supabase_url.rstrip('/')}/auth/v1/.well-known/jwks.json"
+
+        _jwks_cache = JWKSCache(jwks_url=jwks_url)
+        return _jwks_cache
+
+
+# ---------------------------------------------------------------------------
+# JWT Verification
+# ---------------------------------------------------------------------------
+
+def verify_supabase_jwt(token: str) -> SupabaseUser:
     """
-    Dependency to get current authenticated user.
+    Verify a Supabase-issued JWT using ES256 public key from JWKS.
+
+    Validates:
+    - Signature against the public key matching the token's `kid` header
+    - `exp` claim (expiration)
+    - `iss` claim (issuer) if configured
+    - `aud` claim (audience) — must be "authenticated"
+
+    Args:
+        token: Raw JWT string (without "Bearer " prefix)
+
+    Returns:
+        SupabaseUser with user_id, email, and role extracted from claims
+
+    Raises:
+        HTTPException(401): If verification fails for any reason
+    """
+    from app.core.config import settings
+
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+
+    # --- 1. Extract kid from token header ---
+    try:
+        unverified_header = jwt.get_unverified_header(token)
+    except JWTError:
+        logger.warning("JWT header decode failed")
+        raise credentials_exception
+
+    kid = unverified_header.get("kid")
+    alg = unverified_header.get("alg")
+
+    if not kid:
+        logger.warning("JWT missing kid header")
+        raise credentials_exception
+
+    if alg != "ES256":
+        logger.warning("JWT uses unsupported algorithm: %s (expected ES256)", alg)
+        raise credentials_exception
+
+    # --- 2. Fetch matching public key from JWKS ---
+    cache = _get_jwks_cache()
+    key_data = cache.get_key(kid)
+
+    if key_data is None:
+        logger.warning("No JWKS key found for kid=%s", kid)
+        raise credentials_exception
+
+    # --- 3. Verify and decode ---
+    try:
+        # Build verification options
+        jwt_options = {
+            "verify_exp": True,
+            "verify_aud": True,
+            "verify_iss": bool(settings.SUPABASE_JWT_ISSUER),
+        }
+
+        payload = jwt.decode(
+            token,
+            key_data,
+            algorithms=["ES256"],
+            audience=settings.SUPABASE_JWT_AUDIENCE,
+            issuer=settings.SUPABASE_JWT_ISSUER or None,
+            options=jwt_options,
+        )
+    except JWTError as e:
+        logger.warning("JWT verification failed: %s", e)
+        raise credentials_exception from e
+
+    # --- 4. Extract user info from claims ---
+    user_id = payload.get("sub")
+    if not user_id:
+        logger.warning("JWT missing sub claim")
+        raise credentials_exception
+
+    email = payload.get("email")
+    role = payload.get("role", "authenticated")
+
+    return SupabaseUser(
+        user_id=user_id,
+        email=email,
+        role=role,
+    )
+
+
+# ---------------------------------------------------------------------------
+# FastAPI Dependencies
+# ---------------------------------------------------------------------------
+
+async def get_current_user(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+) -> SupabaseUser:
+    """
+    FastAPI dependency: extract and verify the authenticated user from the
+    Authorization header.
 
     Usage:
         @app.get("/protected")
-        async def protected_route(user: TokenData = Depends(get_current_user)):
+        async def protected_route(user: SupabaseUser = Depends(get_current_user)):
             return {"user_id": user.user_id}
 
     Args:
-        credentials: HTTP Bearer credentials
+        credentials: HTTP Bearer credentials extracted by FastAPI
 
     Returns:
-        TokenData for authenticated user
+        SupabaseUser for the authenticated caller
 
     Raises:
-        HTTPException: If authentication fails
+        HTTPException(401): If no token, invalid token, or verification fails
     """
-    token = credentials.credentials
-    return decode_token(token)
+    return verify_supabase_jwt(credentials.credentials)
 
 
-async def get_current_active_user(
-    current_user: TokenData = Depends(get_current_user)
-) -> TokenData:
-    """
-    Dependency to ensure user is active.
-
-    Args:
-        current_user: Current user from token
-
-    Returns:
-        TokenData if user is active
-
-    Raises:
-        HTTPException: If user is inactive
-    """
-    # Note: Active user check requires database integration
-    # When database is connected, add user lookup and is_active check here
-    # For now, rely on token validation
-    return current_user
+# Alias for readability at call sites
+require_authenticated = get_current_user
+"""Alias for get_current_user — use at call sites where the intent is clearer."""
 
 
-# Role-based access control
-class RoleChecker:
-    """
-    Dependency class for role-based access control.
+def _reset_jwks_cache() -> None:
+    """Reset the JWKS cache singleton. For testing only."""
+    global _jwks_cache
+    with _cache_init_lock:
+        _jwks_cache = None
 
-    Usage:
-        @app.get("/admin", dependencies=[Depends(RoleChecker(["admin"]))])
-        async def admin_only():
-            return {"message": "Admin access"}
-    """
-
-    def __init__(self, allowed_roles: list[str]):
-        self.allowed_roles = allowed_roles
-
-    async def __call__(
-        self,
-        user: TokenData = Depends(get_current_user)
-    ) -> TokenData:
-        """
-        Check if user has required role.
-
-        Args:
-            user: Current authenticated user
-
-        Returns:
-            TokenData if authorized
-
-        Raises:
-            HTTPException: If user lacks required role
-        """
-        if user.role not in self.allowed_roles:
-            logger.warning(
-                f"User {user.user_id} with role {user.role} "
-                f"attempted to access resource requiring {self.allowed_roles}"
-            )
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail=f"Insufficient permissions. Required roles: {self.allowed_roles}"
-            )
-        return user
-
-
-# Helper functions for user management
-async def authenticate_user(email: str, password: str) -> Optional[User]:
-    """
-    Authenticate user by email and password.
-
-    Args:
-        email: User email
-        password: Plain text password
-
-    Returns:
-        User object if authentication successful, None otherwise
-    """
-    # Note: Database integration required for production
-    # This is a development mock - replace with actual database lookup
-    logger.info(f"Authenticating user: {email}")
-
-    # Mock user for development
-    if email == "demo@telivus.ai" and password == "demo123":
-        return User(
-            id="demo_user_123",
-            email=email,
-            name="Demo User",
-            role="user",
-            is_active=True,
-            created_at=datetime.utcnow()
-        )
-
-    return None
-
-
-async def create_user(user_data: UserCreate) -> User:
-    """
-    Create new user account.
-
-    Args:
-        user_data: User registration data
-
-    Returns:
-        Created user object
-
-    Raises:
-        HTTPException: If email already exists
-    """
-    # Note: Database integration required for production
-    # Replace with actual database storage and duplicate email check
-
-    # Hash password
-    hash_password(user_data.password)
-
-    # Create user (mock)
-    user = User(
-        id=f"user_{datetime.utcnow().timestamp()}",
-        email=user_data.email,
-        name=user_data.name,
-        role="user",
-        is_active=True,
-        created_at=datetime.utcnow()
-    )
-
-    logger.info(f"Created new user: {user_data.email}")
-
-    return user
-
-
-async def login_user(credentials: UserLogin) -> Token:
-    """
-    Login user and return JWT tokens.
-
-    Args:
-        credentials: User login credentials
-
-    Returns:
-        Access and refresh tokens
-
-    Raises:
-        HTTPException: If authentication fails
-    """
-    user = await authenticate_user(credentials.email, credentials.password)
-
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect email or password",
-            headers={"WWW-Authenticate": "Bearer"}
-        )
-
-    # Create tokens
-    access_token = create_access_token(
-        data={
-            "user_id": user.id,
-            "email": user.email,
-            "role": user.role
-        }
-    )
-
-    refresh_token = create_refresh_token(user.id)
-
-    return Token(
-        access_token=access_token,
-        refresh_token=refresh_token,
-        token_type="bearer",
-        expires_in=ACCESS_TOKEN_EXPIRE_MINUTES * 60
-    )

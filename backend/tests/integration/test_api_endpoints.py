@@ -12,9 +12,23 @@ from unittest.mock import patch
 
 import pytest
 
+from app.core.auth import SupabaseUser, get_current_user
+from app.main import app
+
 
 class TestHealthAPIEndpoints:
     """Integration tests for health assessment API"""
+
+    @pytest.fixture(autouse=True)
+    def authenticate_client(self):
+        """Set mock authentication for integration tests."""
+        app.dependency_overrides[get_current_user] = lambda: SupabaseUser(
+            user_id="test-integration-user",
+            email="test@telivus.ai",
+            role="authenticated",
+        )
+        yield
+        app.dependency_overrides.pop(get_current_user, None)
 
     @pytest.mark.integration
     def test_health_check_endpoint(self, test_client):

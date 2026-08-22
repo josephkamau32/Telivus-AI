@@ -1,119 +1,171 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.4";
+import { getCorsHeaders, handleCorsPreflight } from "../_shared/cors.ts";
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+serve(async (req: Request) => {
+  const preflight = handleCorsPreflight(req);
+  if (preflight) return preflight;
 
-serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
+  const corsHeaders = getCorsHeaders(req.headers.get("Origin"));
 
   try {
-    const PAYSTACK_SECRET_KEY = Deno.env.get('PAYSTACK_SECRET_KEY');
-    const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
-    const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    const PAYSTACK_SECRET_KEY = Deno.env.get("PAYSTACK_SECRET_KEY");
+    const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
+    const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
     if (!PAYSTACK_SECRET_KEY || !SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
-      throw new Error('Missing required environment variables');
+      throw new Error("Missing required environment variables");
     }
 
     const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-    const authHeader = req.headers.get('Authorization');
-    
+    const authHeader = req.headers.get("Authorization");
+
     if (!authHeader) {
-      throw new Error('No authorization header');
+      return new Response(
+        JSON.stringify({ error: "Missing Authorization header" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
-    const token = authHeader.replace('Bearer ', '');
+    const token = authHeader.replace("Bearer ", "");
     const { data: { user }, error: userError } = await supabaseAdmin.auth.getUser(token);
 
     if (userError || !user) {
-      throw new Error('Unauthorized');
+      return new Response(
+        JSON.stringify({ error: "Unauthorized" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
     const { reference } = await req.json();
 
-    if (!reference) {
-      throw new Error('Payment reference is required');
+    if (!reference || typeof reference !== "string") {
+      return new Response(
+        JSON.stringify({ error: "Payment reference is required" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Look up the subscription by payment reference first
+    const { data: subscription, error: subLookupError } = await supabaseAdmin
+      .from("chat_subscriptions")
+      .select("*")
+      .eq("payment_reference", reference)
+      .maybeSingle();
+
+    if (subLookupError || !subscription) {
+      return new Response(
+        JSON.stringify({ error: "Subscription not found" }),
+        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // H-06 Remediation: Verify payment belongs strictly to the authenticated caller
+    if (subscription.user_id !== user.id) {
+      return new Response(
+        JSON.stringify({ error: "Forbidden: payment does not belong to authenticated user" }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // H-03 Remediation: Idempotency check — if already active, return success without duplicate activation
+    if (subscription.status === "active") {
+      return new Response(
+        JSON.stringify({
+          success: true,
+          subscription_type: subscription.subscription_type,
+          already_active: true,
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
     // Verify transaction with Paystack
     const verifyResponse = await fetch(
       `https://api.paystack.co/transaction/verify/${reference}`,
       {
-        method: 'GET',
+        method: "GET",
         headers: {
-          'Authorization': `Bearer ${PAYSTACK_SECRET_KEY}`,
+          "Authorization": `Bearer ${PAYSTACK_SECRET_KEY}`,
         },
       }
     );
 
     if (!verifyResponse.ok) {
-      const errorData = await verifyResponse.text();
-      console.error('Paystack verification error:', errorData);
-      throw new Error('Failed to verify payment');
+      console.error("Paystack verification HTTP error:", verifyResponse.status);
+      throw new Error("Failed to verify payment with provider");
     }
 
     const verifyData = await verifyResponse.json();
 
-    if (verifyData.data.status !== 'success') {
-      throw new Error('Payment was not successful');
+    if (verifyData.data?.status !== "success") {
+      return new Response(
+        JSON.stringify({ error: "Payment was not successful with payment provider" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
-
-    // Look up the subscription by payment reference
-    const { data: subscription } = await supabaseAdmin
-      .from('chat_subscriptions')
-      .select('*')
-      .eq('payment_reference', reference)
-      .single();
-
-    if (!subscription) {
-      throw new Error('Subscription not found');
-    }
-
-    // Invariant: exactly one active, non-expired, non-exhausted subscription
-    // per user at any time. Before activating this subscription, expire all
-    // other active rows for the same user so that chat-with-ai never picks
-    // a stale row via `ORDER BY created_at DESC LIMIT 1`.
-    await supabaseAdmin
-      .from('chat_subscriptions')
-      .update({ status: 'expired' })
-      .eq('user_id', subscription.user_id)
-      .eq('status', 'active')
-      .neq('id', subscription.id);
-
-    const updateData: any = {
-      status: 'active',
-    };
 
     // Set expiry for unlimited plan (30 days from now)
-    if (subscription.subscription_type === 'unlimited') {
+    let expiresAt: string | null = null;
+    if (subscription.subscription_type === "unlimited") {
       const expiryDate = new Date();
       expiryDate.setDate(expiryDate.getDate() + 30);
-      updateData.expires_at = expiryDate.toISOString();
+      expiresAt = expiryDate.toISOString();
     }
 
-    await supabaseAdmin
-      .from('chat_subscriptions')
-      .update(updateData)
-      .eq('id', subscription.id);
-
-    return new Response(
-      JSON.stringify({ 
-        success: true, 
-        subscription_type: subscription.subscription_type 
-      }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    // H-04: Execute atomic activation via PostgreSQL RPC with row-level locking
+    const { data: rpcResult, error: rpcError } = await supabaseAdmin.rpc(
+      "activate_subscription_atomic",
+      {
+        p_subscription_id: subscription.id,
+        p_user_id: user.id,
+        p_subscription_type: subscription.subscription_type,
+        p_expires_at: expiresAt,
+      }
     );
 
-  } catch (error) {
-    console.error('Error in verify-payment:', error);
+    if (rpcError) {
+      console.warn("RPC activate_subscription_atomic unavailable or failed, falling back to direct update:", rpcError.message);
+      // Fallback: Expire any existing active subscriptions then activate
+      await supabaseAdmin
+        .from("chat_subscriptions")
+        .update({ status: "expired" })
+        .eq("user_id", user.id)
+        .eq("status", "active")
+        .neq("id", subscription.id);
+
+      const updateData: Record<string, string> = {
+        status: "active",
+        updated_at: new Date().toISOString(),
+      };
+      if (expiresAt) {
+        updateData.expires_at = expiresAt;
+      }
+
+      await supabaseAdmin
+        .from("chat_subscriptions")
+        .update(updateData)
+        .eq("id", subscription.id);
+    } else if (rpcResult && !rpcResult.success) {
+      return new Response(
+        JSON.stringify({ error: rpcResult.error || "Failed to activate subscription" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     return new Response(
-      JSON.stringify({ error: error.message }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      JSON.stringify({
+        success: true,
+        subscription_type: subscription.subscription_type,
+      }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+
+  } catch (error: unknown) {
+    console.error("Error in verify-payment:", error);
+    return new Response(
+      JSON.stringify({ error: "Payment verification failed" }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 });

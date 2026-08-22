@@ -6,9 +6,13 @@ import path from 'path';
 export default defineConfig({
   plugins: [react()],
   resolve: {
-    alias: {
-      '@': path.resolve(__dirname, './src'),
-    },
+    alias: [
+      { find: /^npm:@supabase\/supabase-js(@.*)?$/, replacement: '@supabase/supabase-js' },
+      { find: /^https:\/\/esm\.sh\/@supabase\/supabase-js(@.*)?$/, replacement: '@supabase/supabase-js' },
+      { find: /^https:\/\/deno\.land\/std(@.*)?\/http\/server\.ts$/, replacement: path.resolve(__dirname, './tests/edge-functions/serve-shim.ts') },
+      { find: /^jsr:@supabase\/functions-js\/.*$/, replacement: path.resolve(__dirname, './tests/edge-functions/empty-shim.ts') },
+      { find: '@', replacement: path.resolve(__dirname, './src') },
+    ],
   },
   test: {
     globals: true,

@@ -1,8 +1,8 @@
 """
 Predictive Alerts API endpoints.
 
-Provides endpoints for managing predictive health alerts, alert rules,
-and notification preferences.
+NOTE: This router is not currently mounted in main.py. Kept for future feature activation.
+All endpoints are pre-wired with Supabase JWT authentication (get_current_user).
 """
 
 from datetime import datetime
@@ -11,6 +11,7 @@ from typing import Any, Dict, List
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from sqlalchemy.orm import Session
 
+from app.core.auth import SupabaseUser, get_current_user
 from app.core.database import get_db
 from app.core.logging import get_logger
 from app.models.health import (
@@ -31,33 +32,22 @@ logger = get_logger(__name__)
 
 
 @router.post(
-    "/generate/{user_id}",
+    "/generate",
     summary="Generate Predictive Alerts",
     description="""
-    Generate predictive alerts for a user based on their health trajectory and alert rules.
-
-    This endpoint analyzes the user's recent health data and trajectory predictions
-    to identify potential health risks, symptom worsening patterns, and preventive
-    care needs. Alerts are generated according to user-defined rules and default
-    medical guidelines.
-
-    **Generated Alert Types:**
-    - Symptom worsening detection
-    - Risk level increases
-    - Emergency warning signs
-    - Preventive care reminders
-    - Medication adherence alerts
-    - Vital sign abnormalities
+    Generate predictive alerts for the authenticated user based on their health trajectory and alert rules.
     """
 )
 async def generate_alerts(
     *,
-    user_id: str,
     background_tasks: BackgroundTasks,
+    current_user: SupabaseUser = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> Dict[str, Any]:
     """
-    Generate predictive alerts for a user.
+    Generate predictive alerts for authenticated user.
+    """
+    user_id = current_user.user_id
 
     Args:
         user_id: User identifier
@@ -215,7 +205,7 @@ async def acknowledge_alert(
         logger.warning(f"Alert acknowledgment validation error: {e}")
         raise HTTPException(
             status_code=404,
-            detail=str(e)
+            detail="Alert not found or invalid"
         ) from e
     except Exception as e:
         logger.error(f"Failed to acknowledge alert {request.alert_id}: {e}", exc_info=True)
@@ -404,7 +394,7 @@ async def update_alert_rule(
         logger.warning(f"Alert rule update validation error: {e}")
         raise HTTPException(
             status_code=404,
-            detail=str(e)
+            detail="Alert rule not found or invalid update"
         ) from e
     except Exception as e:
         logger.error(f"Failed to update alert rule {rule_id}: {e}", exc_info=True)
@@ -465,7 +455,7 @@ async def delete_alert_rule(
         logger.warning(f"Alert rule deletion validation error: {e}")
         raise HTTPException(
             status_code=404,
-            detail=str(e)
+            detail="Alert rule not found or cannot be deleted"
         ) from e
     except Exception as e:
         logger.error(f"Failed to delete alert rule {rule_id}: {e}", exc_info=True)

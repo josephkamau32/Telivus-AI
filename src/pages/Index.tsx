@@ -1042,8 +1042,6 @@ const Index = () => {
 
         clearTimeout(timeoutId);
 
-        console.log('Successfully received AI report:', reportData);
-
         // Transform the response to match the expected format
         const transformedReport = {
           demographic_header: {
@@ -1163,23 +1161,6 @@ const Index = () => {
 
   const triggerTrajectoryAnalysis = async (assessmentData: PatientData, userId: string) => {
     try {
-      console.log('Triggering trajectory analysis for user:', userId);
-
-      // Prepare trajectory request data
-      const trajectoryRequest = {
-        user_id: userId,
-        prediction_horizon_days: 30,
-        include_simulations: true,
-        focus_conditions: [] // Will be auto-detected from symptoms
-      };
-
-      // Call trajectory analysis API (this would be implemented when backend is ready)
-      // For now, just log that trajectory analysis would be triggered
-      console.log('Trajectory analysis request prepared:', trajectoryRequest);
-
-      // In production, this would call:
-      // await apiClient.analyzeTrajectory(trajectoryRequest);
-
       // Show subtle notification that trajectory analysis is running in background
       setTimeout(() => {
         toast({
