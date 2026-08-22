@@ -18,6 +18,13 @@ CREATE TABLE IF NOT EXISTS public.health_reports (
 -- Enable RLS on health_reports
 ALTER TABLE public.health_reports ENABLE ROW LEVEL SECURITY;
 
+-- Policy: Users can view their own health reports
+CREATE POLICY "Users can view their own health reports"
+  ON public.health_reports
+  FOR SELECT
+  TO authenticated
+  USING (auth.uid() = user_id);
+
 -- 2. Create report_logs table
 CREATE TABLE IF NOT EXISTS public.report_logs (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

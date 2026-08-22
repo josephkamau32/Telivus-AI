@@ -25,6 +25,8 @@ dist-ssr
 
 # Supabase
 .supabase
+supabase/.branches/
+supabase/.temp/
 
 # Editor directories and files
 .vscode/*
